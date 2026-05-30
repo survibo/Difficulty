@@ -168,6 +168,7 @@ function renderLexical(d) {
     ["mean_all", p.mean_all],
     ["mean_top_n", p.mean_top_n],
     ["max", p.max],
+    ["내용어", d.content_token_count + " (중복보정 " + d.content_token_count_capped + ")"],
   ]);
 
   let html = '<div class="word-list">';

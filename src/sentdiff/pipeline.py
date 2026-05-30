@@ -53,6 +53,7 @@ class SentenceScorer:
             "structure_score_0_1": structure_score,
             "structure_score_10": structure_result["structure_score_10"],
             "content_token_count": lexical_result["content_token_count"],
+            "content_token_count_capped": lexical_result.get("content_token_count_capped", lexical_result["content_token_count"]),
             "unknown_token_count": lexical_result["unknown_token_count"],
             "scored_words": lexical_result["scored_words"],
             "score_parts": lexical_result["score_parts"],

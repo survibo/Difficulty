@@ -85,6 +85,7 @@ class SentenceScorerTest(unittest.TestCase):
             "structure_score_0_1",
             "structure_score_10",
             "content_token_count",
+            "content_token_count_capped",
             "unknown_token_count",
             "scored_words",
             "score_parts",

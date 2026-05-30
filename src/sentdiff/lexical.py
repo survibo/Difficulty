@@ -309,16 +309,32 @@ class LexiconScorer:
 
         return result
 
+    @staticmethod
+    def _cap_repeats(
+        scored: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        from collections import Counter
+        key_counts: Counter[tuple[str, str]] = Counter()
+        capped: list[dict[str, Any]] = []
+        for item in scored:
+            key = (item["lemma"], item["pos"])
+            key_counts[key] += 1
+            if key_counts[key] % 2 == 1:
+                capped.append(item)
+        return capped
+
     def compute_sentence_score(self, tokens: list[Any]) -> dict[str, Any]:
         scored = self.score_tokens(tokens)
-        diffs = [item["difficulty"] for item in scored]
+        capped = self._cap_repeats(scored)
+        diffs = [item["difficulty"] for item in capped]
 
         if not diffs:
             return {
                 "lexical_score_0_1": 0.0,
-                "content_token_count": 0,
+                "content_token_count": len(scored),
+                "content_token_count_capped": 0,
                 "unknown_token_count": 0,
-                "scored_words": [],
+                "scored_words": scored,
                 "score_parts": {
                     "mean_all": 0.0,
                     "mean_top_n": 0.0,
@@ -342,6 +358,7 @@ class LexiconScorer:
         return {
             "lexical_score_0_1": lexical_score,
             "content_token_count": len(scored),
+            "content_token_count_capped": len(capped),
             "unknown_token_count": unknown_count,
             "scored_words": scored,
             "score_parts": {
