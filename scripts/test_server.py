@@ -27,6 +27,17 @@ except Exception:
 
 INDEX_HTML = ROOT / "index.html"
 
+SCORER: SentenceScorer | None = None
+
+
+def _get_scorer() -> SentenceScorer:
+    global SCORER
+    if SCORER is None:
+        print("Loading pipeline...", end=" ", flush=True)
+        SCORER = SentenceScorer()
+        print("OK", flush=True)
+    return SCORER
+
 
 class Handler(BaseHTTPRequestHandler):
     def do_OPTIONS(self) -> None:
@@ -58,7 +69,8 @@ class Handler(BaseHTTPRequestHandler):
             body = self.rfile.read(length)
             data = json.loads(body)
             sentence = data.get("sentence", "")
-            result = SCORER.score(sentence)
+            scorer = _get_scorer()
+            result = scorer.score(sentence)
             self._ok("application/json", json.dumps(result, ensure_ascii=False, default=str).encode("utf-8"))
         except Exception as e:
             self._err(500, str(e))
@@ -87,20 +99,9 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main() -> None:
-    global SCORER
-    print("Loading pipeline...", end=" ", flush=True)
-    try:
-        SCORER = SentenceScorer()
-    except Exception:
-        print("FAILED", flush=True)
-        traceback.print_exc()
-        sys.exit(1)
-    print("OK")
-
     port = int(os.environ.get("PORT", "8800"))
     server = HTTPServer(("0.0.0.0", port), Handler)
-    print(f"Server: http://0.0.0.0:{port}")
-    print("Press Ctrl+C to stop.")
+    print(f"Server ready on port {port}", flush=True)
     try:
         server.serve_forever()
     except KeyboardInterrupt:
@@ -109,5 +110,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    SCORER: SentenceScorer = None  # type: ignore[assignment]
     main()
