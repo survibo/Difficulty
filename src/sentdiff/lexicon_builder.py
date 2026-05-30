@@ -596,6 +596,19 @@ def _safe_rank_diff(rank: Any, max_rank: Any) -> Optional[float]:
     return rank_to_difficulty(rank, max_rank)
 
 
+def _origin_domain_signal_or_none(row: pd.Series) -> Optional[float]:
+    origin = row.get("origin")
+    domain = row.get("domain")
+
+    if is_missing(origin) and is_missing(domain):
+        return None
+
+    return origin_domain_signal(
+        origin=origin,
+        domain=domain,
+    )
+
+
 def _difficulty_basis(row: pd.Series) -> str:
     parts: list[str] = []
 
@@ -719,12 +732,18 @@ def adjust_derivational_difficulty(
         out.at[idx, "derivation_suffix"] = suffix
         out.at[idx, "derivation_penalty"] = penalty
 
+        if len(base) < 2:
+            continue
+
         base_rows = lemma_groups.get(base)
         if base_rows is None or base_rows.empty:
             continue
 
         base_row = _choose_derivation_base_row(base_rows)
         if base_row is None:
+            continue
+
+        if not _has_derivation_base_pos(base_row.get("pos_norm")):
             continue
 
         raw_difficulty = safe_float(row.get("raw_difficulty"), default=None)
@@ -773,14 +792,7 @@ def add_difficulty_columns(
     out["grade5_diff"] = out["grade_5"].map(_safe_grade5_diff)
     out["rank_diff"] = out["rank_5965"].map(lambda x: _safe_rank_diff(x, max_rank))
 
-    # normalize.py의 origin_domain_signal() 사용.
-    out["origin_domain_signal"] = out.apply(
-        lambda row: origin_domain_signal(
-            origin=row.get("origin"),
-            domain=row.get("domain"),
-        ),
-        axis=1,
-    )
+    out["origin_domain_signal"] = out.apply(_origin_domain_signal_or_none, axis=1)
 
     difficulties: list[float] = []
 

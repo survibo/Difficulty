@@ -19,6 +19,8 @@ from sentdiff.lexicon_builder import (  # noqa: E402
     finalize_lexicon,
 )
 from sentdiff.normalize import (  # noqa: E402
+    parse_grade5,
+    rank_to_difficulty,
     split_light_predicate_suffix,
 )
 
@@ -141,6 +143,20 @@ class DerivationalDifficultyTests(unittest.TestCase):
     def test_derivational_adjustment_caps_maximum_drop(self) -> None:
         df = pd.DataFrame(
             [
+                _row("가공", difficulty=0.0, pos_norm="명사"),
+                _row("가공하다", difficulty=1.0, raw_difficulty=1.0, pos_norm="동사"),
+            ]
+        )
+
+        out = adjust_derivational_difficulty(df, LexiconBuildConfig())
+        row = out[out["lemma"].eq("가공하다")].iloc[0]
+
+        self.assertTrue(bool(row["derivation_adjusted"]))
+        self.assertAlmostEqual(float(row["difficulty"]), 0.65)
+
+    def test_derivational_adjustment_skips_one_character_base(self) -> None:
+        df = pd.DataFrame(
+            [
                 _row("해", difficulty=0.0, pos_norm="명사"),
                 _row("해하다", difficulty=1.0, raw_difficulty=1.0, pos_norm="동사"),
             ]
@@ -149,8 +165,24 @@ class DerivationalDifficultyTests(unittest.TestCase):
         out = adjust_derivational_difficulty(df, LexiconBuildConfig())
         row = out[out["lemma"].eq("해하다")].iloc[0]
 
-        self.assertTrue(bool(row["derivation_adjusted"]))
-        self.assertAlmostEqual(float(row["difficulty"]), 0.65)
+        self.assertEqual(row["derivation_base"], "해")
+        self.assertFalse(bool(row["derivation_adjusted"]))
+        self.assertEqual(row["difficulty"], row["raw_difficulty"])
+
+    def test_derivational_adjustment_requires_nominal_or_root_base(self) -> None:
+        df = pd.DataFrame(
+            [
+                _row("좋아", difficulty=0.0, pos_norm="동사"),
+                _row("좋아하다", difficulty=0.9, raw_difficulty=0.9, pos_norm="동사"),
+            ]
+        )
+
+        out = adjust_derivational_difficulty(df, LexiconBuildConfig())
+        row = out[out["lemma"].eq("좋아하다")].iloc[0]
+
+        self.assertEqual(row["derivation_base"], "좋아")
+        self.assertFalse(bool(row["derivation_adjusted"]))
+        self.assertEqual(row["difficulty"], row["raw_difficulty"])
 
     def test_add_difficulty_columns_preserves_raw_and_marks_basis(self) -> None:
         df = pd.DataFrame(
@@ -192,6 +224,52 @@ class DerivationalDifficultyTests(unittest.TestCase):
         self.assertIn("raw_difficulty", out.columns)
         self.assertLess(row["difficulty"], row["raw_difficulty"])
         self.assertIn("derivation_adjusted", row["difficulty_basis"])
+
+    def test_origin_domain_missing_is_not_used_as_easy_signal(self) -> None:
+        df = pd.DataFrame(
+            [
+                {
+                    "lemma": "일식",
+                    "homograph_no": 0,
+                    "pos_norm": "명사",
+                    "pos_40k": "",
+                    "pos_5965": "명사",
+                    "grade_5": None,
+                    "aux_5965_diff": 0.25,
+                    "rank_5965": 5965,
+                    "origin": "",
+                    "domain": "",
+                    "source_40k": False,
+                    "source_5965": True,
+                }
+            ]
+        )
+
+        out = add_difficulty_columns(df, LexiconBuildConfig())
+        row = out.iloc[0]
+
+        self.assertTrue(pd.isna(row["origin_domain_signal"]))
+        self.assertAlmostEqual(float(row["rank_diff"]), 1.0)
+        self.assertAlmostEqual(float(row["raw_difficulty"]), 0.5)
+        self.assertEqual(row["difficulty_basis"], "vocab_5965+rank_5965")
+
+
+class NormalizeDifficultyHelperTests(unittest.TestCase):
+    def test_parse_grade5_is_strict(self) -> None:
+        self.assertEqual(parse_grade5("1"), 1)
+        self.assertEqual(parse_grade5("1.0"), 1)
+        self.assertEqual(parse_grade5("1등급"), 1)
+        self.assertEqual(parse_grade5(5), 5)
+
+        self.assertIsNone(parse_grade5("15등급"))
+        self.assertIsNone(parse_grade5("1~5등급"))
+        self.assertIsNone(parse_grade5("등급5"))
+        self.assertIsNone(parse_grade5("5등급 후보"))
+
+    def test_rank_to_difficulty_starts_at_zero(self) -> None:
+        self.assertAlmostEqual(rank_to_difficulty(1, 5965), 0.0)
+        self.assertAlmostEqual(rank_to_difficulty(5965, 5965), 1.0)
+        self.assertIsNone(rank_to_difficulty(0, 5965))
 
 
 class DerivationBaseSelectionTests(unittest.TestCase):

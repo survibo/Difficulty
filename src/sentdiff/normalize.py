@@ -231,23 +231,15 @@ def parse_grade5(value: Any) -> Optional[int]:
     "5등급" -> 5
     3 -> 3
     """
-    if is_missing(value):
+    text = normalize_text(value)
+    if not text:
         return None
 
-    n = safe_int(value)
-    if n is not None and 1 <= n <= 5:
-        return n
-
-    text = normalize_text(value)
-    m = re.search(r"[1-5]", text)
+    m = re.fullmatch(r"([1-5])(?:\.0)?(?:등급)?", text)
     if not m:
         return None
 
-    grade = int(m.group())
-    if 1 <= grade <= 5:
-        return grade
-
-    return None
+    return int(m.group(1))
 
 
 def grade5_to_difficulty(grade: Any) -> Optional[float]:
@@ -309,7 +301,7 @@ def rank_to_difficulty(rank: Any, max_rank: Any) -> Optional[float]:
     순위가 클수록 덜 기본적인 단어라고 보고 로그 변환한다.
 
     예:
-    rank_difficulty = log(1 + rank) / log(1 + max_rank)
+    rank_difficulty = (log(1 + rank) - log(2)) / (log(1 + max_rank) - log(2))
     """
     r = safe_float(rank)
     m = safe_float(max_rank)
@@ -317,10 +309,14 @@ def rank_to_difficulty(rank: Any, max_rank: Any) -> Optional[float]:
     if r is None or m is None:
         return None
 
-    if r <= 0 or m <= 1:
+    if r < 1 or m <= 1:
         return None
 
-    return clamp(math.log1p(r) / math.log1p(m))
+    denominator = math.log1p(m) - math.log1p(1)
+    if denominator <= 0:
+        return None
+
+    return clamp((math.log1p(r) - math.log1p(1)) / denominator)
 
 
 # ---------------------------------------------------------------------
