@@ -100,7 +100,9 @@ class SentenceScorerTest(unittest.TestCase):
 
     def test_score_composition(self) -> None:
         result = self.scorer.score("문장을 분석한다.")
-        expected = 0.50 * result["lexical_score_0_1"] + 0.50 * result["structure_score_0_1"]
+        lw = result["lexical_weight"]
+        sw = result["structure_weight"]
+        expected = lw * result["lexical_score_0_1"] + sw * result["structure_score_0_1"]
         self.assertAlmostEqual(result["score_0_1"], expected, places=4)
 
     def test_structure_parts_contains_length_score(self) -> None:

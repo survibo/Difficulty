@@ -277,6 +277,7 @@ class StructureScorerTest(unittest.TestCase):
             "strong_logical_ending_count", "strong_logical_ending_weighted",
             "weak_connective_count", "weak_connective_weighted",
             "derivational_suffix_count", "max_noun_chain",
+            "predicate_count_adj", "max_noun_chain_adj",
         }
         self.assertEqual(set(sp.keys()), sub_keys)
 

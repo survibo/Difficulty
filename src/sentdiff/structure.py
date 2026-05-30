@@ -201,8 +201,9 @@ class StructureScorer:
         max_noun_chain = self._max_noun_chain(tokens)
 
         length_score = self._compute_length_score(content_token_count)
+        adj_predicate_count = max(0, predicate_count - 1)
         predicate_score = self._safe_ratio(
-            predicate_count, self.config.predicate_full_score_at,
+            adj_predicate_count, self.config.predicate_full_score_at,
         )
         embedding_score = self._safe_ratio(
             adnominal_count + nominalizer_count, self.config.embedding_full_score_at,
@@ -216,8 +217,9 @@ class StructureScorer:
             + weak_connective_weighted
         )
         logical_score = min(1.0, logical_raw / self.config.logical_full_score_at)
+        adj_max_noun_chain = max(0, max_noun_chain - 1)
         modifier_score = self._safe_ratio(
-            max_noun_chain, self.config.modifier_full_score_at,
+            adj_max_noun_chain, self.config.modifier_full_score_at,
         )
         derivational_score = self._safe_ratio(
             derivational_suffix_count, self.config.derivational_full_score_at,
@@ -248,6 +250,7 @@ class StructureScorer:
                 "derivational_score": round(derivational_score, 4),
                 "content_token_count": content_token_count,
                 "predicate_count": predicate_count,
+                "predicate_count_adj": adj_predicate_count,
                 "ending_count": ending_count,
                 "connective_ending_count": connective_ending_count,
                 "adnominal_count": adnominal_count,
@@ -260,6 +263,7 @@ class StructureScorer:
                 "weak_connective_count": weak_connective_count,
                 "derivational_suffix_count": derivational_suffix_count,
                 "max_noun_chain": max_noun_chain,
+                "max_noun_chain_adj": adj_max_noun_chain,
             },
         }
 
