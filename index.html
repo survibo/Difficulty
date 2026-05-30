@@ -187,14 +187,14 @@ function renderLexical(d) {
 function renderStructure(d) {
   const sp = d.structure_parts;
   document.getElementById("structureFormula").textContent =
-    "structure = 0.15×length + 0.15×predicate + 0.15×embedding + 0.15×connective + 0.10×logical + 0.15×negation + 0.10×modifier + 0.05×derivational";
+    "structure = 0.15×length + 0.15×predicate + 0.15×embedding + 0.15×connective + 0.15×negation + 0.10×logical + 0.10×modifier + 0.05×derivational";
   const items = [
     ["length_score", sp.length_score, d.content_token_count + " tokens"],
     ["predicate_score", sp.predicate_score, sp.predicate_count + " VV/VA"],
     ["embedding_score", sp.embedding_score, "ETM:" + sp.adnominal_count + " ETN:" + sp.nominalizer_count],
     ["connective_score", sp.connective_score, sp.connective_ending_count + " EC"],
-    ["logical_score", sp.logical_score, "marker:" + sp.logical_marker_weighted + " strong:" + sp.strong_logical_ending_weighted + " weak:" + sp.weak_connective_weighted],
     ["negation_score", sp.negation_score, sp.negation_count + " negations"],
+    ["logical_score", sp.logical_score, "marker:" + sp.logical_marker_weighted + " strong:" + sp.strong_logical_ending_weighted + " weak:" + sp.weak_connective_weighted],
     ["modifier_score", sp.modifier_score, "max chain:" + sp.max_noun_chain],
     ["derivational_score", sp.derivational_score, sp.derivational_suffix_count + " suffixes"],
   ];
