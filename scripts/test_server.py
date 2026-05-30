@@ -29,6 +29,13 @@ INDEX_HTML = ROOT / "index.html"
 
 
 class Handler(BaseHTTPRequestHandler):
+    def do_OPTIONS(self) -> None:
+        self.send_response(204)
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.end_headers()
+
     def do_GET(self) -> None:
         if self.path in ("/", "/index.html"):
             data = INDEX_HTML.read_bytes()
@@ -63,6 +70,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def _err(self, code: int, msg: str) -> None:
         self.send_response(code)
+        self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Content-Type", "text/plain; charset=utf-8")
         self.end_headers()
         self.wfile.write(msg.encode("utf-8"))
