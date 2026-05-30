@@ -1,0 +1,5 @@
+[build]
+  builder = "RAILPACK"
+
+[deploy]
+  startCommand = "python scripts/test_server.py"
