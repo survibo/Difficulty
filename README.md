@@ -119,7 +119,7 @@ src/sentdiff/normalize.py
 - 동형어번호 분리
 - 등급 변환
 - 품사명 통일
-- 한글/숫자/기호 정리
+- 어종/분야 신호와 파생 표제어 suffix 처리
 
 src/sentdiff/morph.py
 - Kiwi 형태소 분석 래퍼

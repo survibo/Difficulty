@@ -1,3 +1,4 @@
+#python scripts/01_build_lexicon.py
 from pathlib import Path
 import sys
 

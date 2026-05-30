@@ -32,8 +32,8 @@ import pandas as pd
 
 from .normalize import (
     clamp,
-    contains_hangul,
     grade5_to_difficulty,
+    grade5965_to_aux_difficulty,
     is_missing,
     is_valid_lemma,
     normalize_columns,
@@ -41,12 +41,14 @@ from .normalize import (
     normalize_lemma,
     normalize_origin,
     normalize_pos,
+    origin_domain_signal,
     parse_grade5,
     parse_homograph_no,
     rank_to_difficulty,
     safe_float,
     safe_int,
     split_homograph_suffix,
+    split_light_predicate_suffix,
     weighted_available,
 )
 
@@ -62,13 +64,16 @@ class LexiconBuildConfig:
     vocab_40k_path: str | Path = "data/raw/vocab_40k.xlsx"
     output_path: str | Path = "data/processed/lexicon_master.csv"
 
+    # pandas 기준:
+    # 첫 번째 시트 = 0
+    # 여섯 번째 시트 = 5
     vocab_5965_sheet_name: int | str = 0
     vocab_40k_sheet_name: int | str = 5
 
     header: int = 0
-
     encoding: str = "utf-8-sig"
 
+    # 최종 확정 가중치.
     # 4만 목록을 강하게 신뢰하고, 5965는 약하게만 반영한다.
     weight_grade5: float = 0.80
     weight_5965_aux: float = 0.10
@@ -76,24 +81,14 @@ class LexiconBuildConfig:
     weight_origin_domain: float = 0.05
 
     # 정보가 전혀 부족한 경우의 기본 난도.
-    default_difficulty: float = 0.60
+    default_difficulty: float = 0.30
 
-    # 5965 등급 보조값.
-    # A/B는 쉬운 어휘로 보고 0.00.
-    # C는 4만 기준 2등급 정도의 약한 난도로 보고 0.25.
-    aux_5965_difficulty_map: dict[str, float] | None = None
-
-    def __post_init__(self) -> None:
-        if self.aux_5965_difficulty_map is None:
-            object.__setattr__(
-                self,
-                "aux_5965_difficulty_map",
-                {
-                    "A": 0.00,
-                    "B": 0.00,
-                    "C": 0.25,
-                },
-            )
+    # 하다/되다/시키다 파생어 난도 보정.
+    use_derivational_adjustment: bool = True
+    derivational_base_weight: float = 0.60
+    derivational_original_weight: float = 0.40
+    derivational_max_drop: float = 0.35
+    derivational_adjust_only_downward: bool = True
 
 
 # ---------------------------------------------------------------------
@@ -144,47 +139,17 @@ def _find_column(
 
 
 # ---------------------------------------------------------------------
-# 5965 auxiliary grade handling
+# 5965 grade label handling
 # ---------------------------------------------------------------------
 
 
-def parse_5965_aux_difficulty(
-    grade_value: Any,
-    mapping: dict[str, float],
-) -> Optional[float]:
-    """
-    5965 목록의 A/B/C 등급을 보조 난도로 변환한다.
-
-    확정 기준:
-    - A -> 0.00
-    - B -> 0.00
-    - C -> 0.25
-
-    숫자형이 들어온 경우:
-    - 1 -> A/B급으로 보고 0.00
-    - 2 -> C급으로 보고 0.25
-    - 3 -> 혹시 모를 입력 오류에 대비해 0.25로 처리
-    """
-    if is_missing(grade_value):
-        return None
-
-    text = str(grade_value).strip().upper()
-
-    if text in mapping:
-        return mapping[text]
-
-    numeric = safe_int(text)
-    if numeric == 1:
-        return 0.00
-    if numeric in {2, 3}:
-        return 0.25
-
-    return None
-
-
-def normalize_5965_aux_grade_label(grade_value: Any) -> str:
+def normalize_5965_grade_label(grade_value: Any) -> str:
     """
     5965 등급 원값을 보존하되 비교하기 쉽게 정규화한다.
+
+    확정 기준:
+    - A/B는 쉬운 어휘 그룹
+    - C는 2등급성 보조값
     """
     if is_missing(grade_value):
         return ""
@@ -204,49 +169,7 @@ def normalize_5965_aux_grade_label(grade_value: Any) -> str:
 
 
 # ---------------------------------------------------------------------
-# Origin/domain signal
-# ---------------------------------------------------------------------
-
-
-def origin_domain_signal(origin: Any, domain: Any) -> float:
-    """
-    어종/분야 기반 보정 신호를 0~1로 계산한다.
-
-    이 값은 최종 난도에 0.05 비중으로만 들어간다.
-    따라서 한자어/외래어라는 이유만으로 난도가 크게 튀지 않게 한다.
-
-    원칙:
-    - 일반 고유어: 낮음
-    - 한자어/외래어/혼종어: 약간 높음
-    - 전문 분야: 높음
-    """
-    normalized_origin = normalize_origin(origin)
-    normalized_domain = normalize_domain(domain)
-
-    origin_score = 0.0
-    if normalized_origin == "한자어":
-        origin_score = 0.40
-    elif normalized_origin == "외래어":
-        origin_score = 0.50
-    elif normalized_origin == "혼종어":
-        origin_score = 0.45
-    elif normalized_origin == "고유어":
-        origin_score = 0.00
-
-    domain_score = 0.0
-    if normalized_domain:
-        if normalized_domain == "일반어":
-            domain_score = 0.00
-        elif "일반어" in normalized_domain:
-            domain_score = 0.40
-        else:
-            domain_score = 1.00
-
-    return clamp(max(origin_score, domain_score))
-
-
-# ---------------------------------------------------------------------
-# Input cleaners
+# Input loaders
 # ---------------------------------------------------------------------
 
 
@@ -256,15 +179,22 @@ def _read_excel_file(
     sheet_name: int | str,
     header: int,
 ) -> pd.DataFrame:
+    """
+    파일 확장자에 맞는 pandas Excel 엔진으로 읽는다.
+
+    - .xlsx/.xlsm: openpyxl
+    - .xls: xlrd
+    """
     suffix = path.suffix.lower()
 
     if suffix == ".xls":
         try:
-            import xlrd  # noqa: F401
+            import xlrd
         except ImportError as exc:
             raise ImportError(
                 f"{path} 파일은 .xls 형식이라 xlrd 패키지가 필요합니다. "
-                "다음 명령으로 설치하세요: C:/ProgramData/anaconda3/python.exe -m pip install xlrd"
+                "현재 활성화된 venv에서 다음 명령으로 설치하세요: "
+                "python -m pip install xlrd"
             ) from exc
 
         engine = "xlrd"
@@ -313,11 +243,12 @@ def load_vocab_40k(config: LexiconBuildConfig) -> pd.DataFrame:
 
     cleaned = pd.DataFrame()
     cleaned["lemma"] = df[lemma_col].map(normalize_lemma)
-    cleaned["homograph_no"] = (
-        df[homograph_col].map(parse_homograph_no)
-        if homograph_col
-        else 0
-    )
+
+    if homograph_col:
+        cleaned["homograph_no"] = df[homograph_col].map(parse_homograph_no)
+    else:
+        cleaned["homograph_no"] = 0
+
     cleaned["pos_40k"] = df[pos_col].map(normalize_pos)
     cleaned["pos_norm"] = cleaned["pos_40k"]
 
@@ -348,9 +279,7 @@ def load_vocab_40k(config: LexiconBuildConfig) -> pd.DataFrame:
 
     cleaned = cleaned[cleaned["lemma"].map(is_valid_lemma)].copy()
 
-    # 4만 목록이므로 한글 없는 항목을 무조건 제거하면 외래어/기호 표제어가 날아갈 수 있다.
-    # 다만 완전히 빈 표제어는 이미 제거되어 있다.
-
+    # 같은 의미 항목이 완전히 중복된 경우 제거.
     cleaned = cleaned.drop_duplicates(
         subset=[
             "lemma",
@@ -401,19 +330,16 @@ def load_vocab_5965(config: LexiconBuildConfig) -> pd.DataFrame:
     cleaned["pos_5965"] = df[pos_col].map(normalize_pos)
     cleaned["pos_norm"] = cleaned["pos_5965"]
 
-    cleaned["rank_5965"] = (
-        df[rank_col].map(lambda x: safe_float(x, default=np.nan))
-        if rank_col
-        else np.nan
-    )
+    if rank_col:
+        cleaned["rank_5965"] = df[rank_col].map(lambda x: safe_float(x, default=np.nan))
+    else:
+        cleaned["rank_5965"] = np.nan
 
-    cleaned["grade_5965_raw"] = df[grade_col].map(normalize_5965_aux_grade_label)
-    cleaned["aux_5965_diff"] = df[grade_col].map(
-        lambda x: parse_5965_aux_difficulty(
-            x,
-            config.aux_5965_difficulty_map or {"A": 0.0, "B": 0.0, "C": 0.25},
-        )
-    )
+    cleaned["grade_5965_raw"] = df[grade_col].map(normalize_5965_grade_label)
+
+    # normalize.py의 확정 기준 사용:
+    # A -> 0.00, B -> 0.00, C -> 0.25
+    cleaned["aux_5965_diff"] = df[grade_col].map(grade5965_to_aux_difficulty)
 
     cleaned["gloss_5965"] = (
         df[gloss_col].map(lambda x: "" if is_missing(x) else str(x).strip())
@@ -444,23 +370,59 @@ def load_vocab_5965(config: LexiconBuildConfig) -> pd.DataFrame:
 
 
 # ---------------------------------------------------------------------
-# Merge logic
+# Merge helpers
 # ---------------------------------------------------------------------
+
+
+def _make_exact_aux_table(aux_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    exact merge용 5965 테이블을 만든다.
+
+    같은 lemma + homograph_no + pos_norm에 여러 후보가 있으면
+    순위가 낮은 항목을 우선한다.
+    """
+    if aux_df.empty:
+        return aux_df.copy()
+
+    out = aux_df.copy()
+
+    out["_rank_sort"] = out["rank_5965"].fillna(float("inf"))
+    out["_aux_diff_sort"] = out["aux_5965_diff"].fillna(float("inf"))
+
+    out = out.sort_values(
+        by=["lemma", "homograph_no", "pos_norm", "_rank_sort", "_aux_diff_sort"],
+        ascending=[True, True, True, True, True],
+        kind="mergesort",
+    )
+
+    out = out.drop_duplicates(
+        subset=["lemma", "homograph_no", "pos_norm"],
+        keep="first",
+    )
+
+    out = out.drop(columns=["_rank_sort", "_aux_diff_sort"])
+
+    return out.reset_index(drop=True)
 
 
 def _make_relaxed_aux_table(aux_df: pd.DataFrame) -> pd.DataFrame:
     """
     lemma + homograph_no 기준으로 보조 병합할 수 있는 5965 테이블 생성.
 
-    같은 lemma + homograph_no에 여러 품사가 있으면 무리하게 하나로 고르지 않는다.
-    단, 완전히 같은 키에 후보가 하나뿐인 경우만 relaxed match에 사용한다.
+    같은 lemma + homograph_no에 여러 후보가 있으면 무리하게 하나로 고르지 않는다.
+    후보가 정확히 하나뿐인 경우만 relaxed match에 사용한다.
     """
+    if aux_df.empty:
+        return aux_df.copy()
+
+    exact_aux = _make_exact_aux_table(aux_df)
+
     key_cols = ["lemma", "homograph_no"]
 
-    counts = aux_df.groupby(key_cols).size().reset_index(name="candidate_count")
+    counts = exact_aux.groupby(key_cols).size().reset_index(name="candidate_count")
     unique_keys = counts[counts["candidate_count"] == 1][key_cols]
 
-    relaxed = aux_df.merge(unique_keys, on=key_cols, how="inner")
+    relaxed = exact_aux.merge(unique_keys, on=key_cols, how="inner")
 
     return relaxed.copy()
 
@@ -494,8 +456,10 @@ def _merge_main_with_aux(
         "source_5965",
     ]
 
+    exact_aux = _make_exact_aux_table(aux_df)
+
     merged = main_df.merge(
-        aux_df[aux_cols],
+        exact_aux[aux_cols],
         on=exact_keys,
         how="left",
         suffixes=("", "_aux"),
@@ -544,7 +508,7 @@ def _merge_main_with_aux(
 
             relaxed_row = relaxed_matches.loc[main_id]
 
-            # 혹시 같은 main_id가 Series가 아니라 DataFrame으로 온 경우 방어.
+            # 혹시 같은 main_id가 DataFrame으로 온 경우 방어.
             if isinstance(relaxed_row, pd.DataFrame):
                 if len(relaxed_row) != 1:
                     continue
@@ -635,16 +599,158 @@ def _safe_rank_diff(rank: Any, max_rank: Any) -> Optional[float]:
 def _difficulty_basis(row: pd.Series) -> str:
     parts: list[str] = []
 
-    if not is_missing(row.get("grade_5")):
+    if not is_missing(row.get("grade5_diff")):
         parts.append("grade_5")
     if not is_missing(row.get("aux_5965_diff")):
         parts.append("vocab_5965")
     if not is_missing(row.get("rank_diff")):
         parts.append("rank_5965")
-    if not is_missing(row.get("origin_domain_signal")):
-        parts.append("origin_domain")
+
+    od_value = row.get("origin_domain_signal")
+    if od_value is not None and not is_missing(od_value):
+        try:
+            if float(od_value) > 0:
+                parts.append("origin_domain")
+        except (TypeError, ValueError):
+            pass
+
+    if _as_bool(row.get("derivation_adjusted")):
+        parts.append("derivation_adjusted")
 
     return "+".join(parts) if parts else "default"
+
+
+def _has_derivation_base_pos(pos_value: Any) -> bool:
+    text = "" if is_missing(pos_value) else str(pos_value)
+    parts = {part.strip() for part in text.split("/") if part.strip()}
+    return bool({"명사", "어근"} & parts)
+
+
+def _source_priority(row: pd.Series) -> int:
+    has_40k = _as_bool(row.get("source_40k"))
+    has_5965 = _as_bool(row.get("source_5965"))
+
+    if has_40k and has_5965:
+        return 0
+    if has_40k:
+        return 1
+    if has_5965:
+        return 2
+    return 3
+
+
+def _choose_derivation_base_row(base_rows: pd.DataFrame) -> Optional[pd.Series]:
+    """
+    하다/되다/시키다 파생어 보정에 사용할 base lemma 대표 행을 고른다.
+    """
+    if base_rows.empty:
+        return None
+
+    candidates = base_rows.copy()
+    difficulty_col = (
+        "difficulty"
+        if "difficulty" in candidates.columns
+        else "raw_difficulty"
+        if "raw_difficulty" in candidates.columns
+        else None
+    )
+
+    candidates["_base_pos_priority"] = candidates["pos_norm"].map(
+        lambda value: 0 if _has_derivation_base_pos(value) else 1
+    )
+    candidates["_source_priority"] = candidates.apply(_source_priority, axis=1)
+    candidates["_rank_missing_priority"] = candidates["rank_5965"].map(
+        lambda value: 1 if is_missing(value) else 0
+    )
+    candidates["_rank_sort"] = candidates["rank_5965"].map(
+        lambda value: safe_float(value, default=float("inf"))
+    )
+    candidates["_difficulty_sort"] = (
+        candidates[difficulty_col].map(lambda value: safe_float(value, default=float("inf")))
+        if difficulty_col
+        else float("inf")
+    )
+    candidates["_homograph_sort"] = candidates["homograph_no"].map(parse_homograph_no)
+
+    sorted_candidates = candidates.sort_values(
+        by=[
+            "_base_pos_priority",
+            "_source_priority",
+            "_rank_missing_priority",
+            "_rank_sort",
+            "_difficulty_sort",
+            "_homograph_sort",
+        ],
+        ascending=[True, True, True, True, True, True],
+        kind="mergesort",
+    )
+
+    return sorted_candidates.iloc[0]
+
+
+def adjust_derivational_difficulty(
+    df: pd.DataFrame,
+    config: LexiconBuildConfig,
+) -> pd.DataFrame:
+    """
+    X하다/X되다/X시키다 파생 표제어의 난도를 base lemma 기준으로 완화한다.
+    """
+    out = df.copy()
+
+    out["derivation_base"] = ""
+    out["derivation_suffix"] = ""
+    out["derivation_penalty"] = np.nan
+    out["derivation_base_difficulty"] = np.nan
+    out["derivation_adjusted"] = False
+
+    lemma_groups = {
+        str(lemma): rows
+        for lemma, rows in out.groupby("lemma", dropna=False)
+        if not is_missing(lemma)
+    }
+
+    for idx, row in out.iterrows():
+        split = split_light_predicate_suffix(row.get("lemma"))
+        if split is None:
+            continue
+
+        base, suffix, penalty = split
+        out.at[idx, "derivation_base"] = base
+        out.at[idx, "derivation_suffix"] = suffix
+        out.at[idx, "derivation_penalty"] = penalty
+
+        base_rows = lemma_groups.get(base)
+        if base_rows is None or base_rows.empty:
+            continue
+
+        base_row = _choose_derivation_base_row(base_rows)
+        if base_row is None:
+            continue
+
+        raw_difficulty = safe_float(row.get("raw_difficulty"), default=None)
+        base_difficulty = safe_float(base_row.get("difficulty"), default=None)
+
+        if raw_difficulty is None or base_difficulty is None:
+            continue
+
+        out.at[idx, "derivation_base_difficulty"] = base_difficulty
+
+        adjusted = (
+            (base_difficulty * config.derivational_base_weight)
+            + (raw_difficulty * config.derivational_original_weight)
+            + penalty
+        )
+
+        max_drop = max(0.0, float(config.derivational_max_drop))
+        adjusted = clamp(max(adjusted, raw_difficulty - max_drop))
+
+        if config.derivational_adjust_only_downward and adjusted >= raw_difficulty:
+            continue
+
+        out.at[idx, "difficulty"] = adjusted
+        out.at[idx, "derivation_adjusted"] = True
+
+    return out
 
 
 def add_difficulty_columns(
@@ -653,6 +759,12 @@ def add_difficulty_columns(
 ) -> pd.DataFrame:
     """
     grade_5, 5965 보조등급, 순위, 어종/분야를 바탕으로 difficulty를 계산한다.
+
+    최종 확정 가중치:
+    - 4만 5등급 기반 난도: 0.80
+    - 5965 보조 난도: 0.10
+    - 5965 순위 기반 난도: 0.05
+    - 어종/분야 신호: 0.05
     """
     out = df.copy()
 
@@ -661,14 +773,33 @@ def add_difficulty_columns(
     out["grade5_diff"] = out["grade_5"].map(_safe_grade5_diff)
     out["rank_diff"] = out["rank_5965"].map(lambda x: _safe_rank_diff(x, max_rank))
 
+    # normalize.py의 origin_domain_signal() 사용.
     out["origin_domain_signal"] = out.apply(
-        lambda row: origin_domain_signal(row.get("origin"), row.get("domain")),
+        lambda row: origin_domain_signal(
+            origin=row.get("origin"),
+            domain=row.get("domain"),
+        ),
         axis=1,
     )
 
     difficulties: list[float] = []
 
     for _, row in out.iterrows():
+        base_values = [
+            row.get("grade5_diff"),
+            row.get("aux_5965_diff"),
+            row.get("rank_diff"),
+        ]
+
+        has_primary_signal = any(
+            value is not None and not is_missing(value)
+            for value in base_values
+        )
+
+        if not has_primary_signal:
+            difficulties.append(clamp(config.default_difficulty))
+            continue
+
         base = weighted_available(
             values=[
                 row.get("grade5_diff"),
@@ -690,7 +821,12 @@ def add_difficulty_columns(
 
         difficulties.append(clamp(float(base)))
 
-    out["difficulty"] = difficulties
+    out["raw_difficulty"] = difficulties
+    out["difficulty"] = out["raw_difficulty"]
+
+    if config.use_derivational_adjustment:
+        out = adjust_derivational_difficulty(out, config)
+
     out["difficulty_basis"] = out.apply(_difficulty_basis, axis=1)
 
     return out
@@ -701,9 +837,23 @@ def add_difficulty_columns(
 # ---------------------------------------------------------------------
 
 
+def _as_bool(value: Any) -> bool:
+    if is_missing(value):
+        return False
+
+    if isinstance(value, bool):
+        return value
+
+    if isinstance(value, (int, float)):
+        return bool(value)
+
+    text = str(value).strip().lower()
+    return text in {"true", "1", "yes", "y"}
+
+
 def _source_label(row: pd.Series) -> str:
-    has_40k = bool(row.get("source_40k")) if not is_missing(row.get("source_40k")) else False
-    has_5965 = bool(row.get("source_5965")) if not is_missing(row.get("source_5965")) else False
+    has_40k = _as_bool(row.get("source_40k"))
+    has_5965 = _as_bool(row.get("source_5965"))
 
     if has_40k and has_5965:
         return "both"
@@ -748,6 +898,8 @@ def finalize_lexicon(df: pd.DataFrame) -> pd.DataFrame:
     final_columns = [
         "entry_id",
         "lemma",
+        "difficulty",
+        "raw_difficulty",
         "homograph_no",
         "pos",
         "pos_norm",
@@ -767,7 +919,11 @@ def finalize_lexicon(df: pd.DataFrame) -> pd.DataFrame:
         "aux_5965_diff",
         "rank_diff",
         "origin_domain_signal",
-        "difficulty",
+        "derivation_base",
+        "derivation_suffix",
+        "derivation_penalty",
+        "derivation_base_difficulty",
+        "derivation_adjusted",
         "difficulty_basis",
     ]
 

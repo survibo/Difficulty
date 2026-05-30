@@ -1,4 +1,4 @@
-kiwipiepy, pandas, numpy, openpyxl, pyyaml, scikit-learn, stanza, openai
+kiwipiepy, pandas, numpy, openpyxl, xlrd, pyyaml, scikit-learn, stanza, openai
 
 1. requirements.txt 작성
 2. data/raw/에 엑셀 2개 넣기

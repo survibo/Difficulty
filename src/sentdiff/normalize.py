@@ -10,7 +10,7 @@ normalize.py
 - 5965 A/B/C 등급을 보조 난도 신호로 변환
 - 품사명 정규화
 - 어휘 난도 계산을 위한 등급/순위 변환
-- 형태소 분석기 태그를 사전 품사명으로 매핑
+- 어종/분야 신호와 파생 표제어 suffix 처리
 
 중요한 난도 정책:
 - 4만 개 5등급 목록을 메인 기준으로 사용한다.
@@ -23,7 +23,7 @@ from __future__ import annotations
 import math
 import re
 import unicodedata
-from typing import Any, Iterable, Optional, Sequence, Tuple
+from typing import Any, Iterable, Optional, Sequence
 
 
 # ---------------------------------------------------------------------
@@ -87,6 +87,13 @@ def normalize_lemma(value: Any) -> str:
     필요한 경우 split_homograph_suffix()를 별도로 사용한다.
     """
     return normalize_text(value)
+
+
+LIGHT_PREDICATE_SUFFIXES: dict[str, float] = {
+    "시키다": 0.05,
+    "되다": 0.04,
+    "하다": 0.03,
+}
 
 
 def normalize_column_name(value: Any) -> str:
@@ -166,7 +173,7 @@ def clamp(value: float, lower: float = 0.0, upper: float = 1.0) -> float:
 _HOMOGRAPH_SUFFIX_RE = re.compile(r"^(.+?)(\d{2})$")
 
 
-def split_homograph_suffix(word: Any) -> Tuple[str, int]:
+def split_homograph_suffix(word: Any) -> tuple[str, int]:
     """
     5965개 어휘 목록처럼 표제어 뒤에 두 자리 동형어번호가 붙은 값을 분리한다.
 
@@ -243,51 +250,6 @@ def parse_grade5(value: Any) -> Optional[int]:
     return None
 
 
-def parse_grade3(value: Any) -> Optional[int]:
-    """
-    5965개 어휘 목록의 A/B/C 등급을 보조 등급으로 변환한다.
-
-    확정 기준:
-    - A -> 1
-    - B -> 1
-    - C -> 2
-
-    주의:
-    이 함수는 예전 이름과의 호환을 위해 유지한다.
-    실제 난도값이 필요하면 grade5965_to_aux_difficulty()를 사용한다.
-    """
-    if is_missing(value):
-        return None
-
-    text = normalize_text(value).upper()
-
-    letter_map = {
-        "A": 1,
-        "B": 1,
-        "C": 2,
-    }
-
-    if text in letter_map:
-        return letter_map[text]
-
-    n = safe_int(text)
-    if n == 1:
-        return 1
-    if n in {2, 3}:
-        return 2
-
-    return None
-
-
-def parse_grade5965(value: Any) -> Optional[int]:
-    """
-    5965개 어휘 목록의 A/B/C 등급을 보조 등급으로 변환한다.
-
-    parse_grade3()와 같은 동작이지만, 의미가 더 명확한 이름이다.
-    """
-    return parse_grade3(value)
-
-
 def grade5_to_difficulty(grade: Any) -> Optional[float]:
     """
     5등급 어휘 난도 변환.
@@ -338,21 +300,6 @@ def grade5965_to_aux_difficulty(grade: Any) -> Optional[float]:
         return 0.25
 
     return None
-
-
-def grade3_to_difficulty(grade: Any) -> Optional[float]:
-    """
-    5965개 A/B/C 보조 난도 변환.
-
-    예전 코드와의 호환을 위해 함수명은 유지하지만,
-    더 이상 A/B/C를 0.00/0.50/1.00으로 보지 않는다.
-
-    현재 기준:
-    - A -> 0.00
-    - B -> 0.00
-    - C -> 0.25
-    """
-    return grade5965_to_aux_difficulty(grade)
 
 
 def rank_to_difficulty(rank: Any, max_rank: Any) -> Optional[float]:
@@ -496,147 +443,6 @@ def normalize_pos(value: Any) -> str:
     return text
 
 
-def sejong_tag_to_pos(tag: Any) -> str:
-    """
-    Kiwi/Sejong 계열 형태소 태그를 사전 품사명으로 변환한다.
-
-    주요 태그:
-    NNG, NNP -> 명사
-    VV -> 동사
-    VA -> 형용사
-    MAG -> 부사
-    MM -> 관형사
-    NP -> 대명사
-    NR -> 수사
-    J* -> 조사
-    E* -> 어미
-    VX -> 보조용언
-    XR -> 어근
-    """
-    t = normalize_text(tag)
-
-    if not t:
-        return ""
-
-    if t.startswith("NN"):
-        return "명사"
-    if t == "NP":
-        return "대명사"
-    if t == "NR":
-        return "수사"
-    if t == "VV":
-        return "동사"
-    if t == "VA":
-        return "형용사"
-    if t in {"VCP", "VCN"}:
-        return "지정사"
-    if t == "VX":
-        return "보조용언"
-    if t == "MAG":
-        return "부사"
-    if t == "MAJ":
-        return "접속부사"
-    if t == "MM":
-        return "관형사"
-    if t.startswith("J"):
-        return "조사"
-    if t.startswith("E"):
-        return "어미"
-    if t.startswith("XS") or t == "XPN":
-        return "접사"
-    if t == "XR":
-        return "어근"
-    if t == "IC":
-        return "감탄사"
-    if t.startswith("S"):
-        return "기호"
-    if t.startswith("N"):
-        return "명사"
-
-    return t
-
-
-def pos_matches(dictionary_pos: Any, analyzer_tag: Any) -> bool:
-    """
-    사전 품사와 형태소 분석기 태그가 대략적으로 일치하는지 판정한다.
-
-    예:
-    dictionary_pos="명사", analyzer_tag="NNG" -> True
-    dictionary_pos="부사/명사", analyzer_tag="MAG" -> True
-    """
-    dpos = normalize_pos(dictionary_pos)
-    apos = sejong_tag_to_pos(analyzer_tag)
-
-    if not dpos or not apos:
-        return False
-
-    dpos_parts = set(dpos.split("/"))
-
-    if apos in dpos_parts:
-        return True
-
-    # 보조용언은 동사/형용사 계열로 약하게 허용
-    if apos == "보조용언" and {"동사", "형용사"} & dpos_parts:
-        return True
-
-    # 어근은 명사/동사/형용사 후보와 결합될 수 있어 직접 일치로 보지 않는다.
-    return False
-
-
-# ---------------------------------------------------------------------
-# Lemma normalization for analyzer tokens
-# ---------------------------------------------------------------------
-
-
-def token_to_lemma_candidate(form: Any, tag: Any) -> str:
-    """
-    형태소 분석 결과를 사전 표제어 후보로 변환한다.
-
-    Kiwi는 용언 어간을 주는 경우가 많으므로,
-    VV/VA는 '-다'를 붙여 사전형 후보를 만든다.
-
-    예:
-    먹/VV -> 먹다
-    가깝/VA -> 가깝다
-    가능/NNG -> 가능
-    """
-    f = normalize_text(form)
-    t = normalize_text(tag)
-
-    if not f:
-        return ""
-
-    if t in {"VV", "VA"}:
-        if f.endswith("다"):
-            return f
-        return f + "다"
-
-    return f
-
-
-def is_content_tag(tag: Any) -> bool:
-    """
-    문장 난이도 어휘 점수에서 내용어로 볼 품사인지 판정한다.
-
-    포함:
-    - 일반명사/고유명사/의존명사 계열
-    - 동사
-    - 형용사
-    - 부사
-    - 어근
-    - 수사
-    """
-    t = normalize_text(tag)
-
-    if not t:
-        return False
-
-    return (
-        t.startswith("NN")
-        or t in {"VV", "VA", "MAG", "XR", "NR", "NP"}
-    )
-
-
 # ---------------------------------------------------------------------
 # Origin / domain normalization and bonus
 # ---------------------------------------------------------------------
@@ -673,60 +479,11 @@ def normalize_domain(value: Any) -> str:
     return normalize_text(value)
 
 
-def origin_bonus(origin: Any) -> float:
-    """
-    어종 기반 난도 보정값.
-
-    주의:
-    - 한자어/외래어가 항상 어려운 것은 아니므로 아주 약한 보정만 준다.
-    - 이 함수는 기존 코드와의 호환을 위해 유지한다.
-    - 새 compute_word_difficulty()는 origin_domain_signal()을 사용한다.
-    """
-    o = normalize_origin(origin)
-
-    if not o:
-        return 0.0
-
-    if o == "외래어":
-        return 0.05
-    if o == "한자어":
-        return 0.04
-    if o == "혼종어":
-        return 0.04
-
-    return 0.0
-
-
-def domain_bonus(domain: Any) -> float:
-    """
-    분야 기반 전문성 보정값.
-
-    일반어만 있으면 0.
-    일반어와 전문 분야가 함께 있으면 약한 보정.
-    일반어가 아니면 더 큰 보정.
-
-    이 함수는 기존 코드와의 호환을 위해 유지한다.
-    새 compute_word_difficulty()는 origin_domain_signal()을 사용한다.
-    """
-    d = normalize_domain(domain)
-
-    if not d:
-        return 0.0
-
-    if d == "일반어":
-        return 0.0
-
-    if "일반어" in d:
-        return 0.04
-
-    return 0.10
-
-
 def origin_domain_signal(origin: Any = None, domain: Any = None) -> float:
     """
     어종/분야 기반 보정 신호를 0~1로 계산한다.
 
-    이 값은 최종 compute_word_difficulty()에서 0.05 비중으로만 반영한다.
+    이 값은 최종 어휘 난도 계산에서 0.05 비중으로만 반영한다.
 
     원칙:
     - 일반 고유어: 낮음
@@ -812,109 +569,6 @@ def weighted_available(
     return sum(v * w for v, w in zip(used_values, used_weights)) / total_weight
 
 
-def make_lexicon_key(
-    lemma: Any,
-    pos: Any = "",
-    homograph_no: Any = 0,
-    include_pos: bool = True,
-    include_homograph: bool = True,
-) -> str:
-    """
-    사전 항목 식별용 key 생성.
-
-    기본:
-    lemma|pos|homograph_no
-
-    예:
-    make_lexicon_key("가격", "명사", 3) -> "가격|명사|3"
-    """
-    normalized_lemma = normalize_lemma(lemma)
-    normalized_pos = normalize_pos(pos)
-    normalized_homograph = parse_homograph_no(homograph_no)
-
-    parts = [normalized_lemma]
-
-    if include_pos:
-        parts.append(normalized_pos)
-
-    if include_homograph:
-        parts.append(str(normalized_homograph))
-
-    return "|".join(parts)
-
-
-# ---------------------------------------------------------------------
-# Difficulty construction helper
-# ---------------------------------------------------------------------
-
-
-def compute_word_difficulty(
-    grade5: Any = None,
-    grade5965: Any = None,
-    grade3: Any = None,
-    rank: Any = None,
-    max_rank: Any = None,
-    origin: Any = None,
-    domain: Any = None,
-    origin_domain_signal_value: Optional[float] = None,
-    base_default: float = 0.60,
-) -> float:
-    """
-    어휘 하나의 0~1 난도값을 계산한다.
-
-    최종 기준:
-    - 4만 5등급 기반 난도: 0.80
-    - 5965 보조 난도: 0.10
-    - 5965 순위 기반 난도: 0.05
-    - 어종/분야 신호: 0.05
-
-    결측값이 있으면 사용 가능한 값끼리 재가중한다.
-
-    매개변수:
-    - grade5: 4만 목록의 1~5등급 또는 "1등급" 같은 문자열
-    - grade5965: 5965 목록의 A/B/C 등급
-    - grade3: 예전 이름과의 호환용. grade5965가 없을 때만 사용
-    - rank: 5965 목록 순위
-    - max_rank: 5965 목록 최대 순위
-    - origin/domain: 어종/분야
-    - origin_domain_signal_value: 이미 계산된 0~1 어종/분야 신호
-    """
-    grade5_diff = grade5_to_difficulty(grade5)
-
-    aux_grade = grade5965
-    if is_missing(aux_grade):
-        aux_grade = grade3
-
-    aux5965_diff = grade5965_to_aux_difficulty(aux_grade)
-    rank_diff = rank_to_difficulty(rank, max_rank)
-
-    if origin_domain_signal_value is None:
-        od_signal = origin_domain_signal(origin=origin, domain=domain)
-    else:
-        od_signal = clamp(float(origin_domain_signal_value))
-
-    base = weighted_available(
-        values=[
-            grade5_diff,
-            aux5965_diff,
-            rank_diff,
-            od_signal,
-        ],
-        weights=[
-            0.80,
-            0.10,
-            0.05,
-            0.05,
-        ],
-        default=base_default,
-    )
-
-    if base is None:
-        base = base_default
-
-    return clamp(float(base))
-
-
 # ---------------------------------------------------------------------
 # Light validation helpers
 # ---------------------------------------------------------------------
@@ -936,31 +590,38 @@ def is_valid_lemma(value: Any) -> bool:
     return True
 
 
-def contains_hangul(value: Any) -> bool:
+def split_light_predicate_suffix(lemma: Any) -> Optional[tuple[str, str, float]]:
     """
-    문자열에 한글 음절/자모가 포함되어 있는지 확인한다.
-    """
-    text = normalize_text(value)
-    return bool(re.search(r"[가-힣ㄱ-ㅎㅏ-ㅣ]", text))
-
-
-def strip_parenthetical(text: Any) -> str:
-    """
-    괄호 안 설명을 제거한다.
+    하다/되다/시키다 파생 표제어를 base, suffix, penalty로 분리한다.
 
     예:
-    "가능하다(可能-)" -> "가능하다"
+    가공하다 -> ("가공", "하다", 0.03)
+    사용되다 -> ("사용", "되다", 0.04)
+    훈련시키다 -> ("훈련", "시키다", 0.05)
     """
-    s = normalize_text(text)
-    s = re.sub(r"\([^)]*\)", "", s)
-    s = re.sub(r"\[[^\]]*\]", "", s)
-    return normalize_text(s)
+    text = normalize_lemma(lemma)
+
+    if not text:
+        return None
+
+    for suffix, penalty in sorted(
+        LIGHT_PREDICATE_SUFFIXES.items(),
+        key=lambda item: len(item[0]),
+        reverse=True,
+    ):
+        if text.endswith(suffix) and len(text) > len(suffix):
+            base = text[: -len(suffix)]
+            if base:
+                return base, suffix, penalty
+
+    return None
 
 
 __all__ = [
     "is_missing",
     "normalize_text",
     "normalize_lemma",
+    "LIGHT_PREDICATE_SUFFIXES",
     "normalize_column_name",
     "normalize_columns",
     "safe_int",
@@ -969,26 +630,14 @@ __all__ = [
     "split_homograph_suffix",
     "parse_homograph_no",
     "parse_grade5",
-    "parse_grade3",
-    "parse_grade5965",
     "grade5_to_difficulty",
-    "grade3_to_difficulty",
     "grade5965_to_aux_difficulty",
     "rank_to_difficulty",
     "normalize_pos",
-    "sejong_tag_to_pos",
-    "pos_matches",
-    "token_to_lemma_candidate",
-    "is_content_tag",
     "normalize_origin",
     "normalize_domain",
-    "origin_bonus",
-    "domain_bonus",
     "origin_domain_signal",
     "weighted_available",
-    "make_lexicon_key",
-    "compute_word_difficulty",
     "is_valid_lemma",
-    "contains_hangul",
-    "strip_parenthetical",
+    "split_light_predicate_suffix",
 ]
