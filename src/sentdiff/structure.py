@@ -49,6 +49,8 @@ DERIVATIONAL_SUFFIXES: set[str] = {
     "적", "성", "화", "론", "주의",
 }
 
+CLAUSE_BOUNDARY_TAGS: set[str] = {"SP", "SF", "SE", "SS"}
+
 _LENGTH_MIN: float = 5.0
 _LENGTH_MAX: float = 25.0
 
@@ -61,14 +63,16 @@ class StructureConfig:
     logical_full_score_at: int = 4
     modifier_full_score_at: int = 5
     derivational_full_score_at: int = 5
+    negation_full_score_at: int = 2
 
-    weight_length: float = 0.20
-    weight_predicate: float = 0.20
-    weight_embedding: float = 0.20
+    weight_length: float = 0.15
+    weight_predicate: float = 0.15
+    weight_embedding: float = 0.15
     weight_connective: float = 0.15
-    weight_logical: float = 0.15
-    weight_modifier: float = 0.05
+    weight_logical: float = 0.10
+    weight_modifier: float = 0.10
     weight_derivational: float = 0.05
+    weight_negation: float = 0.15
 
 
 class StructureScorer:
@@ -132,6 +136,47 @@ class StructureScorer:
                 current = 0
 
         return max_chain
+
+    @staticmethod
+    def _is_negation_token(token: Any) -> bool:
+        tag = str(getattr(token, "tag", "") or "")
+        lemma = str(getattr(token, "lemma", "") or "")
+        if tag == "MAG":
+            return lemma in {"안", "못"}
+        if tag == "VX":
+            return lemma.startswith(("않", "못하", "말"))
+        if tag == "VA":
+            return lemma.replace("다", "").rstrip() in {"없"}
+        if tag == "VCN":
+            return lemma in {"아니", "아니다"}
+        return False
+
+    def _count_grouped_negations(self, tokens: list[Any]) -> int:
+        groups: list[list[Any]] = [[]]
+        for i, token in enumerate(tokens):
+            tag = self._tag(token)
+            if tag == "EC":
+                next_token = tokens[i + 1] if i + 1 < len(tokens) else None
+                is_boundary = next_token is None or self._tag(next_token) not in {"VX"}
+                if is_boundary:
+                    if groups[-1]:
+                        groups.append([])
+                    continue
+                groups[-1].append(token)
+            elif tag in CLAUSE_BOUNDARY_TAGS:
+                if groups[-1]:
+                    groups.append([])
+                continue
+            else:
+                groups[-1].append(token)
+
+        max_neg = 0
+        for group in groups:
+            neg_count = sum(1 for t in group if self._is_negation_token(t))
+            if neg_count > max_neg:
+                max_neg = neg_count
+
+        return max_neg
 
     def score_tokens(self, tokens: list[Any], sentence: str = "") -> dict[str, Any]:
         content_token_count = sum(1 for t in tokens if self._is_content(t))
@@ -198,6 +243,8 @@ class StructureScorer:
             or self._surface(t) in DERIVATIONAL_SUFFIXES
         )
 
+        negation_count = self._count_grouped_negations(tokens)
+
         max_noun_chain = self._max_noun_chain(tokens)
 
         length_score = self._compute_length_score(content_token_count)
@@ -224,6 +271,10 @@ class StructureScorer:
         derivational_score = self._safe_ratio(
             derivational_suffix_count, self.config.derivational_full_score_at,
         )
+        adj_negation_count = max(0, negation_count - 1)
+        negation_score = self._safe_ratio(
+            adj_negation_count, self.config.negation_full_score_at,
+        )
 
         structure_score = (
             self.config.weight_length * length_score
@@ -233,6 +284,7 @@ class StructureScorer:
             + self.config.weight_logical * logical_score
             + self.config.weight_modifier * modifier_score
             + self.config.weight_derivational * derivational_score
+            + self.config.weight_negation * negation_score
         )
         structure_score = max(0.0, min(1.0, structure_score))
         rounded_score = round(structure_score, 4)
@@ -248,6 +300,7 @@ class StructureScorer:
                 "logical_score": round(logical_score, 4),
                 "modifier_score": round(modifier_score, 4),
                 "derivational_score": round(derivational_score, 4),
+                "negation_score": round(negation_score, 4),
                 "content_token_count": content_token_count,
                 "predicate_count": predicate_count,
                 "predicate_count_adj": adj_predicate_count,
@@ -262,6 +315,8 @@ class StructureScorer:
                 "weak_connective_weighted": round(weak_connective_weighted, 4),
                 "weak_connective_count": weak_connective_count,
                 "derivational_suffix_count": derivational_suffix_count,
+                "negation_count": negation_count,
+                "negation_count_adj": adj_negation_count,
                 "max_noun_chain": max_noun_chain,
                 "max_noun_chain_adj": adj_max_noun_chain,
             },
@@ -273,6 +328,7 @@ __all__ = [
     "STRONG_LOGICAL_ENDINGS",
     "WEAK_CONNECTIVE_ENDINGS",
     "DERIVATIONAL_SUFFIXES",
+    "CLAUSE_BOUNDARY_TAGS",
     "StructureConfig",
     "StructureScorer",
 ]
