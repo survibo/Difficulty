@@ -1,6 +1,7 @@
 .env
 __pycache__/
-data/processed/
+data/processed/*
+!data/processed/lexicon_master.csv
 outputs/
 *.pyc
 venv/
