@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import os
 import sys
+import traceback
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
 
@@ -17,7 +18,12 @@ ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
 sys.path.insert(0, str(SRC))
 
-from sentdiff.pipeline import SentenceScorer
+try:
+    from sentdiff.pipeline import SentenceScorer
+except Exception:
+    print("IMPORT ERROR", flush=True)
+    traceback.print_exc()
+    sys.exit(1)
 
 INDEX_HTML = ROOT / "index.html"
 
@@ -68,7 +74,12 @@ class Handler(BaseHTTPRequestHandler):
 def main() -> None:
     global SCORER
     print("Loading pipeline...", end=" ", flush=True)
-    SCORER = SentenceScorer()
+    try:
+        SCORER = SentenceScorer()
+    except Exception:
+        print("FAILED", flush=True)
+        traceback.print_exc()
+        sys.exit(1)
     print("OK")
 
     port = int(os.environ.get("PORT", "8800"))
