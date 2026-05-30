@@ -8,6 +8,7 @@ python scripts/test_server.py
 from __future__ import annotations
 
 import json
+import os
 import sys
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
@@ -70,9 +71,9 @@ def main() -> None:
     SCORER = SentenceScorer()
     print("OK")
 
-    port = 8800
+    port = int(os.environ.get("PORT", "8800"))
     server = HTTPServer(("0.0.0.0", port), Handler)
-    print(f"Server: http://localhost:{port}")
+    print(f"Server: http://0.0.0.0:{port}")
     print("Press Ctrl+C to stop.")
     try:
         server.serve_forever()

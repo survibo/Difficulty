@@ -125,6 +125,7 @@ async function analyze() {
       throw new Error(text || "Server error");
     }
     const data = await res.json();
+    document.getElementById("banner").style.display = "none";
     render(data);
   } catch (e) {
     err.textContent = "서버에 연결할 수 없습니다. `python scripts/test_server.py`를 먼저 실행해주세요.";
