@@ -18,7 +18,7 @@
 ## 1. 최종 점수
 
 ```
-score = 0.60 × lexical + 0.40 × structure
+score = 0.50 × lexical + 0.50 × structure
 ```
 
 - `lexical`: 문장에 쓰인 낱말(어휘)의 난이도
@@ -202,8 +202,8 @@ negation_score = min(1.0, max(0, 절_내_부정_수 - 1) / 2)
 
 | 구성 요소 | 가중치         |
 | --------- | -------------- |
-| lexical   | **0.60** |
-| structure | **0.40** |
+| lexical   | **0.50** |
+| structure | **0.50** |
 
 ### 어휘 점수 내부 가중치
 

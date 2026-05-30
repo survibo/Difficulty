@@ -16,8 +16,8 @@ from .lexical import LexiconConfig, LexiconScorer
 from .morph import KiwiMorphAnalyzer
 from .structure import StructureConfig, StructureScorer
 
-_LEXICAL_WEIGHT: float = 0.60
-_STRUCTURE_WEIGHT: float = 0.40
+_LEXICAL_WEIGHT: float = 0.50
+_STRUCTURE_WEIGHT: float = 0.50
 
 
 class SentenceScorer:
