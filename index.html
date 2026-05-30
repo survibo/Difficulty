@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>문장 난도 측정 테스트</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, 'Noto Sans KR', sans-serif; background: #f5f5f5; padding: 40px 20px; color: #333; }
+  .container { max-width: 720px; margin: 0 auto; }
+  h1 { font-size: 1.5rem; margin-bottom: 8px; }
+  p.sub { color: #777; font-size: 0.9rem; margin-bottom: 24px; }
+  textarea { width: 100%; height: 100px; padding: 12px; font-size: 1rem; border: 2px solid #ddd; border-radius: 8px; resize: vertical; }
+  textarea:focus { outline: none; border-color: #4a90d9; }
+  button { margin-top: 12px; padding: 10px 28px; font-size: 1rem; background: #4a90d9; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
+  button:hover { background: #357abd; }
+  button:disabled { background: #aaa; cursor: not-allowed; }
+  .error { color: #d32; margin-top: 12px; }
+  #result { display: none; margin-top: 24px; }
+  #result.show { display: block; }
+  .score-row { display: flex; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+  .score-card { flex: 1; min-width: 120px; background: #fff; border-radius: 10px; padding: 16px; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .score-card .label { font-size: 0.8rem; color: #888; }
+  .score-card .value { font-size: 2rem; font-weight: 700; margin-top: 4px; }
+  .score-card .value.blue { color: #4a90d9; }
+  .score-card .value.green { color: #27ae60; }
+  .score-card .value.orange { color: #e67e22; }
+  .score-card .value.red { color: #e74c3c; }
+  .section { background: #fff; border-radius: 10px; padding: 16px 20px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .section h3 { font-size: 0.95rem; color: #555; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid #eee; }
+  .section table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  .section td { padding: 4px 8px; }
+  .section td:first-child { color: #888; width: 160px; }
+  .section td:last-child { font-weight: 500; }
+  .badge { display: inline-block; padding: 1px 8px; border-radius: 4px; font-size: 0.75rem; background: #eee; color: #666; margin-left: 4px; }
+  .histogram { display: flex; align-items: center; gap: 6px; }
+  .bar { height: 8px; border-radius: 4px; background: #4a90d9; transition: width 0.3s; }
+  .bar.bg { background: #eee; position: absolute; width: 100%; }
+  .bar-wrap { position: relative; flex: 1; height: 8px; border-radius: 4px; background: #eee; }
+  .word-list { margin-top: 8px; }
+  .word-item { display: inline-block; padding: 2px 10px; margin: 2px; border-radius: 4px; font-size: 0.8rem; background: #f0f4ff; }
+  .word-item.unknown { background: #ffe0e0; }
+  .word-item .diff { color: #888; font-size: 0.7rem; margin-left: 4px; }
+  #examples { margin-bottom: 16px; }
+  .example-btn { display: inline-block; padding: 4px 12px; margin: 2px; font-size: 0.8rem; background: #e8eef7; color: #4a90d9; border: 1px solid #c8d8ed; border-radius: 14px; cursor: pointer; }
+  .example-btn:hover { background: #4a90d9; color: #fff; }
+  .formula { font-family: 'Consolas', 'Courier New', monospace; font-size: 0.8rem; color: #666; background: #fafafa; padding: 8px 12px; border-radius: 6px; margin-bottom: 12px; border: 1px solid #eee; }
+  .server-banner { background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; font-size: 0.85rem; color: #856404; }
+  .server-banner code { background: #fff; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="server-banner" id="banner">
+    💡 로컬 서버 실행 시: <code>python scripts/test_server.py</code> → <code>http://localhost:8800</code>
+  </div>
+
+  <h1>문장 난도 측정</h1>
+  <p class="sub">한국어 문장을 입력하면 어휘 + 구조 기반 난도 점수를 계산합니다.</p>
+
+  <div id="examples">
+    <span class="example-btn" onclick="loadExample(this)">날씨가 좋다</span>
+    <span class="example-btn" onclick="loadExample(this)">이 문제는 생각보다 어렵다</span>
+    <span class="example-btn" onclick="loadExample(this)">그럼에도 불구하고 그는 끝까지 포기하지 않았다</span>
+    <span class="example-btn" onclick="loadExample(this)">경제 성장의 둔화에도 불구하고 고용 시장은 비교적 안정세를 유지하고 있다</span>
+  </div>
+
+  <textarea id="input" placeholder="한국어 문장을 입력하세요..."></textarea>
+  <button id="btn" onclick="analyze()">분석</button>
+  <div id="error" class="error"></div>
+
+  <div id="result">
+    <div id="finalFormula" class="formula"></div>
+    <div class="score-row" id="scoreRow"></div>
+    <div class="section" id="lexicalSection">
+      <h3>어휘 점수 (lexical)</h3>
+      <div id="lexicalFormula" class="formula"></div>
+      <div id="lexicalBody"></div>
+    </div>
+    <div class="section" id="structureSection">
+      <h3>구조 점수 (structure)</h3>
+      <div id="structureFormula" class="formula"></div>
+      <div id="structureBody"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = "/api/score";
+
+const EXAMPLES = [
+  "날씨가 좋다",
+  "이 문제는 생각보다 어렵다",
+  "그럼에도 불구하고 그는 끝까지 포기하지 않았다",
+  "경제 성장의 둔화에도 불구하고 고용 시장은 비교적 안정세를 유지하고 있다",
+];
+
+function loadExample(el) {
+  document.getElementById("input").value = el.textContent;
+  analyze();
+}
+
+async function analyze() {
+  const input = document.getElementById("input").value.trim();
+  const btn = document.getElementById("btn");
+  const err = document.getElementById("error");
+  const result = document.getElementById("result");
+
+  err.textContent = "";
+  result.classList.remove("show");
+
+  if (!input) { err.textContent = "문장을 입력하세요."; return; }
+
+  btn.disabled = true;
+  btn.textContent = "분석 중...";
+
+  try {
+    const res = await fetch(API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sentence: input }),
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(text || "Server error");
+    }
+    const data = await res.json();
+    render(data);
+  } catch (e) {
+    err.textContent = "서버에 연결할 수 없습니다. `python scripts/test_server.py`를 먼저 실행해주세요.";
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "분석";
+  }
+}
+
+function render(d) {
+  document.getElementById("finalFormula").textContent =
+    `score = ${d.lexical_weight} × lexical + ${d.structure_weight} × structure`;
+
+  const scoreRow = document.getElementById("scoreRow");
+  scoreRow.innerHTML = card("최종 점수", d.score_10, d.score_10 >= 7 ? "red" : d.score_10 >= 4 ? "orange" : "green") +
+    card("어휘", d.lexical_score_10, "blue") +
+    card("구조", d.structure_score_10, d.structure_score_10 >= 5 ? "orange" : "green") +
+    card("내용어", d.content_token_count, "blue") +
+    card("미등록어", d.unknown_token_count, d.unknown_token_count > 0 ? "red" : "green");
+
+  renderLexical(d);
+  renderStructure(d);
+
+  document.getElementById("result").classList.add("show");
+}
+
+function card(label, value, color) {
+  return `<div class="score-card"><div class="label">${label}</div><div class="value ${color}">${value}</div></div>`;
+}
+
+function renderLexical(d) {
+  const p = d.score_parts;
+  const words = d.scored_words || [];
+  document.getElementById("lexicalFormula").textContent =
+    "lexical = 0.25 × mean_all + 0.50 × mean_top_3 + 0.25 × max";
+  const body = document.getElementById("lexicalBody");
+  body.innerHTML = table([
+    ["가중치", d.lexical_weight],
+    ["mean_all", p.mean_all],
+    ["mean_top_n", p.mean_top_n],
+    ["max", p.max],
+  ]);
+
+  let html = '<div class="word-list">';
+  for (const w of words) {
+    const cls = w.match_method === "unknown" ? "word-item unknown" : "word-item";
+    html += `<span class="${cls}">${w.surface}<span class="diff">${w.difficulty}</span></span>`;
+  }
+  html += "</div>";
+  body.innerHTML += html;
+}
+
+function renderStructure(d) {
+  const sp = d.structure_parts;
+  document.getElementById("structureFormula").textContent =
+    "structure = 0.20×length + 0.20×predicate + 0.20×embedding + 0.15×connective + 0.15×logical + 0.05×modifier + 0.05×derivational";
+  const items = [
+    ["length_score", sp.length_score, d.content_token_count + " tokens"],
+    ["predicate_score", sp.predicate_score, sp.predicate_count + " VV/VA"],
+    ["embedding_score", sp.embedding_score, "ETM:" + sp.adnominal_count + " ETN:" + sp.nominalizer_count],
+    ["connective_score", sp.connective_score, sp.connective_ending_count + " EC"],
+    ["logical_score", sp.logical_score, "marker:" + sp.logical_marker_weighted + " strong:" + sp.strong_logical_ending_weighted + " weak:" + sp.weak_connective_weighted],
+    ["modifier_score", sp.modifier_score, "max chain:" + sp.max_noun_chain],
+    ["derivational_score", sp.derivational_score, sp.derivational_suffix_count + " suffixes"],
+  ];
+
+  const body = document.getElementById("structureBody");
+  let html = '<table>';
+  for (const [k, v, detail] of items) {
+    const pct = Math.round(v * 100);
+    html += `<tr><td>${k}</td><td><div class="histogram"><div class="bar-wrap"><div class="bar" style="width:${pct}%"></div></div>${v.toFixed(2)}</div></td><td><span class="badge">${detail}</span></td></tr>`;
+  }
+  html += '</table>';
+  body.innerHTML = html;
+}
+
+function table(rows) {
+  let html = "<table>";
+  for (const [k, v] of rows) html += `<tr><td>${k}</td><td>${typeof v === "number" ? v.toFixed(3) : v}</td></tr>`;
+  html += "</table>";
+  return html;
+}
+</script>
+</body>
+</html>

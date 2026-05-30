@@ -1,367 +1,207 @@
-# flow.md — 문장 난이도 측정 파이프라인
+# 문장 난이도 측정 파이프라인 — 계산식 중심 개요
+
+## 1. 최종 점수
 
 ```
-사용자 입력
-  │
-  ▼
-SentenceScorer.score("문장을 분석한다.")
-  │
-  ├── 1. KiwiMorphAnalyzer.analyze()
-  │       └─→ list[MorphToken]
-  │
-  ├── 2. LexiconScorer.compute_sentence_score(tokens)
-  │       └─→ lexical_score_0_1 + score_parts
-  │
-  ├── 3. StructureScorer.score_tokens(tokens)
-  │       └─→ structure_score_0_1 + structure_parts
-  │
-  └── 4. score_0_1 = 0.70 × lexical + 0.30 × structure
-          └─→ 최종 출력 dict
+score = 0.60 × lexical + 0.40 × structure
 ```
+
+- `lexical`: 문장에 쓰인 낱말(어휘)의 난이도
+- `structure`: 문장 구조의 복잡도
 
 ---
 
-## 0. 진입점
+## 2. 어휘 점수 (lexical)
 
-### `SentenceScorer` (pipeline.py)
+### 2.1 기본 원리
 
-```python
-scorer = SentenceScorer(lexicon_config, structure_config)
-result = scorer.score("문장을 분석한다.")
+각 내용어(명사, 동사, 형용사, 부사 등)를 사전(lexicon)에서 찾아 **0.0~1.0** 사이의 난도 값을 가져온다.
+사전에 없는 낱말은 **0.30**의 난도를 부여한다.
+
+### 2.2 낱말 lookup 순서
+
+1. **(lemma, POS)** 정확 일치
+2. **base + POS** → (base, "명사") → (base, "어근") 순서로 시도  
+   (예: "분석되다" → base "분석" + "명사")
+3. **lemma만** 일치
+4. **base만** 일치
+5. 없으면 **unknown** (난도 0.30)
+
+### 2.3 점수 공식
+
+```
+lexical = 0.25 × mean_all + 0.50 × mean_top_3 + 0.25 × max
 ```
 
-생성자:
+| 항목 | 설명 | 가중치 |
+|------|------|--------|
+| `mean_all` | 모든 내용어 난도의 평균 | **0.25** |
+| `mean_top_3` | 난도가 가장 높은 상위 3개 낱말의 평균 | **0.50** |
+| `max` | 가장 높은 낱말 하나의 난도 | **0.25** |
 
-| 인자 | 기본값 | 설명 |
-|---|---|---|
-| `lexicon_config` | `LexiconConfig()` | 어휘 사전 경로/설정 |
-| `structure_config` | `StructureConfig()` | 구조 점수 threshold/가중치 |
+즉, **어려운 낱말이 몇 개 등장하는지**에 가장 큰 비중(0.50)을 두고,
+전체적인 수준(0.25)과 최고 난도(0.25)를 보조로 사용한다.
 
-score() 출력 dict:
+### 2.4 예시
 
-| 키 | 예시 | 출처 |
-|---|---|---|
-| `sentence` | `"문장을 분석한다."` | raw input |
-| `score_0_1` | `0.1821` | 0.70×lexical + 0.30×structure |
-| `score_10` | `1.82` | `round(score_0_1 × 10, 2)` |
-| `lexical_score_0_1` | `0.2515` | LexiconScorer |
-| `lexical_score_10` | `2.52` | `round(lexical × 10, 2)` |
-| `structure_score_0_1` | `0.0200` | StructureScorer |
-| `structure_score_10` | `0.20` | `round(structure × 10, 2)` |
-| `content_token_count` | `2` | LexiconScorer |
-| `unknown_token_count` | `0` | LexiconScorer |
-| `scored_words` | `[...]` | LexiconScorer |
-| `score_parts` | `{...}` | LexiconScorer |
-| `structure_parts` | `{...}` | StructureScorer |
-| `lexical_weight` | `0.70` | 고정 |
-| `structure_weight` | `0.30` | 고정 |
+문장: **"이 문제는 생각보다 어렵다"**
+
+| 낱말 | 난도 | 비고 |
+|------|------|------|
+| 문제 | 0.20 | |
+| 생각 | 0.25 | |
+| 보다 | 0.22 | |
+| 어렵다 | 0.00 | 사전에 0.0으로 등록됨 |
+
+- mean_all = (0.20 + 0.25 + 0.22 + 0.00) / 4 = **0.1675**
+- mean_top_3 = (0.25 + 0.22 + 0.20) / 3 = **0.2233**
+- max = **0.25**
+- lexical = 0.25×0.1675 + 0.50×0.2233 + 0.25×0.25 = **0.2161**
 
 ---
 
-## 1. 형태소 분석 — `KiwiMorphAnalyzer.analyze()`
+## 3. 구조 점수 (structure)
 
-**파일:** `morph.py`
+### 3.1 기본 원리
 
-Kiwi(open Korean tokenizer)로 문장을 형태소 단위로 분해한다.
+형태소 분석 결과의 품사 태그(Sejong 품사 체계 기준)를 바탕으로
+문장 구조의 복잡도를 7개 지표로 측정한다.
+각 지표는 일정 임계값을 넘으면 1.0이 된다.
 
-### 입력
-```python
-"문장을 분석한다."
+### 3.2 7개 지표
+
+| 지표 | 측정 대상 | 임계값 | 가중치 |
+|------|----------|--------|--------|
+| **length** | 내용어(명사/동사 등) 개수 | 30개 → 1.0 | **0.20** |
+| **predicate** | 서술어(VV, VA, VCP, VCN) 개수 | 6개 → 1.0 | **0.20** |
+| **embedding** | 관형형/명사형 전성어미(ETM, ETN) 개수 | 4개 → 1.0 | **0.20** |
+| **connective** | 연결어미(EC) 개수 | 5개 → 1.0 | **0.15** |
+| **logical** | 논리 표지·연결어미 가중합 | 4.0 → 1.0 | **0.15** |
+| **modifier** | 최장 명사 연쇄 길이 | 5개 → 1.0 | **0.05** |
+| **derivational** | 파생 접사(XSN, XSV, XSA, 적/성/화 등) 개수 | 5개 → 1.0 | **0.05** |
+
+### 3.3 점수 공식
+
+```
+structure = 0.20×length + 0.20×predicate + 0.20×embedding
+          + 0.15×connective + 0.15×logical
+          + 0.05×modifier + 0.05×derivational
 ```
 
-### 출력 — `list[MorphToken]`
+### 3.4 length 점수
 
-MorphToken (frozen dataclass):
-
-| 필드 | 타입 | 예시 | 설명 |
-|---|---|---|---|
-| `surface` | `str` | `"문장"` | 표면형 |
-| `lemma` | `str` | `"문장"` | lemma 후보 (용언은 `-다` 붙임) |
-| `tag` | `str` | `"NNG"` | Kiwi/Sejong 태그 (raw) |
-| `pos` | `str` | `"명사"` | 사람이 읽는 품사명 |
-| `start` | `int` | `0` | 문장 내 시작 offset |
-| `end` | `int` | `2` | 문장 내 끝 offset |
-| `is_content` | `bool` | `True` | 내용어 태그 여부 |
-
-예시 출력:
-```python
-[
-    MorphToken(surface="문장", lemma="문장", tag="NNG", pos="명사", start=0, end=2, is_content=True),
-    MorphToken(surface="을", lemma="을", tag="JKO", pos="목적격조사", start=2, end=3, is_content=False),
-    MorphToken(surface="분석", lemma="분석", tag="NNG", pos="명사", start=4, end=6, is_content=True),
-    MorphToken(surface="하", lemma="분석하다", tag="XSV", pos="동사파생접미사", start=6, end=7, is_content=True),
-    MorphToken(surface="ㄴ다", lemma="ㄴ다", tag="EF", pos="종결어미", start=7, end=9, is_content=False),
-    MorphToken(surface=".", lemma=".", tag="SF", pos="마침표물음표느낌표", start=9, end=10, is_content=False),
-]
+```
+length = min(1.0, max(0.0, (content_count - 5) / 25))
 ```
 
-### 주요 태그 목록
+내용어가 5개 이하 → 0.0, 30개 이상 → 1.0.
 
-| 태그 | 품사 | 내용어 |
-|---|---|---|
-| `NNG`, `NNP`, `NNB` | 명사 | ✅ |
-| `VV`, `VA` | 동사/형용사 | ✅ |
-| `VCP`, `VCN` | 지정사 | ✅ |
-| `MAG`, `MAJ` | 부사 | ✅ |
-| `XR` | 어근 | ✅ |
-| `IC` | 감탄사 | ✅ |
-| `XSN`, `XSV`, `XSA` | 파생접미사 | ✅ |
-| `JKS`, `JKC`, `JKO`, `JX` 등 | 조사 | ❌ |
-| `EP`, `EF`, `EC`, `ETM`, `ETN` | 어미 | ❌ |
-| `SF`, `SP`, `SS` | 문장부호 | ❌ |
+### 3.5 각 지표 계산 방식
 
-내용어 여부는 `is_content_tag(tag)` 함수로 결정한다.
+**predicate**: 태그가 VV(동사), VA(형용사), VCP(긍정지정사), VCN(부정지정사)인 토큰 수.
+
+**embedding**: ETM(관형형 전성어미: `-은`, `-는`, `-을` 등) + ETN(명사형 전성어미: `-음`, `-기` 등) 개수.
+
+**connective**: EC(연결어미: `-고`, `-어서`, `-면` 등) 개수.
+
+**logical**: 세 가지 하위 항목을 더한 뒤 임계값 4.0으로 나눈다.
+
+```
+logical_raw = 논리표지_가중합 + 강한논리연결어미_가중합 + 약한연결어미_가중합
+logical = min(1.0, logical_raw / 4.0)
+```
+
+**논리표지** — 명시적 논리 접속 부사/표현 (가중치 0.5~1.0):
+
+| 표지 | 가중치 | 표지 | 가중치 |
+|------|--------|------|--------|
+| 즉, 곧 | 0.8~1.0 | 다시 말해, 말하자면 | 0.8~1.0 |
+| 예컨대, 예를 들어 | 0.8 | 따라서, 그러므로 | 1.0 |
+| 왜냐하면 | 1.0 | 그러나, 하지만, 그렇지만 | 1.0 |
+| 반면, 반대로 | 0.9 | 오히려 | 0.8 |
+| 그럼에도(불구하고) | 0.9~1.0 | 만약, 만일 | 1.0 |
+| 또한, 더불어, 아울러 | 0.7 | 결국, 요컨대, 종합하면 | 0.9~1.0 |
+| 뿐만 아니라, 아니라 | 0.5~0.9 | | |
+
+**강한 논리 연결어미** — EC 태그 중 인과/조건/양보를 나타내는 연결어미 (가중치 0.6~1.0):
+
+| 연결어미 | 가중치 | 연결어미 | 가중치 |
+|----------|--------|----------|--------|
+| -(으)므로 | 1.0 | -기에 | 0.9 |
+| -때문에 | 1.0 | -(으)면, -다면, -라면 | 0.8~1.0 |
+| -지만, -으나 | 0.9~1.0 | -더라도, -(으)ㄹ지라도 | 1.0 |
+| -아/어도 | 0.9 | -려고/으려고 | 0.7 |
+| -도록 | 0.8 | -는데/-은데/-ㄴ데 | 0.6 |
+
+**약한 연결어미** — 단순 나열/비교를 나타내는 EC (가중치 0.3~0.5):
+
+| 연결어미 | 가중치 |
+|----------|--------|
+| -고 | 0.3 |
+| -며, -으며 | 0.4 |
+| -면서, -으면서 | 0.5 |
+| -거나, -든지 | 0.5 |
+
+**modifier**: 명사(NNG, NNP, NNB)와 어근(XR)이 연속으로 나오는 최장 길이.
+단, 접미사(XSN)는 명사 연쇄를 이어주기만 하고 새로 시작하지는 못한다.
+
+예: **"경제 성장 둔화"** → NNG + NNG + NNG → chain length = **3**
+
+**derivational**: XSN(명사파생접미사: `-적`, `-성`), XSV(동사파생접미사: `-하-`), XSA(형용사파생접미사),
+또는 표면형이 `적`, `성`, `화`, `론`, `주의`인 토큰 개수.
 
 ---
 
-## 2. 어휘 난도 — `LexiconScorer.compute_sentence_score()`
+## 4. 현재 설정값 한눈에 보기
 
-**파일:** `lexical.py`
+### 전체 가중치
 
-### 2a. `score_tokens(tokens)` — 개별 토큰 lookup
+| 구성 요소 | 가중치 |
+|-----------|--------|
+| lexical | **0.60** |
+| structure | **0.40** |
 
-content token만 필터링한 후, 각 토큰의 lemma+pos를 `lexicon_master.csv`에서 lookup한다.
+### 어휘 점수 내부 가중치
 
-#### lookup 우선순위 (5단계)
+| 항목 | 가중치 |
+|------|--------|
+| mean_all | **0.25** |
+| mean_top_3 (상위 3개) | **0.50** |
+| max (최고 난도 1개) | **0.25** |
 
-| # | 방법 | 조건 | 예 |
-|---|---|---|---|
-| 1 | **exact** | (lemma, pos) 일치 | `("분석", "명사")` → 0.2588 |
-| 2 | **base_exact** | 하다/되다/시키다 → base + 명사/어근 lookup | `("분석하다", "동사")` → `"분석"(명사)` 0.2588 |
-| 3 | **lemma_only** | lemma만 일치 (pos 무시) | `("분석", "동사")` → `"분석"` 0.2588 |
-| 4 | **base_lemma_only** | base lemma만 일치 (명사/어근만) | `("분석되다", "동사")` → `"분석"` 0.2588 |
-| 5 | **unknown** | 미등록어 → 기본값 0.30 |
+### 구조 점수 내부 가중치 및 임계값
 
-방어 조건:
-- base 길이 1이면 base fallback 생략
-- base_exact는 명사/어근 entry가 있을 때만 성공
-
-### 2b. `compute_sentence_score(tokens)` — 문장 단위 집계
-
-**점수 공식:**
-```
-mean_all  = mean(모든 내용어 difficulty)
-mean_top3 = mean(상위 3개 difficulty)
-max       = max difficulty
-
-lexical_score_0_1 = 0.30 × mean_all + 0.40 × mean_top3 + 0.30 × max
-                  → [0.0, 1.0] 범위로 클리핑
-```
-
-**score_parts (디버그용 breakdown):**
-
-| 키 | 설명 |
-|---|---|
-| `mean_all` | 전체 평균 |
-| `mean_top3` | 상위 3개 평균 |
-| `max` | 최대값 |
-
-### 출력 예시
-```python
-{
-    "lexical_score_0_1": 0.2515,      # 순수 어휘 난도 (0~1)
-    "content_token_count": 2,
-    "unknown_token_count": 0,
-    "scored_words": [                  # 개별 토큰 점수
-        {"surface": "문장", "lemma": "문장", "pos": "명사",
-         "difficulty": 0.2405, "match_method": "exact", "matched_entry_id": 13586},
-        {"surface": "분석", "lemma": "분석", "pos": "명사",
-         "difficulty": 0.2588, "match_method": "exact", "matched_entry_id": 17155},
-    ],
-    "score_parts": {
-        "mean_all": 0.2497,
-        "mean_top3": 0.2497,
-        "max": 0.2588,
-    },
-}
-```
+| 지표 | 가중치 | 1.0 되는 조건 |
+|------|--------|--------------|
+| length | 0.20 | 내용어 30개 이상 |
+| predicate | 0.20 | 서술어 6개 이상 |
+| embedding | 0.20 | 전성어미 4개 이상 |
+| connective | 0.15 | 연결어미 5개 이상 |
+| logical | 0.15 | 논리 표지 가중합 4.0 이상 |
+| modifier | 0.05 | 명사 연쇄 5개 이상 |
+| derivational | 0.05 | 접사 5개 이상 |
 
 ---
 
-## 3. 구조 복잡도 — `StructureScorer.score_tokens()`
+## 5. 검토가 필요한 지점
 
-**파일:** `structure.py`
+이 문서를 읽고 다음 항목에 대해 의견을 주시면 됩니다.
 
-MorphToken 리스트를 받아 7개 지표를 계산하고 가중합으로 구조 점수를 산출한다.
+1. **어휘 난도 사전** — 특정 낱말의 난도가 적절한가?
+   - 사전은 lexicon_master.csv에 있으며, 각 낱말마다 0.0~1.0의 난도가 할당되어 있다.
+   - 예: `어렵다`가 0.0인 것은 문제일 수 있다.
 
-### 지표별 계산 방식
+2. **어휘 점수 공식** — mean_all(0.25), mean_top_3(0.50), max(0.25)의 비중이 적절한가?
+   - 현재는 상위 3개 낱말의 평균이 전체 점수의 절반을 결정한다.
 
-| 지표 | 가중치 | 계산 방식 | threshold |
-|---|---|---|---|
-| `length_score` | 0.20 | `min(1.0, max(0.0, (content_count − 5) / 25))` | (고정) |
-| `predicate_score` | 0.20 | VV+VA+VCP+VCN 개수 / threshold | 6 |
-| `embedding_score` | 0.20 | ETM+ETN 개수 / threshold | 4 |
-| `connective_score` | 0.15 | EC 개수 / threshold | 5 |
-| `logical_score` | 0.15 | (marker_weighted + strong_ending_w + weak_connective_w) / threshold | 4 |
-| `modifier_score` | 0.05 | 최대 명사 연쇄 길이 / threshold | 5 |
-| `derivational_score` | 0.05 | XSN+XSV+XSA + 표면형 매칭 개수 / threshold | 5 |
+3. **논리 표지 목록** — 어떤 논리적 표현이 빠졌는가? 가중치가 적절한가?
+   - 예: `-니까`가 없는 것, `-고`의 가중치가 0.3으로 너무 낮은/높은 것 등.
 
-모든 sub-score는 `[0.0, 1.0]` 범위로 클리핑된다.
+4. **구조 지표별 임계값** — 각 지표가 1.0이 되려면 몇 개가 필요한가?
+   - 예: 서술어 6개면 충분한가? embedding은 4개면 충분한가?
 
-### 논리 표지 가중치 체계
+5. **구조 지표별 가중치** — 각 지표의 중요도 비중이 적절한가?
+   - 예: length, predicate, embedding이 각각 0.20으로 동일한데, 조정이 필요한가?
+   - modifier와 derivational이 0.05로 낮은데, 더 반영해야 하는가?
 
-세 가지 dict로 관리되며, surface/lemma 둘 다 매칭:
-
-| dict | 예시 | 가중치 범위 |
-|---|---|---|
-| `LOGICAL_MARKERS` | 즉(1.0), 따라서(1.0), 그러나(1.0), 또한(0.7) | 0.7~1.0 |
-| `STRONG_LOGICAL_ENDINGS` | 으므로(1.0), 지만(1.0), 더라도(1.0), 는데(0.6) | 0.6~1.0 |
-| `WEAK_CONNECTIVE_ENDINGS` | 고(0.3), 며(0.4), 면서(0.5) | 0.3~0.5 |
-
-### 명사 연쇄
-
-`NNG`/`NNP`/`NNB`/`XR`이 연속되면 chain 증가. `XSN`은 앞에 명사류가 있을 때만 연장.
-
-```
-예: 사회(0) 문화(1) 연구(2) 방법(3) → max_noun_chain = 4
-     방법(0) 론(1,XSN) 적(2,XSN)      → max_noun_chain = 3
-     화(0,XSN) 과정(1)               → XSN이 chain 시작 못함, max = 1 (과정)
-```
-
-### 최종 구조 점수
-
-```python
-structure_score_0_1 = (
-    0.20 × length_score
-    + 0.20 × predicate_score
-    + 0.20 × embedding_score
-    + 0.15 × connective_score
-    + 0.15 × logical_score
-    + 0.05 × modifier_score
-    + 0.05 × derivational_score
-) → [0.0, 1.0] 범위로 클리핑
-```
-
-### 출력 예시
-```python
-{
-    "structure_score_0_1": 0.0200,
-    "structure_score_10": 0.20,
-    "structure_parts": {
-        # sub-scores
-        "length_score": 0.0,
-        "predicate_score": 0.0,
-        "embedding_score": 0.0,
-        "connective_score": 0.0,
-        "logical_score": 0.0,
-        "modifier_score": 0.2,
-        "derivational_score": 0.2,
-        # raw counts
-        "content_token_count": 2,
-        "predicate_count": 0,
-        "ending_count": 1,
-        "connective_ending_count": 0,
-        "adnominal_count": 0,
-        "nominalizer_count": 0,
-        "logical_marker_weighted": 0.0,
-        "logical_marker_count": 0,
-        "strong_logical_ending_weighted": 0.0,
-        "strong_logical_ending_count": 0,
-        "weak_connective_weighted": 0.0,
-        "weak_connective_count": 0,
-        "derivational_suffix_count": 1,
-        "max_noun_chain": 1,
-    },
-}
-```
-
----
-
-## 4. 최종 점수 결합 — pipeline.py
-
-```python
-score_0_1 = 0.70 × lexical_score_0_1 + 0.30 × structure_score_0_1
-         → [0.0, 1.0] 범위로 클리핑
-
-score_10 = round(score_0_1 × 10, 2)
-```
-
-Lexical에 비중 0.70, structure에 0.30을 준 이유:
-- 어휘 난도는 사전 기반으로 비교적 신뢰 가능
-- 구조 점수는 아직 POS 태그 기반 proxy이므로 보수적으로 반영
-
----
-
-## 5. CLI 출력 — scripts/02_score_sentences.py
-
-### 기본 출력
-```
-$ python scripts/02_score_sentences.py "문장을 분석한다."
-
-  sentence:        문장을 분석한다.
-  score_10:        1.82
-  lexical_score:   2.52
-  structure_score: 0.20
-  content_words:   2
-  unknown_words:   0
-  scored_words:
-    문장           0.2405   exact            (id=13586)
-    분석           0.2588   exact            (id=17155)
-```
-
-### --debug 출력
-```
-$ python scripts/02_score_sentences.py --debug "문장을 분석한다."
-
-  ... (기본 출력 + 아래 추가)
-
-  [lexical_parts]
-    mean_all:   0.2497
-    mean_top3:  0.2497
-    max:        0.2588
-  [structure_parts]
-    length_score:               0.0
-    predicate_score:            0.0
-    embedding_score:            0.0
-    connective_score:           0.0
-    logical_score:              0.0
-    modifier_score:             0.2
-    derivational_score:         0.2
-    content_token_count:        2
-    predicate_count:            0
-    ending_count:               1
-    connective_ending_count:    0
-    adnominal_count:            0
-    nominalizer_count:          0
-    logical_marker_weighted:    0.0
-    logical_marker_count:       0
-    strong_logical_ending_w:    0.0
-    strong_logical_ending_cnt:  0
-    weak_connective_w:          0.0
-    weak_connective_cnt:        0
-    derivational_suffix_count:  1
-    max_noun_chain:             1
-```
-
-### 3가지 실행 모드
-
-| 모드 | 명령어 |
-|---|---|
-| 인라인 문장 | `python scripts/02_score_sentences.py "문장"` |
-| 파일 입력 | `python scripts/02_score_sentences.py --file input.txt` |
-| 인터랙티브 | `python scripts/02_score_sentences.py` (빈 줄로 종료) |
-
-모든 모드에서 `--debug` 플래그 사용 가능.
-
----
-
-## 파일 관계도
-
-```
-scripts/
-  02_score_sentences.py ─── CLI 진입점
-src/sentdiff/
-  morph.py        ─── KiwiMorphAnalyzer (형태소 분석)
-  lexical.py      ─── LexiconScorer (어휘 난도)
-  structure.py    ─── StructureScorer (구조 복잡도)
-  pipeline.py     ─── SentenceScorer (3개 통합)
-  normalize.py    ─── 정규화 유틸리티
-  lexicon_builder.py ─── lexicon_master.csv 생성
-tests/
-  test_morph.py
-  test_lexical.py
-  test_structure.py
-  test_pipeline.py
-data/
-  processed/lexicon_master.csv ─── 어휘 난도 사전
-```
+6. **전체 비중** — lexical(0.60)과 structure(0.40)의 균형이 적절한가?

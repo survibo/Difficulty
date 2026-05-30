@@ -29,9 +29,9 @@ from .normalize import split_light_predicate_suffix
 # Tunable parameters
 # ---------------------------------------------------------------------
 
-_WEIGHT_MEAN_ALL: float = 0.30
-_WEIGHT_MEAN_TOP_N: float = 0.40
-_WEIGHT_MAX: float = 0.30
+_WEIGHT_MEAN_ALL: float = 0.25
+_WEIGHT_MEAN_TOP_N: float = 0.50
+_WEIGHT_MAX: float = 0.25
 _TOP_N: int = 3
 
 
