@@ -36,6 +36,9 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
         self.end_headers()
 
+    def do_HEAD(self) -> None:
+        self.do_GET()
+
     def do_GET(self) -> None:
         if self.path in ("/", "/index.html"):
             data = INDEX_HTML.read_bytes()
@@ -76,7 +79,11 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(msg.encode("utf-8"))
 
     def log_message(self, fmt: str, *args: Any) -> None:
-        sys.stderr.write(f"[{self.date_time_string()}] {args[0]} {args[1]} {args[2]}\n")
+        try:
+            msg = fmt % args
+        except Exception:
+            msg = f"{fmt} | args={args!r}"
+        sys.stderr.write(f"[{self.date_time_string()}] {msg}\n")
 
 
 def main() -> None:
