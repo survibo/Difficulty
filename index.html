@@ -99,9 +99,9 @@ const API = "/api/score";
 
 const EXAMPLES = [
   "날씨가 좋다",
-  "이 문제는 생각보다 어렵다",
   "그럼에도 불구하고 그는 끝까지 포기하지 않았다",
   "경제 성장의 둔화에도 불구하고 고용 시장은 비교적 안정세를 유지하고 있다",
+  "즉 세계의 근원적 질서인 ‘이념’의 내적 구조도, 이념이 시ㆍ공간적 현실로서 드러나는 방식도 변증법적이기에, 이념과 현실은 하나의 체계를 이루며, 이 두 차원의 원리를 밝히는 철학적 논증도 변증법적 체계성을 지녀야 한다."
 ];
 
 function loadExample(el) {
@@ -150,12 +150,17 @@ function render(d) {
     `score = (${d.lexical_weight}×lexical + ${d.structure_weight}×structure + ${d.negation_weight}×negation) / ${denom}`;
 
   const scoreRow = document.getElementById("scoreRow");
-  scoreRow.innerHTML = card("최종 점수", d.score_10, d.score_10 >= 7 ? "red" : d.score_10 >= 4 ? "orange" : "green", "0 ~ 10") +
-    card("어휘", d.lexical_score_10, "blue", "0 ~ 10") +
-    card("구조", d.structure_score_10, d.structure_score_10 >= 5 ? "orange" : "green", "0 ~ 10") +
-    card("부정", d.negation_score_10, d.negation_score_10 >= 5 ? "red" : "green", "0 ~ 10") +
-    card("내용어", d.content_token_count, "blue") +
-    card("미등록어", d.unknown_token_count, d.unknown_token_count > 0 ? "red" : "green");
+  scoreRow.innerHTML =
+    '<div class="score-row">' +
+      card("최종 점수", d.score_10, d.score_10 >= 7 ? "red" : d.score_10 >= 4 ? "orange" : "green", "0 ~ 10") +
+      card("어휘", d.lexical_score_10, "blue", "0 ~ 10") +
+      card("구조", d.structure_score_10, d.structure_score_10 >= 5 ? "orange" : "green", "0 ~ 10") +
+      card("부정", d.negation_score_10, d.negation_score_10 >= 5 ? "red" : "green", "0 ~ 10") +
+    '</div>' +
+    '<div class="score-row">' +
+      card("내용어", d.content_token_count, "blue") +
+      card("미등록어", d.unknown_token_count, d.unknown_token_count > 0 ? "red" : "green") +
+    '</div>';
 
   renderLexical(d);
   renderStructure(d);
