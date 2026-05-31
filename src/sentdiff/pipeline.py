@@ -52,6 +52,14 @@ class SentenceScorer:
         )
         score_0_1 = max(0.0, min(1.0, score_0_1))
 
+        content_count = lexical_result["content_token_count"]
+        unknown_count = lexical_result["unknown_token_count"]
+        reliability = (
+            1.0 - (unknown_count / content_count)
+            if content_count > 0
+            else 1.0
+        )
+
         return {
             "sentence": sentence,
             "score_0_1": round(score_0_1, 4),
@@ -72,6 +80,7 @@ class SentenceScorer:
             "lexical_weight": _LEXICAL_WEIGHT,
             "structure_weight": _STRUCTURE_WEIGHT,
             "negation_bonus_coefficient": _NEGATION_BONUS_COEFF,
+            "reliability": round(max(0.0, reliability), 4),
         }
 
 

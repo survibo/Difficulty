@@ -159,7 +159,8 @@ function render(d) {
     card("구조", d.structure_score_10, d.structure_score_10 >= 5 ? "orange" : "green", "0 ~ 10", `${GH}/src/sentdiff/structure.md`) +
     card("부정(보너스)", d.negation_score_10, d.negation_score_10 >= 5 ? "red" : "green", "0 ~ 10", `${GH}/src/sentdiff/negation.md`) +
     card("내용어", d.content_token_count, "blue") +
-    card("미등록어", d.unknown_token_count, d.unknown_token_count > 0 ? "red" : "green");
+    card("미등록어", d.unknown_token_count, d.unknown_token_count > 0 ? "red" : "green") +
+    card("신뢰도", d.reliability.toFixed(2), d.reliability >= 0.9 ? "green" : d.reliability >= 0.7 ? "orange" : "red", "0 ~ 1");
 
   renderLexical(d);
   renderStructure(d);

@@ -96,6 +96,7 @@ class SentenceScorerTest(unittest.TestCase):
             "lexical_weight",
             "structure_weight",
             "negation_bonus_coefficient",
+            "reliability",
         }
         self.assertEqual(set(result.keys()), expected_keys)
 

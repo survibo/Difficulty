@@ -27,6 +27,7 @@ def format_result(result: dict, debug: bool = False) -> str:
     parts = [
         f"  sentence:        {result['sentence']}",
         f"  score_10:        {result['score_10']}",
+        f"  reliability:     {result['reliability']}",
         f"  lexical_score:   {result['lexical_score_10']}",
         f"  structure_score: {result['structure_score_10']}",
         f"  content_words:   {result['content_token_count']}",
