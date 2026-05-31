@@ -112,6 +112,20 @@ class StructureScorerTest(unittest.TestCase):
         self.assertGreater(sp["embedding_score"], 0.0)
 
     # -----------------------------------------------------------------
+    # adverbial_ending_count: EC "게" / "도록" / "듯이"
+    # -----------------------------------------------------------------
+
+    def test_adverbial_ending_count(self) -> None:
+        tokens = [
+            _make_token("게", "게", "EC"),
+            _make_token("도록", "도록", "EC"),
+            _make_token("듯이", "듯이", "EC"),
+        ]
+        result = self.scorer.score_tokens(tokens)
+        sp = result["structure_parts"]
+        self.assertEqual(sp["adverbial_ending_count"], 3)
+
+    # -----------------------------------------------------------------
     # connective endings: EC
     # -----------------------------------------------------------------
 
@@ -286,7 +300,7 @@ class StructureScorerTest(unittest.TestCase):
             "repetition_count", "repetition_details",
             "content_token_count", "predicate_count", "ending_count",
             "connective_ending_count", "adnominal_count",
-            "nominalizer_count", "logical_marker_count",
+            "nominalizer_count", "adverbial_ending_count", "logical_marker_count",
             "logical_marker_weighted",
             "strong_logical_ending_count", "strong_logical_ending_weighted",
             "derivational_suffix_count",

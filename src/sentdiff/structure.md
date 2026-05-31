@@ -13,8 +13,8 @@ MorphToken의 POS 태그 패턴을 기반으로 8개 지표로 문장 구조 복
 ## 점수 공식
 
 ```
-structure = 0.20×predicate + 0.20×embedding
-          + 0.15×length + 0.15×structural_span
+structure = 0.20×predicate + 0.15×embedding
+          + 0.15×length + 0.20×structural_span
           + 0.10×logical + 0.08×modifier
           + 0.07×repetition + 0.05×connective
 
@@ -23,9 +23,9 @@ structure = 0.20×predicate + 0.20×embedding
 | 지표 | 측정 대상 | 1.0이 되는 조건 | 가중치 |
 |------|----------|----------------|--------|
 | predicate | 서술어(VV, VA, VCP, VCN, VX, XSV, XSA) 개수 (-1 보정) | 8개 이상 (7+1) | 0.20 |
-| embedding | 관형형(ETM)+명사형(ETN) 개수 | 4개 이상 | 0.20 |
+| structural_span | 절 구간 내용어 합계 (모든 EC/ETM/ETN에서 기록된 구간 길이의 총합) | 20.0 이상 (내용어 20개) | 0.20 |
+| embedding | 관형형(ETM)+명사형(ETN)+부사형EC(게·도록·듯이) 개수 | 5개 이상 | 0.15 |
 | length | 내용어(명/동/형) token 수 | 23개 이상 | 0.15 |
-| structural_span | 절 구간 내용어 합계 (모든 EC/ETM/ETN에서 기록된 구간 길이의 총합) | 20.0 이상 (내용어 20개) | 0.15 |
 | logical | 논리표지·강한어미 가중합 | 4 이상 | 0.10 |
 | modifier | 최장 명사 연쇄 길이 (-1 보정) | 5개 이상 (4+1) | 0.08 |
 | repetition | 단어 반복 부담 (반복 횟수×난도×다의성 계수 합계) | 3.5 이상 | 0.07 |
@@ -115,5 +115,5 @@ cs = min(1.0, EC_개수 / 4)
 
 ## 의존성
 - **import:** stdlib만 사용 (다른 sentdiff 파일 import 없음)
-- **상수 export:** `LOGICAL_MARKERS`, `STRONG_LOGICAL_ENDINGS`, `DERIVATIONAL_SUFFIXES`
+- **상수 export:** `LOGICAL_MARKERS`, `STRONG_LOGICAL_ENDINGS`, `DERIVATIONAL_SUFFIXES`, `ADVERBIAL_EC_FORMS`
 - **사용처:** `pipeline.py`

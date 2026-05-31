@@ -112,6 +112,7 @@ def _structure_reasons(sp: dict) -> list[str]:
     adj_pc = sp["predicate_count_adj"]
     cc = sp["connective_ending_count"]
     em = sp["adnominal_count"] + sp["nominalizer_count"]
+    ae = sp["adverbial_ending_count"]
     lr = sp["logical_marker_weighted"] + sp["strong_logical_ending_weighted"]
     cs = sp["connective_score"]
     ls = sp["logical_score"]
@@ -136,10 +137,13 @@ def _structure_reasons(sp: dict) -> list[str]:
     else:
         reasons.append(f"  content_words={bc} → length=1.0 (≥23)")
 
-    if em == 0:
-        reasons.append("  no ETM/ETN → embedding=0")
+    if em == 0 and ae == 0:
+        reasons.append("  no ETM/ETN/부사절 → embedding=0")
     else:
-        reasons.append(f"  ETM+ETN={em}/4 → embedding={sp['embedding_score']}")
+        parts = []
+        if em: parts.append(f"ETM+ETN={em}")
+        if ae: parts.append(f"부사절={ae}")
+        reasons.append(f"  {' + '.join(parts)}/5 → embedding={sp['embedding_score']}")
 
     if cc == 0 and lr == 0:
         reasons.append("  no EC/logical markers → connective=0, logical=0")

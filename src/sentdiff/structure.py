@@ -46,6 +46,8 @@ DERIVATIONAL_SUFFIXES: set[str] = {
     "적", "성", "화", "론", "주의",
 }
 
+ADVERBIAL_EC_FORMS: set[str] = {"게", "도록", "듯이"}
+
 REPETITION_EXCLUDE_LEMMAS: set[str] = {
     "것", "수", "때", "말", "점", "등", "바", "데",
 }
@@ -59,7 +61,7 @@ _LENGTH_MAX: float = 18.0
 @dataclass(frozen=True)
 class StructureConfig:
     predicate_full_score_at: int = 7
-    embedding_full_score_at: int = 4
+    embedding_full_score_at: int = 5
     connective_full_score_at: int = 4
     logical_full_score_at: int = 4
     modifier_full_score_at: int = 4
@@ -70,11 +72,11 @@ class StructureConfig:
    # 8개 지표 고정 가중치 (합 1.0)
     weight_length: float = 0.15
     weight_predicate: float = 0.20
-    weight_embedding: float = 0.20
+    weight_embedding: float = 0.15
     weight_connective: float = 0.05
     weight_logical: float = 0.10
     weight_modifier: float = 0.08
-    weight_structural_span: float = 0.15
+    weight_structural_span: float = 0.20
     weight_repetition: float = 0.07
 
 
@@ -254,6 +256,13 @@ class StructureScorer:
             if self._tag(t) == "ETN"
         )
 
+        adverbial_ending_count = sum(
+            1 for t in tokens
+            if self._tag(t) == "EC"
+            and (self._surface(t) in ADVERBIAL_EC_FORMS
+                 or self._lemma(t) in ADVERBIAL_EC_FORMS)
+        )
+
         logical_marker_weighted = sum(
             self._match_weighted(t, LOGICAL_MARKERS)
             for t in tokens
@@ -293,7 +302,8 @@ class StructureScorer:
             adj_predicate_count, self.config.predicate_full_score_at,
         )
         embedding_score = self._safe_ratio(
-            adnominal_count + nominalizer_count, self.config.embedding_full_score_at,
+            adnominal_count + nominalizer_count + adverbial_ending_count,
+            self.config.embedding_full_score_at,
         )
         connective_score = self._safe_ratio(
             connective_ending_count, self.config.connective_full_score_at,
@@ -348,6 +358,7 @@ class StructureScorer:
                 "connective_ending_count": connective_ending_count,
                 "adnominal_count": adnominal_count,
                 "nominalizer_count": nominalizer_count,
+                "adverbial_ending_count": adverbial_ending_count,
                 "connective_score": round(connective_score, 4),
                 "logical_score": round(logical_score, 4),
                 "logical_marker_weighted": round(logical_marker_weighted, 4),
@@ -365,6 +376,7 @@ __all__ = [
     "LOGICAL_MARKERS",
     "STRONG_LOGICAL_ENDINGS",
     "DERIVATIONAL_SUFFIXES",
+    "ADVERBIAL_EC_FORMS",
     "REPETITION_EXCLUDE_LEMMAS",
     "StructureConfig",
     "StructureScorer",

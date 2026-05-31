@@ -19,7 +19,7 @@
 ## 1. 최종 점수
 
 ```
-score = min(1.0, 0.5 × lexical + 0.5 × structure + 0.2 × negation)
+score = min(1.0, 0.5 × lexical + 0.5 × structure + 0.3 × negation)
 ```
 
 - `lexical`: 문장에 쓰인 낱말(어휘)의 난이도
@@ -82,7 +82,7 @@ score = min(1.0, 0.5 × lexical + 0.5 × structure + 0.2 × negation)
 ### 3.1 기본 원리
 
 형태소 분석 결과의 품사 태그(Sejong 품사 체계 기준)를 바탕으로
-문장 구조의 복잡도를 7개 지표로 측정한다.
+문장 구조의 복잡도를 8개 지표로 측정한다.
 각 지표는 일정 임계값을 넘으면 1.0이 된다.
 
 ### 3.2 8개 지표
@@ -90,9 +90,9 @@ score = min(1.0, 0.5 × lexical + 0.5 × structure + 0.2 × negation)
 | 지표                      | 측정 대상                                                | 임계값        | 가중치         |
 | ------------------------- | -------------------------------------------------------- | ------------- | -------------- |
 | **predicate**       | 서술어(VV, VA, VCP, VCN, VX, XSV, XSA) 개수**(-1 보정)** | 8개 → 1.0    | **0.20** |
-| **embedding**       | 관형형/명사형 전성어미(ETM, ETN) 개수                    | 4개 → 1.0    | **0.20** |
+| **structural_span** | 직전 절 경계~ETM/ETN/EC까지 절 구간 내용어 합계          | 20.0개 → 1.0 | **0.20** |
+| **embedding**       | 관형형/명사형 전성어미(ETM, ETN) + 부사형 EC(-게/-도록/-듯이) 개수 | 5개 → 1.0    | **0.15** |
 | **length**          | 내용어(명사/동사 등) 개수                                | 23개 → 1.0   | **0.15** |
-| **structural_span** | 직전 절 경계~ETM/ETN/EC까지 절 구간 내용어 합계          | 20.0개 → 1.0 | **0.15** |
 | **logical**         | 논리부사·강한어미 가중합                                | 4 → 1.0      | **0.10** |
 | **modifier**        | 최장 명사 연쇄 길이**(-1 보정)**                         | 5개 → 1.0    | **0.08** |
 | **repetition**      | 단어 반복 부담 (반복 횟수×난도×다의성 계수 합계)       | 3.5 → 1.0    | **0.07** |
@@ -101,8 +101,8 @@ score = min(1.0, 0.5 × lexical + 0.5 × structure + 0.2 × negation)
 ### 3.3 점수 공식
 
 ```
-structure = 0.20×predicate + 0.20×embedding
-          + 0.15×length + 0.15×structural_span
+structure = 0.20×predicate + 0.15×embedding
+          + 0.15×length + 0.20×structural_span
           + 0.10×logical + 0.08×modifier
           + 0.07×repetition + 0.05×connective
 ```
@@ -143,16 +143,17 @@ score = min(1.0, raw / 7)
 
 ---
 
-**embedding** — 관형형/명사형 전성어미 개수
+**embedding** — 관형형/명사형 전성어미 + 부사형 연결어미 개수
 
-- 태그: ETM (`-은`, `-는`, `-을` 등), ETN (`-음`, `-기` 등)
+- ETM (`-은`, `-는`, `-을` 등), ETN (`-음`, `-기` 등)
+- 부사형 EC: surface/lemma가 `게`, `도록`, `듯이`에 해당하는 연결어미
 
 ```
-raw = adnominal_count + nominalizer_count
-score = min(1.0, raw / 4)
+raw = adnominal_count + nominalizer_count + adverbial_ending_count
+score = min(1.0, raw / 5)
 ```
 
-4개 이상 → 1.0.
+5개 이상 → 1.0.
 
 ---
 
@@ -371,9 +372,9 @@ score = min(1.0, 0.5 × lexical + 0.5 × structure + 0.3 × negation)
 | 지표            | 가중치 | 1.0 되는 조건                    |
 | --------------- | ------ | -------------------------------- |
 | predicate       | 0.20   | 서술어 7개+1개(-1 보정)          |
-| embedding       | 0.20   | 관형형/명사형 4개 이상           |
+| structural_span | 0.20   | 절 구간 내용어 합계 20.0 이상    |
+| embedding       | 0.15   | 관형형/명사형/부사형(게·도록·듯이) 5개 이상 |
 | length          | 0.15   | 내용어 23개 이상                 |
-| structural_span | 0.15   | 절 구간 내용어 합계 20.0 이상    |
 | logical         | 0.10   | 논리표지·강한어미 가중합 4 이상 |
 | modifier        | 0.08   | 명사 연쇄 4개+1개(-1 보정)       |
 | repetition      | 0.07   | 반복 부담 합계 3.5 이상          |
