@@ -5,7 +5,7 @@ KiwiMorphAnalyzer + LexiconScorer + StructureScorer + NegationAnalyzer를 내부
 문장 하나를 받으면 최종 난도 점수까지 한 번에 처리한다.
 
 점수 구성:
-  score = min(1.0, 0.5 * lexical + 0.5 * structure + 0.1 * negation)
+  score = min(1.0, 0.5 * lexical + 0.5 * structure + 0.2 * negation)
 """
 
 from __future__ import annotations

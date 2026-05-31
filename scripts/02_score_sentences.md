@@ -3,6 +3,7 @@
 **위치:** `scripts/02_score_sentences.py` (154줄)
 
 ## 역할
+
 명령줄에서 문장 난도를 측정하는 CLI 도구. 3가지 모드 지원.
 
 ## 실행 모드
@@ -12,7 +13,7 @@
 python scripts/02_score_sentences.py "문장을 분석한다."
 
 # 2. 파일 입력
-python scripts/02_score_sentences.py --file data/sentences.txt
+python scripts/02_score_sentences.py --file sentences.txt
 
 # 3. 인터랙티브 모드
 python scripts/02_score_sentences.py
@@ -34,12 +35,13 @@ python scripts/02_score_sentences.py --debug "문장을 분석한다."
 
 ## CLI 옵션
 
-| 옵션 | 설명 |
-|------|------|
-| `sentence` | 분석할 문장 (따옴표) |
-| `--file, -f` | 문장이 한 줄씩 있는 파일 경로 |
+| 옵션              | 설명                                                       |
+| ----------------- | ---------------------------------------------------------- |
+| `sentence`      | 분석할 문장 (따옴표)                                       |
+| `--file, -f`    | 문장이 한 줄씩 있는 파일 경로                              |
 | `--lexicon, -l` | lexicon CSV 경로 (기본: data/processed/lexicon_master.csv) |
-| `--debug` | 점수 세부 구성 요소 출력 |
+| `--debug`       | 점수 세부 구성 요소 출력                                   |
 
 ## 의존성
+
 - **import:** `sentdiff.pipeline`, `sentdiff.lexical`

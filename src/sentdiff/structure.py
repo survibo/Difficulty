@@ -2,7 +2,7 @@
 structure.py
 
 MorphToken 리스트의 POS 태그 패턴을 기반으로 문장 구조 복잡도를 계산한다.
-7개 지표(length / predicate / embedding / connective / logical / modifier / derivational)를
+8개 지표(length / predicate / embedding / connective / logical / modifier / derivational / structural_span)를
 weighted sum한 structure_score를 반환한다.
 negation 점수는 별도 negation.py의 NegationAnalyzer가 처리한다.
 """
@@ -51,6 +51,8 @@ DERIVATIONAL_SUFFIXES: set[str] = {
     "적", "성", "화", "론", "주의",
 }
 
+_STRUCTURAL_SPAN_MARKER_TAGS: set[str] = {"ETM", "ETN", "EC"}
+_BOUNDARY_TAGS: set[str] = {"EC", "EF", "SF", "SP", "SE"}
 _LENGTH_MIN: float = 5.0
 _LENGTH_MAX: float = 18.0
 
@@ -63,17 +65,17 @@ class StructureConfig:
     logical_full_score_at: int = 4
     modifier_full_score_at: int = 4
     derivational_full_score_at: int = 3
+    structural_span_full_score_at: float = 20.0
 
-    # 기존 7개 지표 가중치 + 0.15/7 균등 배분 (negation 제외)
-    _ADD: float = 0.15 / 7
-
-    weight_length: float = 0.15 + _ADD
-    weight_predicate: float = 0.15 + _ADD
-    weight_embedding: float = 0.15 + _ADD
-    weight_connective: float = 0.15 + _ADD
-    weight_logical: float = 0.10 + _ADD
-    weight_modifier: float = 0.10 + _ADD
-    weight_derivational: float = 0.05 + _ADD
+    # 8개 지표 고정 가중치 (합 1.0)
+    weight_length: float = 0.12
+    weight_predicate: float = 0.17
+    weight_embedding: float = 0.17
+    weight_connective: float = 0.15
+    weight_logical: float = 0.12
+    weight_modifier: float = 0.08
+    weight_derivational: float = 0.07
+    weight_structural_span: float = 0.12
 
 
 class StructureScorer:
@@ -120,6 +122,16 @@ class StructureScorer:
             return table[lemma]
         return 0.0
 
+    @staticmethod
+    def _is_aux_ec(tokens: list[Any], i: int) -> bool:
+        tag = str(getattr(tokens[i], "tag", "") or "")
+        if tag != "EC":
+            return False
+        for j in range(i + 1, min(i + 4, len(tokens))):
+            if str(getattr(tokens[j], "tag", "") or "") == "VX":
+                return True
+        return False
+
     def _max_noun_chain(self, tokens: list[Any]) -> int:
         max_chain = 0
         current = 0
@@ -137,6 +149,36 @@ class StructureScorer:
                 current = 0
 
         return max_chain
+
+    def _compute_structural_span(self, tokens: list[Any]) -> dict[str, float | int]:
+        segment_content_count = 0
+        spans: list[int] = []
+
+        for i, token in enumerate(tokens):
+            tag = self._tag(token)
+
+            if self._is_content(token):
+                segment_content_count += 1
+
+            if tag in _STRUCTURAL_SPAN_MARKER_TAGS and segment_content_count > 0:
+                spans.append(segment_content_count)
+
+            if tag in _BOUNDARY_TAGS and not self._is_aux_ec(tokens, i):
+                segment_content_count = 0
+
+        if not spans:
+            return {"score": 0.0, "raw": 0.0, "normalized": 0.0, "count": 0}
+
+        raw_span = sum(spans)
+        normalized = raw_span / self.config.structural_span_full_score_at
+        score = min(1.0, normalized)
+
+        return {
+            "score": round(score, 4),
+            "raw": round(raw_span, 4),
+            "normalized": round(normalized, 4),
+            "count": len(spans),
+        }
 
     def score_tokens(self, tokens: list[Any], sentence: str = "") -> dict[str, Any]:
         content_token_count = sum(1 for t in tokens if self._is_content(t))
@@ -204,6 +246,7 @@ class StructureScorer:
         )
 
         max_noun_chain = self._max_noun_chain(tokens)
+        structural_span = self._compute_structural_span(tokens)
 
         length_score = self._compute_length_score(content_token_count)
         adj_predicate_count = max(0, predicate_count - 1)
@@ -238,6 +281,7 @@ class StructureScorer:
             + self.config.weight_logical * logical_score
             + self.config.weight_modifier * modifier_score
             + self.config.weight_derivational * derivational_score
+            + self.config.weight_structural_span * structural_span["score"]
         )
         structure_score = max(0.0, min(1.0, structure_score))
         rounded_score = round(structure_score, 4)
@@ -253,6 +297,10 @@ class StructureScorer:
                 "logical_score": round(logical_score, 4),
                 "modifier_score": round(modifier_score, 4),
                 "derivational_score": round(derivational_score, 4),
+                "structural_span_score": structural_span["score"],
+                "structural_span_raw": structural_span["raw"],
+                "structural_span_normalized": structural_span["normalized"],
+                "structural_span_count": structural_span["count"],
                 "content_token_count": content_token_count,
                 "predicate_count": predicate_count,
                 "predicate_count_adj": adj_predicate_count,

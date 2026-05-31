@@ -9,6 +9,9 @@ import argparse
 import sys
 from pathlib import Path
 
+if sys.platform == "win32" and hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 SRC_DIR = PROJECT_ROOT / "src"
 sys.path.insert(0, str(SRC_DIR))
@@ -40,10 +43,11 @@ def format_result(result: dict, debug: bool = False) -> str:
         parts.append("  [structure_parts]")
         for key in ("length_score", "predicate_score", "embedding_score",
                      "connective_score", "logical_score", "modifier_score",
-                     "derivational_score"):
+                     "derivational_score", "structural_span_score"):
             parts.append(f"    {key}: {sp[key]}")
         parts.append(f"    content_token_count:         {sp['content_token_count']}")
         parts.append(f"    predicate_count:             {sp['predicate_count']}")
+        parts.append(f"    predicate_count_adj:         {sp['predicate_count_adj']}")
         parts.append(f"    ending_count:                {sp['ending_count']}")
         parts.append(f"    connective_ending_count:     {sp['connective_ending_count']}")
         parts.append(f"    adnominal_count:             {sp['adnominal_count']}")
@@ -56,6 +60,9 @@ def format_result(result: dict, debug: bool = False) -> str:
         parts.append(f"    weak_connective_cnt:         {sp['weak_connective_count']}")
         parts.append(f"    derivational_suffix_count:   {sp['derivational_suffix_count']}")
         parts.append(f"    max_noun_chain:              {sp['max_noun_chain']}")
+        parts.append(f"    max_noun_chain_adj:          {sp['max_noun_chain_adj']}")
+        parts.append(f"    structural_span_raw:         {sp['structural_span_raw']}")
+        parts.append(f"    structural_span_count:       {sp['structural_span_count']}")
 
     if result["scored_words"]:
         word_lines = []

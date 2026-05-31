@@ -269,7 +269,9 @@ class StructureScorerTest(unittest.TestCase):
         sub_keys = {
             "length_score", "predicate_score", "embedding_score",
             "connective_score", "logical_score", "modifier_score",
-            "derivational_score",
+            "derivational_score", "structural_span_score",
+            "structural_span_raw", "structural_span_normalized",
+            "structural_span_count",
             "content_token_count", "predicate_count", "ending_count",
             "connective_ending_count", "adnominal_count",
             "nominalizer_count", "logical_marker_count",
@@ -281,6 +283,66 @@ class StructureScorerTest(unittest.TestCase):
             "predicate_count_adj", "max_noun_chain_adj",
         }
         self.assertEqual(set(sp.keys()), sub_keys)
+
+    # -----------------------------------------------------------------
+    # structural_span: segment content count at ETM/ETN/EC
+    # -----------------------------------------------------------------
+
+    def test_structural_span_no_markers(self) -> None:
+        tokens = [
+            _make_token("문장", "문장", "NNG"),
+            _make_token("분석", "분석", "NNG"),
+        ]
+        result = self.scorer.score_tokens(tokens)
+        sp = result["structure_parts"]
+        self.assertEqual(sp["structural_span_score"], 0.0)
+        self.assertEqual(sp["structural_span_count"], 0)
+
+    def test_structural_span_content_counted(self) -> None:
+        tokens = [
+            _make_token("세계", "세계", "NNG"),
+            _make_token("근원", "근원", "NNG"),
+            _make_token("적인", "적", "ETM", is_content=False),
+        ]
+        result = self.scorer.score_tokens(tokens)
+        sp = result["structure_parts"]
+        self.assertEqual(sp["structural_span_count"], 1)
+        self.assertEqual(sp["structural_span_raw"], 2.0)
+
+    def test_structural_span_leading_marker_skipped(self) -> None:
+        tokens = [
+            _make_token("는", "는", "ETM", is_content=False),
+            _make_token("것", "것", "NNB"),
+            _make_token("먹", "먹다", "VV"),
+        ]
+        result = self.scorer.score_tokens(tokens)
+        sp = result["structure_parts"]
+        self.assertEqual(sp["structural_span_count"], 0)
+        self.assertEqual(sp["structural_span_score"], 0.0)
+
+    def test_structural_span_ec_boundary_order(self) -> None:
+        tokens = [
+            _make_token("뛰", "뛰다", "VV"),
+            _make_token("고", "고", "EC", is_content=False),
+            _make_token("점프", "점프", "NNG"),
+            _make_token("하며", "하다", "EC", is_content=False),
+        ]
+        result = self.scorer.score_tokens(tokens)
+        sp = result["structure_parts"]
+        self.assertEqual(sp["structural_span_count"], 2)
+        self.assertEqual(sp["structural_span_raw"], 2.0)
+
+    def test_structural_span_aux_ec(self) -> None:
+        tokens = [
+            _make_token("먹", "먹다", "VV"),
+            _make_token("고", "고", "EC", is_content=False),
+            _make_token("싶", "싶다", "VX", is_content=False),
+            _make_token("다", "다", "EF", is_content=False),
+        ]
+        result = self.scorer.score_tokens(tokens)
+        sp = result["structure_parts"]
+        self.assertEqual(sp["structural_span_count"], 1)
+        self.assertEqual(sp["structural_span_raw"], 1.0)
 
 
 if __name__ == "__main__":
