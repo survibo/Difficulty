@@ -30,7 +30,7 @@ split_homograph_suffix("가격03") → ("가격", 3)
 split_homograph_suffix("가게")   → ("가게", 0)
 ```
 
-5965 목록처럼 표제어 끝 두 자리 숫자가 동형어번호인 경우 분리.
+표제어 끝 두 자리 숫자가 동형어번호인 경우 분리.
 
 ### 3. 등급→난도 변환
 
@@ -38,7 +38,6 @@ split_homograph_suffix("가게")   → ("가게", 0)
 |------|------|------|------|
 | `parse_grade5(v)` | "1등급"~"5등급" | 1~5 정수 | 4만 목록 등급 파싱 |
 | `grade5_to_difficulty(g)` | 1~5 등급 | 0.00, 0.25, ..., 1.00 | 4만 목록 메인 난도 |
-| `grade5965_to_aux_difficulty(g)` | A/B/C | 0.00 / 0.00 / 0.25 | 5965 보조 난도 |
 
 **grade5_to_difficulty 공식:**
 
@@ -46,19 +45,7 @@ split_homograph_suffix("가게")   → ("가게", 0)
 difficulty = (grade - 1) / 4
 ```
 
-**grade5965_to_aux_difficulty 기준:**
-- A, B → 0.00 (쉬움)
-- C → 0.25 (2등급성 보조값)
-
-### 4. 순위→난도 변환
-
-```
-rank_difficulty = (log(1 + rank) - log(2)) / (log(1 + max_rank) - log(2))
-```
-
-순위가 클수록 덜 기본적인 단어 → 로그 스케일로 0~1 변환.
-
-### 5. 품사명 정규화
+### 4. 품사명 정규화
 
 ```
 normalize_pos("명")  → "명사"
@@ -68,7 +55,7 @@ normalize_pos("부사/명사") → "부사/명사"  (복합 품사 보존)
 
 영문 태그·약어·한글 품사명을 통일된 한글 품사명으로 변환.
 
-### 6. 어종/분야 신호
+### 5. 어종/분야 신호
 
 | 값 | origin_score | 용도 |
 |----|-------------|------|
@@ -81,7 +68,7 @@ domain_score: 일반어=0.00, 일반어 포함=0.40, 전문분야=1.00
 
 최종 신호 = `max(origin_score, domain_score)` (0~1, 비중 0.05)
 
-### 7. 경동사 파생 접미사 분리
+### 6. 경동사 파생 접미사 분리
 
 ```
 split_light_predicate_suffix("가공하다") → ("가공", "하다", 0.03)
@@ -96,7 +83,7 @@ split_light_predicate_suffix("사용되다") → ("사용", "되다", 0.04)
 
 base lemma lookup fallback과 파생어 난도 보정에 사용.
 
-### 8. 가중 평균 유틸리티
+### 7. 가중 평균 유틸리티
 
 ```
 weighted_available(values, weights, default=None)

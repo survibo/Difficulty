@@ -5,7 +5,7 @@
 | 순서 | 모듈                   | 역할                                                      | 의존                                |
 | ---- | ---------------------- | --------------------------------------------------------- | ----------------------------------- |
 | 1    | `normalize.py`       | 텍스트 정규화, 등급→난도 변환, 유틸리티                  | —                                  |
-| 2    | `lexicon_builder.py` | vocab_40k + vocab_5965 병합 →`lexicon_master.csv` 생성 | normalize                           |
+| 2    | `lexicon_builder.py` | vocab_40k →`lexicon_master.csv` 생성                    | normalize                           |
 | 3    | `morph.py`           | Kiwi 형태소 분석 →`MorphToken` 리스트                  | normalize                           |
 | 4    | `lexical.py`         | 사전 lookup → 내용어 난도 → 어휘 점수(lexical)          | normalize, morph                    |
 | 5    | `structure.py`       | 품사 태그 8개 지표 → 구조 점수(structure)                | morph                               |
