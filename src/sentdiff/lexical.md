@@ -80,7 +80,7 @@ lexical_score = clamp(raw, 0, 1)
     "content_token_count_capped": int,  # 반복 제거 후 개수
     "unknown_token_count": int,         # unknown 판정 개수
     "scored_words": [                   # 반복 제거된 scored word 리스트
-        {"surface", "lemma", "pos", "difficulty", "match_method", "matched_entry_id"}
+        {"surface", "lemma", "tag", "pos", "difficulty", "match_method", "matched_entry_id"}
     ],
     "score_parts": {
         "mean_all": float,

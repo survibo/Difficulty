@@ -241,7 +241,7 @@ function renderParagraph(d) {
     card("문장 수", d.sentence_count, "blue") +
     card("문장 집계", (p.sentence_aggregate * 10).toFixed(2), "blue", "0 ~ 10") +
     card("정보 밀도", (p.information_density * 10).toFixed(2), p.information_density >= 0.5 ? "orange" : "green", "문장수×10 기준") +
-    card("어휘 항목", p.unique_content_lexical_count, "blue");
+    card("핵심 내용어", p.unique_core_content_count, "blue");
 
   renderParagraphDetails(d);
   document.getElementById("result").classList.add("show");
@@ -250,7 +250,7 @@ function renderParagraph(d) {
 function renderParagraphDetails(d) {
   const p = d.paragraph_parts;
   document.getElementById("paragraphFormula").textContent =
-    `sentence=${p.sentence_aggregate} (mean=${p.sentence_mean}, top3=${p.sentence_top_3_mean}, max=${p.sentence_max}) + density=${p.information_density} (${p.unique_content_lexical_count}/${p.information_density_full_score_at}); discourse는 참고값`;
+    `sentence=${p.sentence_aggregate} (mean=${p.sentence_mean}, top3=${p.sentence_top_3_mean}, max=${p.sentence_max}) + density=${p.information_density} (${p.unique_core_content_count}/${p.information_density_full_score_at}); discourse는 참고값`;
 
   let html = table([
     ["sentence_mean", p.sentence_mean],
@@ -259,7 +259,7 @@ function renderParagraphDetails(d) {
     ["sentence_aggregate", p.sentence_aggregate],
     ["information_density", p.information_density],
     ["information_density_full_score_at", p.information_density_full_score_at],
-    ["unique_content_lexical_count", p.unique_content_lexical_count],
+    ["unique_core_content_count", p.unique_core_content_count],
   ]);
 
   html += '<h3 style="margin-top:16px">문장별 점수</h3><table>';

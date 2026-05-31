@@ -396,4 +396,58 @@ hard boundary → 새 hard segment 시작
 | logical         | 0.08   | 논리표지·강한어미 가중합 4 이상 |
 | repetition      | 0.07   | 반복 부담 합계 3.5 이상          |
 | connective      | 0.05   | EC 개수 4개 이상                 |
+
+---
+
+## 6. 문단 점수 (paragraph)
+
+문단 분석은 문장 분석 결과를 바꾸지 않고, 문단 안의 문장 점수들을 다시 집계한다.
+
+### 6.1 최종 문단 공식
+
 ```
+paragraph_score = 0.80 × sentence_aggregate + 0.20 × information_density
+```
+
+### 6.2 문장 점수 집계
+
+문단 안 문장들의 평균, 어려운 문장 상위 3개 평균, 최댓값을 함께 사용한다.
+
+```
+sentence_aggregate =
+  0.40 × sentence_mean
++ 0.40 × sentence_top_3_mean
++ 0.20 × sentence_max
+```
+
+### 6.3 정보 밀도
+
+정보 밀도는 사전 난도(lexical difficulty)가 아니라 형태소 품사 기준의 **핵심 내용어 수**로 계산한다.
+문단 전체에서 서로 다른 `(lemma, 핵심품사)` 쌍을 세고, `문장 수 × 10`을 1.0 기준으로 정규화한다.
+
+```
+information_density = min(1.0, unique_core_content_count / (sentence_count × 10))
+```
+
+핵심 내용어로 세는 태그:
+
+| 태그 | 의미 |
+| ---- | ---- |
+| NNG  | 일반명사 |
+| NNP  | 고유명사 |
+| VV   | 동사 |
+| VA   | 형용사 |
+| XR   | 어근 |
+
+제외 예시:
+
+- `NNB` 의존명사: 수, 것, 데 등
+- `NP` 대명사
+- `NR` 수사
+- `MAG` 부사
+- `SL`, `SH` 외국어/한자 표기
+
+### 6.4 담화 표지
+
+문장 첫머리의 `그러나`, `따라서`, `한편`, `결국` 같은 담화 표지는
+`discourse_marker_score`로 따로 집계하지만 현재 문단 최종 점수에는 반영하지 않는다.

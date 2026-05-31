@@ -38,10 +38,24 @@ discourse_marker_score = min(1.0, discourse_marker_weighted / sentence_count)
 
 ## information_density
 
-문단 전체에서 서로 다른 내용어 lexical item `(lemma, pos)` 수를 정보량으로 본다. 문단 길이에 따라 기준을 조정하기 위해 `문장 수 × 10`을 1.0 기준으로 사용한다.
+문단 전체에서 서로 다른 **핵심 내용어** 수를 정보량으로 본다.
+사전 난도(lexical difficulty)가 아니라 형태소 품사 기준으로 집계한다.
+
+핵심 내용어 태그:
+
+| 태그 | 의미 |
+|------|------|
+| `NNG` | 일반명사 |
+| `NNP` | 고유명사 |
+| `VV` | 동사 |
+| `VA` | 형용사 |
+| `XR` | 어근 |
+
+`NNB` 의존명사, `NP` 대명사, `NR` 수사, `MAG` 부사, 외국어/한자 표기는 정보 밀도 집계에서 제외한다.
+문단 길이에 따라 기준을 조정하기 위해 `문장 수 × 10`을 1.0 기준으로 사용한다.
 
 ```text
-information_density = min(1.0, unique_content_lexical_count / (sentence_count × 10))
+information_density = min(1.0, unique_core_content_count / (sentence_count × 10))
 ```
 
 ## 출력 구조
@@ -63,7 +77,7 @@ information_density = min(1.0, unique_content_lexical_count / (sentence_count ×
         "discourse_marker_count": int,
         "information_density": float,
         "information_density_full_score_at": int,
-        "unique_content_lexical_count": int,
+        "unique_core_content_count": int,
         "paragraph_weights": dict,
     },
 }

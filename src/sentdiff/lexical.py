@@ -310,12 +310,14 @@ class LexiconScorer:
 
             surface = getattr(token, "surface", "")
             lemma = getattr(token, "lemma", "")
+            tag = getattr(token, "tag", "")
             pos = getattr(token, "pos", "")
 
             match = self.lookup(lemma, pos, surface)
             result.append({
                 "surface": match.surface,
                 "lemma": match.lemma,
+                "tag": tag,
                 "pos": match.pos,
                 "difficulty": match.difficulty,
                 "match_method": match.match_method,

@@ -34,6 +34,9 @@ _DISCOURSE_MARKERS: dict[str, float] = {
     "결론적으로": 1.0,
 }
 
+_CORE_INFORMATION_TAGS: set[str] = {"NNG", "NNP", "VV", "VA", "XR"}
+_CORE_INFORMATION_POS: set[str] = {"명사", "동사", "형용사", "어근"}
+
 
 class ParagraphScorer:
     """Score paragraph difficulty without changing sentence scoring behavior."""
@@ -90,20 +93,36 @@ class ParagraphScorer:
         }
 
     @staticmethod
+    def _is_core_information_word(word: dict[str, Any]) -> bool:
+        tag = str(word.get("tag", "") or "").strip()
+        base_tag = tag.split("-")[0]
+        if base_tag in _CORE_INFORMATION_TAGS:
+            return True
+        if base_tag.isascii() and base_tag.isalnum():
+            return False
+
+        pos = str(word.get("pos", "") or "").strip()
+        return pos in _CORE_INFORMATION_POS
+
+    @staticmethod
     def _information_density(sentence_results: list[dict[str, Any]]) -> dict[str, float | int]:
-        lexical_items: set[tuple[str, str]] = set()
+        core_items: set[tuple[str, str]] = set()
         for result in sentence_results:
             for word in result.get("scored_words_full", []):
+                if not ParagraphScorer._is_core_information_word(word):
+                    continue
                 lemma = str(word.get("lemma", "") or "").strip()
+                tag = str(word.get("tag", "") or "").strip()
                 pos = str(word.get("pos", "") or "").strip()
+                item_type = tag.split("-")[0] if tag else pos
                 if lemma:
-                    lexical_items.add((lemma, pos))
+                    core_items.add((lemma, item_type))
 
-        unique_count = len(lexical_items)
+        unique_count = len(core_items)
         full_score_at = len(sentence_results) * 10
         score = min(1.0, unique_count / full_score_at) if full_score_at > 0 else 0.0
         return {
-            "unique_content_lexical_count": unique_count,
+            "unique_core_content_count": unique_count,
             "information_density_full_score_at": full_score_at,
             "information_density": round(score, 4),
         }

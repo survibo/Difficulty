@@ -214,6 +214,7 @@ class LexiconScorerTest(unittest.TestCase):
         item = scored[0]
         self.assertIn("surface", item)
         self.assertIn("lemma", item)
+        self.assertIn("tag", item)
         self.assertIn("pos", item)
         self.assertIn("difficulty", item)
         self.assertIn("match_method", item)
@@ -287,6 +288,7 @@ class LexiconScorerTest(unittest.TestCase):
         for word in result["scored_words"]:
             self.assertIn("surface", word)
             self.assertIn("lemma", word)
+            self.assertIn("tag", word)
             self.assertIn("pos", word)
             self.assertIn("difficulty", word)
             self.assertIn("match_method", word)
