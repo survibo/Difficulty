@@ -206,13 +206,12 @@ function renderLexical(d) {
 function renderStructure(d) {
   const sp = d.structure_parts;
   document.getElementById("structureFormula").textContent =
-    "structure = 0.17×predicate + 0.17×embedding + 0.15×connective + 0.12×length + 0.12×logical + 0.12×structural_span + 0.08×modifier + 0.07×repetition";
+    "structure = 0.20×predicate + 0.20×embedding + 0.15×connective_logical + 0.15×length + 0.15×structural_span + 0.08×modifier + 0.07×repetition";
   const items = [
     ["predicate_score", sp.predicate_score, sp.predicate_count + " VV/VA"],
     ["embedding_score", sp.embedding_score, "ETM:" + sp.adnominal_count + " ETN:" + sp.nominalizer_count],
-    ["connective_score", sp.connective_score, sp.connective_ending_count + " EC"],
+    ["connective_logical_score", sp.connective_logical_score, "EC:" + sp.connective_ending_count + " marker:" + sp.logical_marker_weighted.toFixed(1) + " strong:" + sp.strong_logical_ending_weighted.toFixed(1)],
     ["length_score", sp.length_score, d.content_token_count + " tokens"],
-    ["logical_score", sp.logical_score, "marker:" + sp.logical_marker_weighted + " strong:" + sp.strong_logical_ending_weighted + " weak:" + sp.weak_connective_weighted],
     ["structural_span_score", sp.structural_span_score, "raw:" + sp.structural_span_raw.toFixed(2) + " norm:" + sp.structural_span_normalized.toFixed(3) + " n=" + sp.structural_span_count],
     ["modifier_score", sp.modifier_score, "max chain:" + sp.max_noun_chain],
     ["derivational_score", sp.derivational_score, sp.derivational_suffix_count + " suffixes (display)"],

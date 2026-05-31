@@ -112,13 +112,16 @@ def _structure_reasons(sp: dict) -> list[str]:
     adj_pc = sp["predicate_count_adj"]
     cc = sp["connective_ending_count"]
     em = sp["adnominal_count"] + sp["nominalizer_count"]
-    lr = sp["logical_marker_weighted"] + sp["strong_logical_ending_weighted"] + sp["weak_connective_weighted"]
+    lr = sp["logical_marker_weighted"] + sp["strong_logical_ending_weighted"]
+    cs = sp["connective_score"]
+    ls = sp["logical_score"]
     mc = sp["max_noun_chain"]
     adj_mc = sp["max_noun_chain_adj"]
     dc = sp["derivational_suffix_count"]
     sr = sp["structural_span_raw"]
     rc = sp["repetition_count"]
     rr = sp["repetition_raw"]
+    cls = sp["connective_logical_score"]
 
     if pc == 0:
         reasons.append("  no predicate tokens")
@@ -139,15 +142,10 @@ def _structure_reasons(sp: dict) -> list[str]:
     else:
         reasons.append(f"  ETM+ETN={em}/4 → embedding={sp['embedding_score']}")
 
-    if cc == 0:
-        reasons.append("  no EC → connective=0")
+    if cc == 0 and lr == 0:
+        reasons.append("  no EC/logical markers → connective_logical=0")
     else:
-        reasons.append(f"  EC={cc}/4 → connective={sp['connective_score']}")
-
-    if lr == 0:
-        reasons.append("  no logical markers → logical=0")
-    else:
-        reasons.append(f"  logical_weighted={lr:.1f}/4 → logical={sp['logical_score']}")
+        reasons.append(f"  EC={cc}/4 → cs={cs:.3f} + logical_weighted={lr:.1f}/4 → ls={ls:.3f} → (cs+ls×2)/3={cls:.3f}")
 
     if sr == 0:
         reasons.append("  no structural spans → span=0")
@@ -183,12 +181,8 @@ def _active_features(sp: dict) -> list[str]:
         active.append("predicate")
     if sp["embedding_score"] > 0:
         active.append("embedding")
-    if sp["connective_score"] > 0:
-        active.append("connective")
-    if sp["length_score"] > 0:
-        active.append("length")
-    if sp["logical_score"] > 0:
-        active.append("logical")
+    if sp["connective_logical_score"] > 0:
+        active.append("connective_logical")
     if sp["structural_span_score"] > 0:
         active.append("structural_span")
     if sp["modifier_score"] > 0:

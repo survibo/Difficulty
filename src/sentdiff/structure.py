@@ -2,7 +2,7 @@
 structure.py
 
 MorphToken 리스트의 POS 태그 패턴을 기반으로 문장 구조 복잡도를 계산한다.
-8개 지표(length / predicate / embedding / connective / logical / modifier / repetition / structural_span)를
+7개 지표(length / predicate / embedding / connective_logical / modifier / repetition / structural_span)를
 weighted sum한 structure_score를 반환한다.
 negation 점수는 별도 negation.py의 NegationAnalyzer가 처리한다.
 """
@@ -42,12 +42,6 @@ STRONG_LOGICAL_ENDINGS: dict[str, float] = {
     "는데": 0.6, "은데": 0.6, "ㄴ데": 0.6,
 }
 
-WEAK_CONNECTIVE_ENDINGS: dict[str, float] = {
-    "고": 0.3, "며": 0.4, "으며": 0.4,
-    "면서": 0.5, "으면서": 0.5,
-    "거나": 0.5, "든지": 0.5,
-}
-
 DERIVATIONAL_SUFFIXES: set[str] = {
     "적", "성", "화", "론", "주의",
 }
@@ -73,14 +67,13 @@ class StructureConfig:
     structural_span_full_score_at: float = 20.0
     repetition_full_score_at: float = 3.5
 
-    # 8개 지표 고정 가중치 (합 1.0)
-    weight_length: float = 0.12
-    weight_predicate: float = 0.17
-    weight_embedding: float = 0.17
-    weight_connective: float = 0.15
-    weight_logical: float = 0.12
+   # 7개 지표 고정 가중치 (합 1.0)
+    weight_length: float = 0.15
+    weight_predicate: float = 0.20
+    weight_embedding: float = 0.20
+    weight_connective_logical: float = 0.15
     weight_modifier: float = 0.08
-    weight_structural_span: float = 0.12
+    weight_structural_span: float = 0.15
     weight_repetition: float = 0.07
 
 
@@ -280,17 +273,6 @@ class StructureScorer:
             and self._match_weighted(t, STRONG_LOGICAL_ENDINGS) > 0.0
         )
 
-        weak_connective_weighted = sum(
-            self._match_weighted(t, WEAK_CONNECTIVE_ENDINGS)
-            for t in tokens
-            if self._tag(t) == "EC"
-        )
-        weak_connective_count = sum(
-            1 for t in tokens
-            if self._tag(t) == "EC"
-            and self._match_weighted(t, WEAK_CONNECTIVE_ENDINGS) > 0.0
-        )
-
         derivational_suffix_count = sum(
             1 for t in tokens
             if self._tag(t) in {"XSN"}
@@ -318,9 +300,9 @@ class StructureScorer:
         logical_raw = (
             logical_marker_weighted
             + strong_logical_ending_weighted
-            + weak_connective_weighted
         )
         logical_score = min(1.0, logical_raw / self.config.logical_full_score_at)
+        connective_logical_score = (connective_score + logical_score * 2) / 3
         adj_max_noun_chain = max(0, max_noun_chain - 1)
         modifier_score = self._safe_ratio(
             adj_max_noun_chain, self.config.modifier_full_score_at,
@@ -333,8 +315,7 @@ class StructureScorer:
             self.config.weight_length * length_score
             + self.config.weight_predicate * predicate_score
             + self.config.weight_embedding * embedding_score
-            + self.config.weight_connective * connective_score
-            + self.config.weight_logical * logical_score
+            + self.config.weight_connective_logical * connective_logical_score
             + self.config.weight_modifier * modifier_score
             + self.config.weight_structural_span * structural_span["score"]
             + self.config.weight_repetition * repetition["score"]
@@ -349,8 +330,7 @@ class StructureScorer:
                 "length_score": round(length_score, 4),
                 "predicate_score": round(predicate_score, 4),
                 "embedding_score": round(embedding_score, 4),
-                "connective_score": round(connective_score, 4),
-                "logical_score": round(logical_score, 4),
+                "connective_logical_score": round(connective_logical_score, 4),
                 "modifier_score": round(modifier_score, 4),
                 "derivational_score": round(derivational_score, 4),
                 "structural_span_score": structural_span["score"],
@@ -368,12 +348,12 @@ class StructureScorer:
                 "connective_ending_count": connective_ending_count,
                 "adnominal_count": adnominal_count,
                 "nominalizer_count": nominalizer_count,
+                "connective_score": round(connective_score, 4),
+                "logical_score": round(logical_score, 4),
                 "logical_marker_weighted": round(logical_marker_weighted, 4),
                 "logical_marker_count": logical_marker_count,
                 "strong_logical_ending_weighted": round(strong_logical_ending_weighted, 4),
                 "strong_logical_ending_count": strong_logical_ending_count,
-                "weak_connective_weighted": round(weak_connective_weighted, 4),
-                "weak_connective_count": weak_connective_count,
                 "derivational_suffix_count": derivational_suffix_count,
                 "max_noun_chain": max_noun_chain,
                 "max_noun_chain_adj": adj_max_noun_chain,
@@ -384,7 +364,6 @@ class StructureScorer:
 __all__ = [
     "LOGICAL_MARKERS",
     "STRONG_LOGICAL_ENDINGS",
-    "WEAK_CONNECTIVE_ENDINGS",
     "DERIVATIONAL_SUFFIXES",
     "REPETITION_EXCLUDE_LEMMAS",
     "StructureConfig",

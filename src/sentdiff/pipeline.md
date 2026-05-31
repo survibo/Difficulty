@@ -28,7 +28,7 @@ negation.analyze                → negation_score + negation_detail
 ## 점수 공식
 
 ```
-score = min(1.0, 0.5 × lexical + 0.5 × structure + 0.2 × negation)
+score = min(1.0, 0.5 × lexical + 0.5 × structure + 0.3 × negation)
 ```
 
 **가중치:**
@@ -37,12 +37,12 @@ score = min(1.0, 0.5 × lexical + 0.5 × structure + 0.2 × negation)
 |------|------|-----|------|
 | lexical | `_LEXICAL_WEIGHT` | 5.0 | 어휘 난도 (0~1) × 0.5 |
 | structure | `_STRUCTURE_WEIGHT` | 5.0 | 구조 복잡도 (0~1) × 0.5 |
-| negation | `_NEGATION_BONUS_COEFF` | 0.2 | 부정 보너스 (0~1) × 0.2 |
+| negation | `_NEGATION_BONUS_COEFF` | 0.3 | 부정 보너스 (0~1) × 0.3 |
 
 내부 계산:
 
 ```
-score_0_1 = (0.5 × lexical_score) + (0.5 × structure_score) + (0.2 × negation_score)
+score_0_1 = (0.5 × lexical_score) + (0.5 × structure_score) + (0.3 × negation_score)
 score_0_1 = clamp(score_0_1, 0, 1)
 ```
 
@@ -75,7 +75,7 @@ score_0_1 = clamp(score_0_1, 0, 1)
 
     "lexical_weight": 5.0,
     "structure_weight": 5.0,
-    "negation_bonus_coefficient": 0.2,
+    "negation_bonus_coefficient": 0.3,
 }
 ```
 
