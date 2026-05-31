@@ -87,14 +87,14 @@ class ParagraphScorerTest(unittest.TestCase):
         result = self.scorer.score("같은 단어. 같은 다른.")
         parts = result["paragraph_parts"]
         self.assertEqual(parts["unique_content_lemma_count"], 3)
-        self.assertEqual(parts["information_density_full_score_at"], 14)
-        self.assertEqual(parts["information_density"], round(3 / 14, 4))
+        self.assertEqual(parts["information_density_full_score_at"], 20)
+        self.assertEqual(parts["information_density"], round(3 / 20, 4))
 
-    def test_information_density_caps_at_sentence_count_times_seven(self) -> None:
-        result = self.scorer.score("a b c d e f g h.")
+    def test_information_density_caps_at_sentence_count_times_ten(self) -> None:
+        result = self.scorer.score("a b c d e f g h i j k.")
         parts = result["paragraph_parts"]
-        self.assertEqual(parts["unique_content_lemma_count"], 8)
-        self.assertEqual(parts["information_density_full_score_at"], 7)
+        self.assertEqual(parts["unique_content_lemma_count"], 11)
+        self.assertEqual(parts["information_density_full_score_at"], 10)
         self.assertEqual(parts["information_density"], 1.0)
 
 

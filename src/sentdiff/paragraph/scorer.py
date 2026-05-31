@@ -99,7 +99,7 @@ class ParagraphScorer:
                     lemmas.add(lemma)
 
         unique_count = len(lemmas)
-        full_score_at = len(sentence_results) * 7
+        full_score_at = len(sentence_results) * 10
         score = min(1.0, unique_count / full_score_at) if full_score_at > 0 else 0.0
         return {
             "unique_content_lemma_count": unique_count,

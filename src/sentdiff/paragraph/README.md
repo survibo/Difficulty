@@ -38,10 +38,10 @@ discourse_marker_score = min(1.0, discourse_marker_weighted / sentence_count)
 
 ## information_density
 
-문단 전체에서 서로 다른 내용어 lemma 수를 정보량으로 본다. 문단 길이에 따라 기준을 조정하기 위해 `문장 수 × 7`을 1.0 기준으로 사용한다.
+문단 전체에서 서로 다른 내용어 lemma 수를 정보량으로 본다. 문단 길이에 따라 기준을 조정하기 위해 `문장 수 × 10`을 1.0 기준으로 사용한다.
 
 ```text
-information_density = min(1.0, unique_content_lemma_count / (sentence_count × 7))
+information_density = min(1.0, unique_content_lemma_count / (sentence_count × 10))
 ```
 
 ## 출력 구조
