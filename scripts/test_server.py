@@ -13,6 +13,7 @@ import sys
 import traceback
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
@@ -20,6 +21,7 @@ sys.path.insert(0, str(SRC))
 
 try:
     from sentdiff.lexical import LexiconEntry, LexiconScorer
+    from sentdiff.paragraph import ParagraphScorer
     from sentdiff.pipeline import SentenceScorer
 except Exception:
     print("IMPORT ERROR", flush=True)
@@ -29,6 +31,7 @@ except Exception:
 INDEX_HTML = ROOT / "index.html"
 
 SCORER: SentenceScorer | None = None
+PARAGRAPH_SCORER: ParagraphScorer | None = None
 
 
 def _get_scorer() -> SentenceScorer:
@@ -38,6 +41,13 @@ def _get_scorer() -> SentenceScorer:
         SCORER = SentenceScorer()
         print("OK", flush=True)
     return SCORER
+
+
+def _get_paragraph_scorer() -> ParagraphScorer:
+    global PARAGRAPH_SCORER
+    if PARAGRAPH_SCORER is None:
+        PARAGRAPH_SCORER = ParagraphScorer(_get_scorer())
+    return PARAGRAPH_SCORER
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -61,8 +71,40 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self) -> None:
         if self.path == "/api/score":
             self._handle_score()
+        elif self.path == "/api/score-paragraph":
+            self._handle_score_paragraph()
         else:
             self._err(404, "Not Found")
+
+    def _score_with_custom_words(self, custom_words: dict, score_fn: Any) -> dict:
+        scorer = _get_scorer()
+        ls = scorer._lexical_scorer
+
+        saved_exact: dict[tuple[str, str], list[LexiconEntry]] = {}
+        saved_lemma: dict[str, list[LexiconEntry]] = {}
+        for lemma, difficulty in custom_words.items():
+            entry = LexiconEntry(entry_id=-1, lemma=lemma, pos="NNG", difficulty=float(difficulty))
+            key = (lemma, "NNG")
+            if key in ls._exact_map:
+                saved_exact[key] = ls._exact_map[key]
+            if lemma in ls._lemma_map:
+                saved_lemma[lemma] = ls._lemma_map[lemma]
+            ls._exact_map[key] = [entry]
+            ls._lemma_map[lemma] = [entry]
+
+        try:
+            return score_fn()
+        finally:
+            for lemma in custom_words:
+                key = (lemma, "NNG")
+                if key in saved_exact:
+                    ls._exact_map[key] = saved_exact[key]
+                else:
+                    ls._exact_map.pop(key, None)
+                if lemma in saved_lemma:
+                    ls._lemma_map[lemma] = saved_lemma[lemma]
+                else:
+                    ls._lemma_map.pop(lemma, None)
 
     def _handle_score(self) -> None:
         try:
@@ -72,34 +114,27 @@ class Handler(BaseHTTPRequestHandler):
             sentence = data.get("sentence", "")
             custom_words = data.get("custom_words", {})
 
-            scorer = _get_scorer()
-            ls = scorer._lexical_scorer
+            result = self._score_with_custom_words(
+                custom_words,
+                lambda: _get_scorer().score(sentence),
+            )
 
-            saved_exact: dict[tuple[str, str], list[LexiconEntry]] = {}
-            saved_lemma: dict[str, list[LexiconEntry]] = {}
-            for lemma, difficulty in custom_words.items():
-                entry = LexiconEntry(entry_id=-1, lemma=lemma, pos="NNG", difficulty=float(difficulty))
-                key = (lemma, "NNG")
-                if key in ls._exact_map:
-                    saved_exact[key] = ls._exact_map[key]
-                if lemma in ls._lemma_map:
-                    saved_lemma[lemma] = ls._lemma_map[lemma]
-                ls._exact_map[key] = [entry]
-                ls._lemma_map[lemma] = [entry]
+            self._ok("application/json", json.dumps(result, ensure_ascii=False, default=str).encode("utf-8"))
+        except Exception as e:
+            self._err(500, str(e))
 
-            try:
-                result = scorer.score(sentence)
-            finally:
-                for lemma in custom_words:
-                    key = (lemma, "NNG")
-                    if key in saved_exact:
-                        ls._exact_map[key] = saved_exact[key]
-                    else:
-                        ls._exact_map.pop(key, None)
-                    if lemma in saved_lemma:
-                        ls._lemma_map[lemma] = saved_lemma[lemma]
-                    else:
-                        ls._lemma_map.pop(lemma, None)
+    def _handle_score_paragraph(self) -> None:
+        try:
+            length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(length)
+            data = json.loads(body)
+            paragraph = data.get("paragraph", "")
+            custom_words = data.get("custom_words", {})
+
+            result = self._score_with_custom_words(
+                custom_words,
+                lambda: _get_paragraph_scorer().score(paragraph),
+            )
 
             self._ok("application/json", json.dumps(result, ensure_ascii=False, default=str).encode("utf-8"))
         except Exception as e:

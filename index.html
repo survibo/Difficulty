@@ -12,6 +12,9 @@
   p.sub { color: #777; font-size: 0.9rem; margin-bottom: 24px; }
   .criteria { background: #fff; border-left: 4px solid #4a90d9; border-radius: 8px; padding: 12px 14px; margin-bottom: 18px; color: #555; font-size: 0.9rem; line-height: 1.55; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
   .criteria strong { color: #333; }
+  .mode-row { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  .mode-row label { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border: 1px solid #d8e2ef; border-radius: 999px; background: #fff; color: #557; font-size: 0.85rem; cursor: pointer; }
+  .mode-row input { accent-color: #4a90d9; }
   textarea { width: 100%; height: 100px; padding: 12px; font-size: 1rem; border: 2px solid #ddd; border-radius: 8px; resize: vertical; }
   textarea:focus { outline: none; border-color: #4a90d9; }
   button { margin-top: 12px; padding: 10px 28px; font-size: 1rem; background: #4a90d9; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
@@ -58,6 +61,8 @@
     h1 { font-size: 1.35rem; }
     p.sub { margin-bottom: 18px; line-height: 1.5; }
     .criteria { padding: 10px 12px; font-size: 0.85rem; }
+    .mode-row { display: grid; grid-template-columns: 1fr 1fr; }
+    .mode-row label { justify-content: center; }
     textarea { height: 120px; font-size: 16px; }
     #btn { width: 100%; padding: 12px 18px; }
     .server-banner { padding: 10px 12px; line-height: 1.55; }
@@ -85,8 +90,8 @@
     💡 로컬 서버 실행 시: <code>python scripts/test_server.py</code> → <code>http://localhost:8800</code>
   </div>
 
-  <h1>문장 난도 측정</h1>
-  <p class="sub">한국어 문장을 입력하면 어휘 + 구조 + 부정 기반 난도 점수를 계산합니다.
+  <h1>문장·문단 난도 측정</h1>
+  <p class="sub">한국어 문장이나 문단을 입력하면 난도 점수를 계산합니다.
     <a href="https://github.com/survibo/Difficulty" target="_blank" style="color:#4a90d9;text-decoration:none;">GitHub</a>
   </p>
 
@@ -102,13 +107,23 @@
 
   </div>
 
-  <textarea id="input" placeholder="한국어 문장을 입력하세요..."></textarea>
+  <div class="mode-row">
+    <label><input type="radio" name="mode" value="sentence" checked> 문장 분석</label>
+    <label><input type="radio" name="mode" value="paragraph"> 문단 분석</label>
+  </div>
+
+  <textarea id="input" placeholder="한국어 문장이나 문단을 입력하세요..."></textarea>
   <button id="btn" onclick="analyze()">분석</button>
   <div id="error" class="error"></div>
 
   <div id="result">
     <div id="finalFormula" class="formula"></div>
     <div class="score-row" id="scoreRow"></div>
+    <div class="section" id="paragraphSection" style="display:none">
+      <h3>문단 점수 (paragraph)</h3>
+      <div id="paragraphFormula" class="formula"></div>
+      <div id="paragraphBody"></div>
+    </div>
     <div class="section" id="lexicalSection">
       <h3>어휘 점수 (lexical)</h3>
       <div id="lexicalFormula" class="formula"></div>
@@ -129,6 +144,7 @@
 
 <script>
 const API = "/api/score";
+const PARAGRAPH_API = "/api/score-paragraph";
 
 const EXAMPLES = [
   "날씨가 좋다",
@@ -144,6 +160,7 @@ function loadExample(el) {
 
 async function analyze() {
   const input = document.getElementById("input").value.trim();
+  const mode = document.querySelector('input[name="mode"]:checked').value;
   const btn = document.getElementById("btn");
   const err = document.getElementById("error");
   const result = document.getElementById("result");
@@ -151,17 +168,20 @@ async function analyze() {
   err.textContent = "";
   result.classList.remove("show");
 
-  if (!input) { err.textContent = "문장을 입력하세요."; return; }
+  if (!input) { err.textContent = mode === "paragraph" ? "문단을 입력하세요." : "문장을 입력하세요."; return; }
 
   btn.disabled = true;
   btn.textContent = "분석 중...";
 
   try {
     const customWords = JSON.parse(localStorage.getItem("custom_words") || "{}");
-    const res = await fetch(API, {
+    const payload = mode === "paragraph"
+      ? { paragraph: input, custom_words: customWords }
+      : { sentence: input, custom_words: customWords };
+    const res = await fetch(mode === "paragraph" ? PARAGRAPH_API : API, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sentence: input, custom_words: customWords }),
+      body: JSON.stringify(payload),
     });
     if (!res.ok) {
       const text = await res.text();
@@ -169,7 +189,8 @@ async function analyze() {
     }
     const data = await res.json();
     document.getElementById("banner").style.display = "none";
-    render(data);
+    if (mode === "paragraph") renderParagraph(data);
+    else render(data);
   } catch (e) {
     err.textContent = "서버에 연결할 수 없습니다. `python scripts/test_server.py`를 먼저 실행해주세요.";
   } finally {
@@ -179,6 +200,10 @@ async function analyze() {
 }
 
 function render(d) {
+  document.getElementById("paragraphSection").style.display = "none";
+  document.getElementById("lexicalSection").style.display = "block";
+  document.getElementById("structureSection").style.display = "block";
+  document.getElementById("negationSection").style.display = "block";
   const bonus = d.negation_bonus_coefficient;
   document.getElementById("finalFormula").textContent =
     `score = min(1.0, 0.5×lexical + 0.5×structure + ${bonus}×negation)`;
@@ -198,6 +223,51 @@ function render(d) {
   renderNegation(d);
 
   document.getElementById("result").classList.add("show");
+}
+
+function renderParagraph(d) {
+  document.getElementById("lexicalSection").style.display = "none";
+  document.getElementById("structureSection").style.display = "none";
+  document.getElementById("negationSection").style.display = "none";
+  document.getElementById("paragraphSection").style.display = "block";
+
+  const p = d.paragraph_parts;
+  document.getElementById("finalFormula").textContent =
+    "paragraph = 0.70×sentence_aggregate + 0.30×information_density";
+
+  const GH = "https://github.com/survibo/Difficulty/blob/main";
+  const scoreRow = document.getElementById("scoreRow");
+  scoreRow.innerHTML = card("문단 점수", d.score_10, d.score_10 >= 7 ? "red" : d.score_10 >= 4 ? "orange" : "green", "0 ~ 10", `${GH}/src/sentdiff/paragraph/README.md`) +
+    card("문장 수", d.sentence_count, "blue") +
+    card("문장 집계", (p.sentence_aggregate * 10).toFixed(2), "blue", "0 ~ 10") +
+    card("정보 밀도", (p.information_density * 10).toFixed(2), p.information_density >= 0.5 ? "orange" : "green", "문장수×7 기준") +
+    card("개념 수", p.unique_content_lemma_count, "blue");
+
+  renderParagraphDetails(d);
+  document.getElementById("result").classList.add("show");
+}
+
+function renderParagraphDetails(d) {
+  const p = d.paragraph_parts;
+  document.getElementById("paragraphFormula").textContent =
+    `sentence=${p.sentence_aggregate} (mean=${p.sentence_mean}, top3=${p.sentence_top_3_mean}, max=${p.sentence_max}) + density=${p.information_density} (${p.unique_content_lemma_count}/${p.information_density_full_score_at}); discourse는 참고값`;
+
+  let html = table([
+    ["sentence_mean", p.sentence_mean],
+    ["sentence_top_3_mean", p.sentence_top_3_mean],
+    ["sentence_max", p.sentence_max],
+    ["sentence_aggregate", p.sentence_aggregate],
+    ["information_density", p.information_density],
+    ["information_density_full_score_at", p.information_density_full_score_at],
+    ["unique_content_lemma_count", p.unique_content_lemma_count],
+  ]);
+
+  html += '<h3 style="margin-top:16px">문장별 점수</h3><table>';
+  for (const [i, s] of d.sentences.entries()) {
+    html += `<tr><td>${i + 1}</td><td>${escapeHtml(s.sentence)}</td><td><span class="badge">${s.score_10}/10</span></td></tr>`;
+  }
+  html += '</table>';
+  document.getElementById("paragraphBody").innerHTML = html;
 }
 
 function card(label, value, color, range, link) {
@@ -310,6 +380,15 @@ function table(rows) {
   for (const [k, v] of rows) html += `<tr><td>${k}</td><td>${typeof v === "number" ? v.toFixed(3) : v}</td></tr>`;
   html += "</table>";
   return html;
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 </script>
 </body>
