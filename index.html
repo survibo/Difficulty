@@ -179,14 +179,15 @@ function card(label, value, color, range, link) {
 
 function renderLexical(d) {
   const p = d.score_parts;
+  const lw = p.lexical_weights || {mean_all:0.25, mean_top_n:0.50, max:0.25};
   const words = d.scored_words || [];
   document.getElementById("lexicalFormula").textContent =
-    "lexical = 0.25 × mean_all + 0.50 × mean_top_3 + 0.25 × max";
+    lw.mean_all + " × mean_all + " + lw.mean_top_n + " × mean_top_3 + " + lw.max + " × max";
   const body = document.getElementById("lexicalBody");
   body.innerHTML = table([
-    ["mean_all", p.mean_all],
-    ["mean_top_n", p.mean_top_n],
-    ["max", p.max],
+    ["mean_all (" + lw.mean_all + ")", p.mean_all],
+    ["mean_top_n (" + lw.mean_top_n + ")", p.mean_top_n],
+    ["max (" + lw.max + ")", p.max],
     ["내용어", d.content_token_count + " (중복보정 " + d.content_token_count_capped + ")"],
   ]);
 

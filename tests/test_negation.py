@@ -52,7 +52,7 @@ class NegationAnalyzerTest(unittest.TestCase):
     def setUp(self) -> None:
         self.analyzer = NegationAnalyzer()
 
-    def _assert_negation(self, tokens, *, count=None, local_max=None, score=None):
+    def _assert_negation(self, tokens, *, count=None, local_max=None, score=None, construction_hits=None):
         result = self.analyzer.analyze(tokens)
         if count is not None:
             self.assertEqual(result["negation_count_total"], count)
@@ -60,6 +60,8 @@ class NegationAnalyzerTest(unittest.TestCase):
             self.assertEqual(result["negation_count_local_max"], local_max)
         if score is not None:
             self.assertGreaterEqual(result["negation_score"], score)
+        if construction_hits is not None:
+            self.assertEqual(result["negation_construction_hits"], construction_hits)
 
     # =====================================================================
     # simple negation → score == 0.0
@@ -213,6 +215,7 @@ class NegationAnalyzerTest(unittest.TestCase):
     # =====================================================================
 
     def test_conditional_an_myeon_an_doenda(self):
+        # 안 하면 안 된다: negation BOTH before + after conditional → NOT construction
         tokens = [
             _make_token("안", "안", "MAG"),
             _make_token("하", "하다", "VV"),
@@ -220,9 +223,10 @@ class NegationAnalyzerTest(unittest.TestCase):
             _make_token("안", "안", "MAG"),
             _make_token("되", "되다", "VV"),
         ]
-        self._assert_negation(tokens, count=2, local_max=1, score=1.0)
+        self._assert_negation(tokens, count=2, local_max=1, construction_hits=0)
 
     def test_conditional_gaji_anh_eumyeon_an(self):
+        # 가지 않으면 안 된다: negation BOTH before + after conditional → NOT construction
         tokens = [
             _make_token("가", "가다", "VV"),
             _make_token("지", "지", "EC"),
@@ -231,9 +235,10 @@ class NegationAnalyzerTest(unittest.TestCase):
             _make_token("안", "안", "MAG"),
             _make_token("되", "되다", "VV"),
         ]
-        self._assert_negation(tokens, count=2, local_max=1, score=1.0)
+        self._assert_negation(tokens, count=2, local_max=1, construction_hits=0)
 
     def test_conditional_haji_anh_eumyeon_an(self):
+        # 하지 않으면 안 된다: negation BOTH before + after conditional → NOT construction
         tokens = [
             _make_token("하", "하다", "VV"),
             _make_token("지", "지", "EC"),
@@ -242,7 +247,66 @@ class NegationAnalyzerTest(unittest.TestCase):
             _make_token("안", "안", "MAG"),
             _make_token("되", "되다", "VV"),
         ]
-        self._assert_negation(tokens, count=2, local_max=1, score=1.0)
+        self._assert_negation(tokens, count=2, local_max=1, construction_hits=0)
+
+    # =====================================================================
+    # construction 엣지케이스 (가중치 순서: neg-free before + neg after)
+    # =====================================================================
+
+    def test_construction_gaji_anh_eumyeon_moreunda(self):
+        # 가지 않으면 모른다: 조건절 앞 부정, 결과절 긍정 → NOT construction
+        # (조건절 앞에 부정이 있으므로)
+        tokens = [
+            _make_token("가", "가다", "VV"),
+            _make_token("지", "지", "EC"),
+            _make_token("않", "않", "VX"),
+            _make_token("으면", "으면", "EC"),
+            _make_token("모르", "모르다", "VV"),
+            _make_token("ㄴ다", "ㄴ다", "EF"),
+        ]
+        self._assert_negation(tokens, count=1, construction_hits=0)
+
+    def test_construction_myeon_moreuji_anhneunda(self):
+        # 가면 모르지 않는다: 조건절 긍정, 결과절 부정 → construction hit
+        tokens = [
+            _make_token("가", "가다", "VV"),
+            _make_token("면", "면", "EC"),
+            _make_token("모르", "모르다", "VV"),
+            _make_token("지", "지", "EC"),
+            _make_token("않", "않", "VX"),
+            _make_token("는다", "는다", "EF"),
+        ]
+        self._assert_negation(tokens, count=1, construction_hits=1)
+
+    def test_eopneun_han(self):
+        # 없는 한 처벌받지 않는다: 없(VA) 부정 아님, 이중부정 아님
+        # 없(VA) + 는(ETM) + 한(NNB) → "없는 한" 관용구
+        tokens = [
+            _make_token("없", "없다", "VA"),
+            _make_token("는", "는", "ETM"),
+            _make_token("한", "한", "NNB"),
+            _make_token("처벌", "처벌", "NNG"),
+            _make_token("받", "받다", "VV"),
+            _make_token("지", "지", "EC"),
+            _make_token("않", "않", "VX"),
+            _make_token("는다", "는다", "EF"),
+        ]
+        self._assert_negation(tokens, count=1, construction_hits=0)
+
+    def test_eopji_anheun_han(self):
+        # 없지 않은 한 처벌받는다: 없(VA) 부정 맞음, "없는 한"과 구분
+        # 없(VA) + 지(EC) + 않(VX) + 은(ETM) + 한(NNB) → 지 다음이 ETM이 아니므로 예외 안 걸림
+        tokens = [
+            _make_token("없", "없다", "VA"),
+            _make_token("지", "지", "EC"),
+            _make_token("않", "않", "VX"),
+            _make_token("은", "은", "ETM"),
+            _make_token("한", "한", "NNB"),
+            _make_token("처벌", "처벌", "NNG"),
+            _make_token("받", "받다", "VV"),
+            _make_token("는다", "는다", "EF"),
+        ]
+        self._assert_negation(tokens, count=2, construction_hits=0)
 
     # =====================================================================
     # quote / embedded negation → score >= 0.5

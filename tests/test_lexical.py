@@ -16,9 +16,7 @@ from sentdiff.lexical import (  # noqa: E402
     LexiconEntry,
     LexiconScorer,
     _TOP_N,
-    _WEIGHT_MEAN_ALL,
-    _WEIGHT_MEAN_TOP_N,
-    _WEIGHT_MAX,
+    _lexical_weights,
 )
 from sentdiff.morph import MorphToken  # noqa: E402
 
@@ -248,11 +246,17 @@ class LexiconScorerTest(unittest.TestCase):
         top_n = sorted(diffs, reverse=True)[:_TOP_N]
         mean_top_n = sum(top_n) / _TOP_N
         max_val = max(diffs)
-        expected = _WEIGHT_MEAN_ALL * mean_all + _WEIGHT_MEAN_TOP_N * mean_top_n + _WEIGHT_MAX * max_val
+        capped_count = len(result["scored_words"])
+        w_mean_all, w_mean_top_n, w_max = _lexical_weights(capped_count)
+        expected = w_mean_all * mean_all + w_mean_top_n * mean_top_n + w_max * max_val
         self.assertAlmostEqual(result["lexical_score_0_1"], expected, places=4)
         self.assertAlmostEqual(result["score_parts"]["mean_all"], mean_all, places=4)
         self.assertAlmostEqual(result["score_parts"]["mean_top_n"], mean_top_n, places=4)
         self.assertAlmostEqual(result["score_parts"]["max"], max_val, places=4)
+        self.assertIn("lexical_weights", result["score_parts"])
+        self.assertEqual(result["score_parts"]["lexical_weights"]["mean_all"], w_mean_all)
+        self.assertEqual(result["score_parts"]["lexical_weights"]["mean_top_n"], w_mean_top_n)
+        self.assertEqual(result["score_parts"]["lexical_weights"]["max"], w_max)
 
     def test_compute_score_tracks_unknown_count(self) -> None:
         tokens = [

@@ -35,6 +35,21 @@ _WEIGHT_MAX: float = 0.25
 _TOP_N: int = 3
 
 
+def _lexical_weights(content_count: int) -> tuple[float, float, float]:
+    """내용어 개수에 따라 동적으로 가중치를 조정한다.
+
+    짧은 문장일수록 mean_all 비중을 높여 단일 단어의 영향력을 분산한다.
+    Returns:
+        (weight_mean_all, weight_mean_top_n, weight_max)
+    """
+    if content_count <= 4:
+        return (0.50, 0.25, 0.25)
+    elif content_count <= 7:
+        return (0.35, 0.40, 0.25)
+    else:
+        return (0.25, 0.50, 0.25)
+
+
 # ---------------------------------------------------------------------
 # Data structures
 # ---------------------------------------------------------------------
@@ -348,7 +363,8 @@ class LexiconScorer:
         mean_top_n = mean(top_n) if top_n else 0.0
         max_val = max(diffs)
 
-        raw_score = _WEIGHT_MEAN_ALL * mean_all + _WEIGHT_MEAN_TOP_N * mean_top_n + _WEIGHT_MAX * max_val
+        w_mean_all, w_mean_top_n, w_max = _lexical_weights(len(capped))
+        raw_score = w_mean_all * mean_all + w_mean_top_n * mean_top_n + w_max * max_val
         raw_score = max(0.0, min(1.0, raw_score))
         lexical_score = round(raw_score, 4)
 
@@ -367,6 +383,11 @@ class LexiconScorer:
                 "mean_all": round(mean_all, 4),
                 "mean_top_n": round(mean_top_n, 4),
                 "max": round(max_val, 4),
+                "lexical_weights": {
+                    "mean_all": w_mean_all,
+                    "mean_top_n": w_mean_top_n,
+                    "max": w_max,
+                },
             },
         }
 

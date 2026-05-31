@@ -54,7 +54,9 @@ class NegationAnalyzer:
         return value.strip()
 
     @staticmethod
-    def _is_negation_token(token: Any) -> bool:
+    def _is_negation_token(token: Any,
+                            tokens: list[Any] | None = None,
+                            i: int = -1) -> bool:
         tag = NegationAnalyzer._tag(token)
         lemma = NegationAnalyzer._lemma(token)
         surface = NegationAnalyzer._surface(token)
@@ -65,7 +67,15 @@ class NegationAnalyzer:
         if tag in {"VX", "VV"}:
             return stem.startswith(("않", "못하", "말"))
         if tag == "VA":
-            return stem == "없"
+            if stem == "없":
+                if tokens is not None and i >= 0 and i + 2 < len(tokens):
+                    n1_tag = NegationAnalyzer._tag(tokens[i + 1])
+                    n2_tag = NegationAnalyzer._tag(tokens[i + 2])
+                    n2_lemma = NegationAnalyzer._lemma(tokens[i + 2])
+                    if n1_tag == "ETM" and n2_lemma == "한" and n2_tag == "NNB":
+                        return False
+                return True
+            return False
         if tag == "VCN":
             return stem == "아니"
         return False
@@ -115,42 +125,58 @@ class NegationAnalyzer:
     def _build_negation_units(self, tokens: list[Any]) -> list[dict[str, Any]]:
         units: list[dict[str, Any]] = []
         current_tokens: list[Any] = []
+        current_neg: int = 0
         prev_link: str | None = None
         hard_seg_id = 0
-
-        def _append_unit() -> None:
-            nonlocal current_tokens, prev_link, hard_seg_id
-            if not current_tokens:
-                return
-            units.append({
-                "tokens": current_tokens.copy(),
-                "neg_count": sum(
-                    1 for t in current_tokens if self._is_negation_token(t)
-                ),
-                "prev_link": prev_link,
-                "hard_segment_id": hard_seg_id,
-            })
+        neg_before_boundary: bool = False
 
         for i, token in enumerate(tokens):
             kind = self._boundary_kind(tokens, i)
 
             if kind in ("none", "aux"):
                 current_tokens.append(token)
+                if self._is_negation_token(token, tokens, i):
+                    current_neg += 1
                 continue
 
-            _append_unit()
+            if current_tokens:
+                units.append({
+                    "tokens": current_tokens.copy(),
+                    "neg_count": current_neg,
+                    "prev_link": prev_link,
+                    "hard_segment_id": hard_seg_id,
+                    "neg_before_boundary": neg_before_boundary,
+                })
 
             if kind in ("punct", "coordinate", "subordinate"):
                 current_tokens = []
+                current_neg = 0
                 prev_link = None
                 hard_seg_id += 1
-            elif kind in ("quote", "conditional", "nominal"):
+                neg_before_boundary = False
+            elif kind == "conditional":
+                neg_before_boundary = (current_neg > 0)
                 current_tokens = []
+                current_neg = 0
+                prev_link = kind
+            elif kind in ("quote", "nominal"):
+                neg_before_boundary = False
+                current_tokens = []
+                current_neg = 0
                 prev_link = kind
             else:
                 current_tokens = []
+                current_neg = 0
 
-        _append_unit()
+        if current_tokens:
+            units.append({
+                "tokens": current_tokens.copy(),
+                "neg_count": current_neg,
+                "prev_link": prev_link,
+                "hard_segment_id": hard_seg_id,
+                "neg_before_boundary": neg_before_boundary,
+            })
+
         return units
 
     def analyze(self, tokens: list[Any]) -> dict[str, Any]:
@@ -176,6 +202,7 @@ class NegationAnalyzer:
         current_seg: int | None = None
         last_neg_seen = False
         links_since_last_neg: set[str] = set()
+        pending_construction: bool = False
 
         for u in units:
             sid = u["hard_segment_id"]
@@ -184,15 +211,21 @@ class NegationAnalyzer:
                 current_seg = sid
                 last_neg_seen = False
                 links_since_last_neg = set()
+                pending_construction = False
 
             link = u["prev_link"]
             if link in {"quote", "nominal", "conditional"}:
                 links_since_last_neg.add(link)
 
+            # conditional boundary with negation-free antecedent → pending
+            if link == "conditional" and not u.get("neg_before_boundary", False):
+                pending_construction = True
+
             if u["neg_count"] > 0:
+                if pending_construction:
+                    construction_hits += 1
+                    pending_construction = False
                 if last_neg_seen:
-                    if "conditional" in links_since_last_neg:
-                        construction_hits += 1
                     if links_since_last_neg & {"quote", "nominal"}:
                         embedded_links += 1
                 last_neg_seen = True

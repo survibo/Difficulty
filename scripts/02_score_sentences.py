@@ -238,8 +238,9 @@ def format_result(result: dict, debug: bool = False) -> str:
         for w in sorted_words:
             parts.append(f"    {w['lemma']}/{w['pos']:<4}  {w['difficulty']:.4f}   {w['match_method']}")
         parts.append("  formula:")
+        lw = lp.get("lexical_weights", {"mean_all": 0.25, "mean_top_n": 0.50, "max": 0.25})
         parts.append(
-            f"    0.25×mean_all({lp['mean_all']}) + 0.50×mean_top3({lp['mean_top_n']}) + 0.25×max({lp['max']})"
+            f"    {lw['mean_all']}×mean_all({lp['mean_all']}) + {lw['mean_top_n']}×mean_top3({lp['mean_top_n']}) + {lw['max']}×max({lp['max']})"
         )
         parts.append(f"    = {lex:.4f}")
 
