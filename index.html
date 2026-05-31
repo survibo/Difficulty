@@ -148,16 +148,16 @@ async function analyze() {
 }
 
 function render(d) {
-  const denom = d.lexical_weight + d.structure_weight + d.negation_weight;
+  const bonus = d.negation_bonus_coefficient;
   document.getElementById("finalFormula").textContent =
-    `score = (${d.lexical_weight}×lexical + ${d.structure_weight}×structure + ${d.negation_weight}×negation) / ${denom}`;
+    `score = min(1.0, 0.5×lexical + 0.5×structure + ${bonus}×negation)`;
 
   const GH = "https://github.com/survibo/Difficulty/blob/main";
   const scoreRow = document.getElementById("scoreRow");
   scoreRow.innerHTML = card("최종 점수", d.score_10, d.score_10 >= 7 ? "red" : d.score_10 >= 4 ? "orange" : "green", "0 ~ 10", `${GH}/flow.md`) +
     card("어휘", d.lexical_score_10, "blue", "0 ~ 10", `${GH}/src/sentdiff/lexical.md`) +
     card("구조", d.structure_score_10, d.structure_score_10 >= 5 ? "orange" : "green", "0 ~ 10", `${GH}/src/sentdiff/structure.md`) +
-    card("부정", d.negation_score_10, d.negation_score_10 >= 5 ? "red" : "green", "0 ~ 10", `${GH}/src/sentdiff/negation.md`) +
+    card("부정(보너스)", d.negation_score_10, d.negation_score_10 >= 5 ? "red" : "green", "0 ~ 10", `${GH}/src/sentdiff/negation.md`) +
     card("내용어", d.content_token_count, "blue") +
     card("미등록어", d.unknown_token_count, d.unknown_token_count > 0 ? "red" : "green");
 
@@ -183,7 +183,6 @@ function renderLexical(d) {
     "lexical = 0.25 × mean_all + 0.50 × mean_top_3 + 0.25 × max";
   const body = document.getElementById("lexicalBody");
   body.innerHTML = table([
-    ["가중치", d.lexical_weight],
     ["mean_all", p.mean_all],
     ["mean_top_n", p.mean_top_n],
     ["max", p.max],

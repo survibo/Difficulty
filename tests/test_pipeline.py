@@ -95,7 +95,7 @@ class SentenceScorerTest(unittest.TestCase):
             "structure_parts",
             "lexical_weight",
             "structure_weight",
-            "negation_weight",
+            "negation_bonus_coefficient",
         }
         self.assertEqual(set(result.keys()), expected_keys)
 
@@ -105,12 +105,12 @@ class SentenceScorerTest(unittest.TestCase):
 
     def test_score_composition(self) -> None:
         result = self.scorer.score("문장을 분석한다.")
-        lw = result["lexical_weight"]
-        sw = result["structure_weight"]
-        nw = result["negation_weight"]
-        denom = lw + sw + nw
-        expected = (lw * result["lexical_score_0_1"] + sw * result["structure_score_0_1"] + nw * result["negation_score_0_1"]) / denom
-        self.assertAlmostEqual(result["score_0_1"], expected, places=4)
+        expected = (
+            0.5 * result["lexical_score_0_1"]
+            + 0.5 * result["structure_score_0_1"]
+            + 0.2 * result["negation_score_0_1"]
+        )
+        self.assertAlmostEqual(result["score_0_1"], min(1.0, expected), places=4)
 
     def test_structure_parts_contains_length_score(self) -> None:
         result = self.scorer.score("문장을 분석한다.")
@@ -146,7 +146,7 @@ class SentenceScorerTest(unittest.TestCase):
         result = self.scorer.score("문장을 분석한다.")
         self.assertEqual(result["lexical_weight"], 5.0)
         self.assertEqual(result["structure_weight"], 5.0)
-        self.assertEqual(result["negation_weight"], 2.0)
+        self.assertEqual(result["negation_bonus_coefficient"], 0.2)
 
 
 if __name__ == "__main__":

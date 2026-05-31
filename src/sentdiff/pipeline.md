@@ -9,7 +9,7 @@ KiwiMorphAnalyzer + LexiconScorer + StructureScorer + NegationAnalyzer를 내부
 ## 점수 공식
 
 ```
-score = (5.0 × lexical + 5.0 × structure + 2.0 × negation) / 12.0
+score = min(1.0, 0.5 × lexical + 0.5 × structure + 0.1 × negation)
 ```
 
 ## 주요 클래스
@@ -41,7 +41,8 @@ print(result["score_10"])  # 0~10 사이 최종 점수
 | `scored_words` | 각 내용어 lookup 결과 리스트 |
 | `score_parts` | 어휘 점수 breakdown |
 | `structure_parts` | 구조 점수 breakdown |
-| `lexical_weight` / `structure_weight` / `negation_weight` | 현재 적용된 가중치 |
+| `lexical_weight` / `structure_weight` | 현재 적용된 가중치 |
+| `negation_bonus_coefficient` | 부정 보너스 계수 (0.1) |
 
 ## 의존성
 - **import:** `morph.py`, `lexical.py`, `structure.py`, `negation.py`

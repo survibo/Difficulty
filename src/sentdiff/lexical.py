@@ -334,7 +334,7 @@ class LexiconScorer:
                 "content_token_count": len(scored),
                 "content_token_count_capped": 0,
                 "unknown_token_count": 0,
-                "scored_words": scored,
+            "scored_words": capped,
                 "score_parts": {
                     "mean_all": 0.0,
                     "mean_top_n": 0.0,
@@ -360,7 +360,7 @@ class LexiconScorer:
             "content_token_count": len(scored),
             "content_token_count_capped": len(capped),
             "unknown_token_count": unknown_count,
-            "scored_words": scored,
+            "scored_words": capped,
             "score_parts": {
                 "mean_all": round(mean_all, 4),
                 "mean_top_n": round(mean_top_n, 4),

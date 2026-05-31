@@ -52,17 +52,17 @@ DERIVATIONAL_SUFFIXES: set[str] = {
 }
 
 _LENGTH_MIN: float = 5.0
-_LENGTH_MAX: float = 25.0
+_LENGTH_MAX: float = 18.0
 
 
 @dataclass(frozen=True)
 class StructureConfig:
-    predicate_full_score_at: int = 6
+    predicate_full_score_at: int = 7
     embedding_full_score_at: int = 4
-    connective_full_score_at: int = 5
+    connective_full_score_at: int = 4
     logical_full_score_at: int = 4
-    modifier_full_score_at: int = 5
-    derivational_full_score_at: int = 5
+    modifier_full_score_at: int = 4
+    derivational_full_score_at: int = 3
 
     # 기존 7개 지표 가중치 + 0.15/7 균등 배분 (negation 제외)
     _ADD: float = 0.15 / 7
@@ -143,7 +143,7 @@ class StructureScorer:
 
         predicate_count = sum(
             1 for t in tokens
-            if self._tag(t) in {"VV", "VA", "VCP", "VCN"}
+            if self._tag(t) in {"VV", "VA", "VCP", "VCN", "VX", "XSV", "XSA"}
         )
 
         ending_count = sum(
@@ -199,7 +199,7 @@ class StructureScorer:
 
         derivational_suffix_count = sum(
             1 for t in tokens
-            if self._tag(t) in {"XSN", "XSV", "XSA"}
+            if self._tag(t) in {"XSN"}
             or self._surface(t) in DERIVATIONAL_SUFFIXES
         )
 

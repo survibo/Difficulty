@@ -5,7 +5,7 @@ KiwiMorphAnalyzer + LexiconScorer + StructureScorer + NegationAnalyzer를 내부
 문장 하나를 받으면 최종 난도 점수까지 한 번에 처리한다.
 
 점수 구성:
-  score = (5.0 * lexical + 5.0 * structure + 2.0 * negation) / 12.0
+  score = min(1.0, 0.5 * lexical + 0.5 * structure + 0.1 * negation)
 """
 
 from __future__ import annotations
@@ -19,8 +19,7 @@ from .structure import StructureConfig, StructureScorer
 
 _LEXICAL_WEIGHT: float = 5.0
 _STRUCTURE_WEIGHT: float = 5.0
-_NEGATION_WEIGHT: float = 2.0
-_DENOMINATOR: float = 12.0
+_NEGATION_BONUS_COEFF: float = 0.2
 
 
 class SentenceScorer:
@@ -48,10 +47,9 @@ class SentenceScorer:
         negation_score = negation_result["negation_score"]
 
         score_0_1 = (
-            _LEXICAL_WEIGHT * lexical_score
-            + _STRUCTURE_WEIGHT * structure_score
-            + _NEGATION_WEIGHT * negation_score
-        ) / _DENOMINATOR
+            0.5 * lexical_score + 0.5 * structure_score
+            + _NEGATION_BONUS_COEFF * negation_score
+        )
         score_0_1 = max(0.0, min(1.0, score_0_1))
 
         return {
@@ -73,7 +71,7 @@ class SentenceScorer:
             "negation_detail": negation_result,
             "lexical_weight": _LEXICAL_WEIGHT,
             "structure_weight": _STRUCTURE_WEIGHT,
-            "negation_weight": _NEGATION_WEIGHT,
+            "negation_bonus_coefficient": _NEGATION_BONUS_COEFF,
         }
 
 

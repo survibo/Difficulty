@@ -18,13 +18,13 @@ structure = 0.15×length + 0.15×predicate + 0.15×embedding
 
 | 지표 | 측정 대상 | 1.0이 되는 조건 | 가중치 |
 |------|----------|----------------|--------|
-| length | 내용어(명/동/형) token 수 | 30개 이상 | 0.15 |
-| predicate | 서술어(VV, VA, VCP, VCN) 개수 (-1 보정) | 7개 이상 (6+1) | 0.15 |
+| length | 내용어(명/동/형) token 수 | 23개 이상 | 0.15 |
+| predicate | 서술어(VV, VA, VCP, VCN, VX, XSV, XSA) 개수 (-1 보정) | 8개 이상 (7+1) | 0.15 |
 | embedding | 관형형(ETM)+명사형(ETN) 개수 | 4개 이상 | 0.15 |
-| connective | 연결어미(EC) 개수 | 5개 이상 | 0.15 |
+| connective | 연결어미(EC) 개수 | 4개 이상 | 0.15 |
 | logical | 논리표지+강한어미+약한어미 가중합 | 4.0 이상 | 0.10 |
-| modifier | 최장 명사 연쇄 길이 (-1 보정) | 6개 이상 (5+1) | 0.10 |
-| derivational | 파생 접사 개수 | 5개 이상 | 0.05 |
+| modifier | 최장 명사 연쇄 길이 (-1 보정) | 5개 이상 (4+1) | 0.10 |
+| derivational | 명사파생접미사(XSN)+표면형 개수 | 3개 이상 | 0.05 |
 
 ### 보정 설명
 - **predicate**: 모든 문장에 서술어가 최소 1개 필수이므로 `predicate_count - 1` 후 score 계산.
