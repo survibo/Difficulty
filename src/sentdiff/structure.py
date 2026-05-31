@@ -2,7 +2,7 @@
 structure.py
 
 MorphToken 리스트의 POS 태그 패턴을 기반으로 문장 구조 복잡도를 계산한다.
-7개 지표(length / predicate / embedding / connective_logical / modifier / repetition / structural_span)를
+8개 지표(length / predicate / embedding / connective / logical / modifier / repetition / structural_span)를
 weighted sum한 structure_score를 반환한다.
 negation 점수는 별도 negation.py의 NegationAnalyzer가 처리한다.
 """
@@ -67,11 +67,12 @@ class StructureConfig:
     structural_span_full_score_at: float = 20.0
     repetition_full_score_at: float = 3.5
 
-   # 7개 지표 고정 가중치 (합 1.0)
+   # 8개 지표 고정 가중치 (합 1.0)
     weight_length: float = 0.15
     weight_predicate: float = 0.20
     weight_embedding: float = 0.20
-    weight_connective_logical: float = 0.15
+    weight_connective: float = 0.05
+    weight_logical: float = 0.10
     weight_modifier: float = 0.08
     weight_structural_span: float = 0.15
     weight_repetition: float = 0.07
@@ -302,7 +303,6 @@ class StructureScorer:
             + strong_logical_ending_weighted
         )
         logical_score = min(1.0, logical_raw / self.config.logical_full_score_at)
-        connective_logical_score = (connective_score + logical_score * 2) / 3
         adj_max_noun_chain = max(0, max_noun_chain - 1)
         modifier_score = self._safe_ratio(
             adj_max_noun_chain, self.config.modifier_full_score_at,
@@ -315,7 +315,8 @@ class StructureScorer:
             self.config.weight_length * length_score
             + self.config.weight_predicate * predicate_score
             + self.config.weight_embedding * embedding_score
-            + self.config.weight_connective_logical * connective_logical_score
+            + self.config.weight_connective * connective_score
+            + self.config.weight_logical * logical_score
             + self.config.weight_modifier * modifier_score
             + self.config.weight_structural_span * structural_span["score"]
             + self.config.weight_repetition * repetition["score"]
@@ -330,7 +331,6 @@ class StructureScorer:
                 "length_score": round(length_score, 4),
                 "predicate_score": round(predicate_score, 4),
                 "embedding_score": round(embedding_score, 4),
-                "connective_logical_score": round(connective_logical_score, 4),
                 "modifier_score": round(modifier_score, 4),
                 "derivational_score": round(derivational_score, 4),
                 "structural_span_score": structural_span["score"],

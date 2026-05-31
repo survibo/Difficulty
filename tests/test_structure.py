@@ -174,9 +174,8 @@ class StructureScorerTest(unittest.TestCase):
         sp = result["structure_parts"]
         self.assertEqual(sp["connective_score"], 0.0)
         self.assertEqual(sp["logical_score"], 0.0)
-        self.assertEqual(sp["connective_logical_score"], 0.0)
 
-    def test_connective_logical_averaging(self) -> None:
+    def test_connective_score_only(self) -> None:
         tokens = [
             _make_token("먹고", "먹다", "EC"),
         ]
@@ -185,7 +184,6 @@ class StructureScorerTest(unittest.TestCase):
         self.assertEqual(sp["connective_ending_count"], 1)
         self.assertEqual(sp["connective_score"], 0.25)  # 1/4
         self.assertEqual(sp["logical_score"], 0.0)      # no marker match
-        self.assertAlmostEqual(sp["connective_logical_score"], 0.0833, places=3)
 
     def test_logical_marker_increases_logical_score(self) -> None:
         tokens = [
@@ -195,7 +193,6 @@ class StructureScorerTest(unittest.TestCase):
         sp = result["structure_parts"]
         self.assertEqual(sp["logical_marker_weighted"], 1.0)
         self.assertEqual(sp["logical_score"], 0.25)  # 1.0/4
-        self.assertAlmostEqual(sp["connective_logical_score"], 0.1667, places=3)  # (0 + 0.25×2)/3
 
     def test_unlisted_ec_not_counted_as_logical(self) -> None:
         tokens = [
@@ -281,7 +278,7 @@ class StructureScorerTest(unittest.TestCase):
         sp = result["structure_parts"]
         sub_keys = {
             "length_score", "predicate_score", "embedding_score",
-            "connective_logical_score", "modifier_score",
+            "modifier_score",
             "derivational_score", "structural_span_score",
             "structural_span_raw", "structural_span_normalized",
             "structural_span_count",
