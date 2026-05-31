@@ -3,7 +3,12 @@
 **위치:** `src/sentdiff/structure.py`
 
 ## 역할
+
 MorphToken의 POS 태그 패턴을 기반으로 8개 지표로 문장 구조 복잡도를 측정한다.
+
+## flow 단계
+
+**5단계** — morph에 의존.
 
 ## 점수 공식
 
