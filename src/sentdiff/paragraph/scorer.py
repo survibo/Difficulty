@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import defaultdict
 import re
 from statistics import mean
 from typing import Any
@@ -36,6 +37,8 @@ _DISCOURSE_MARKERS: dict[str, float] = {
 
 _CORE_INFORMATION_TAGS: set[str] = {"NNG", "NNP", "VV", "VA", "XR"}
 _CORE_INFORMATION_POS: set[str] = {"명사", "동사", "형용사", "어근"}
+_CONCEPT_REPETITION_EXCLUDED_LEMMAS: set[str] = {"것", "수", "때", "말", "점", "등", "바", "데"}
+_CONCEPT_REPETITION_FULL_SCORE_AT: float = 10.0
 
 
 class ParagraphScorer:
@@ -105,6 +108,27 @@ class ParagraphScorer:
         return pos in _CORE_INFORMATION_POS
 
     @staticmethod
+    def _core_item_type(word: dict[str, Any]) -> str:
+        tag = str(word.get("tag", "") or "").strip()
+        if tag:
+            return tag.split("-")[0]
+        return str(word.get("pos", "") or "").strip()
+
+    @staticmethod
+    def _safe_difficulty(word: dict[str, Any]) -> float:
+        try:
+            difficulty = float(word.get("difficulty", 0.30))
+        except (TypeError, ValueError):
+            difficulty = 0.30
+        return max(0.0, min(1.0, difficulty))
+
+    @staticmethod
+    def _concept_pos_weight(item_type: str) -> float:
+        if item_type in {"VV", "VA", "동사", "형용사"}:
+            return 0.8
+        return 1.0
+
+    @staticmethod
     def _information_density(sentence_results: list[dict[str, Any]]) -> dict[str, float | int]:
         core_items: set[tuple[str, str]] = set()
         for result in sentence_results:
@@ -112,9 +136,7 @@ class ParagraphScorer:
                 if not ParagraphScorer._is_core_information_word(word):
                     continue
                 lemma = str(word.get("lemma", "") or "").strip()
-                tag = str(word.get("tag", "") or "").strip()
-                pos = str(word.get("pos", "") or "").strip()
-                item_type = tag.split("-")[0] if tag else pos
+                item_type = ParagraphScorer._core_item_type(word)
                 if lemma:
                     core_items.add((lemma, item_type))
 
@@ -127,6 +149,44 @@ class ParagraphScorer:
             "information_density": round(score, 4),
         }
 
+    @staticmethod
+    def _concept_repetition(sentence_results: list[dict[str, Any]]) -> dict[str, float | int]:
+        counts: defaultdict[tuple[str, str], int] = defaultdict(int)
+        sentence_ids: defaultdict[tuple[str, str], set[int]] = defaultdict(set)
+        difficulties: defaultdict[tuple[str, str], list[float]] = defaultdict(list)
+
+        for sentence_id, result in enumerate(sentence_results):
+            for word in result.get("scored_words_full", []):
+                if not ParagraphScorer._is_core_information_word(word):
+                    continue
+                lemma = str(word.get("lemma", "") or "").strip()
+                if not lemma or lemma in _CONCEPT_REPETITION_EXCLUDED_LEMMAS:
+                    continue
+                item_type = ParagraphScorer._core_item_type(word)
+                key = (lemma, item_type)
+                counts[key] += 1
+                sentence_ids[key].add(sentence_id)
+                difficulties[key].append(ParagraphScorer._safe_difficulty(word))
+
+        raw = 0.0
+        repeated_count = 0
+        for key, count in counts.items():
+            if count <= 1:
+                continue
+            repeated_count += 1
+            difficulty = max(difficulties[key]) if difficulties[key] else 0.30
+            spread = min(1.6, 1.0 + 0.2 * (len(sentence_ids[key]) - 1))
+            pos_weight = ParagraphScorer._concept_pos_weight(key[1])
+            raw += (count - 1) * difficulty * spread * pos_weight
+
+        score = min(1.0, raw / _CONCEPT_REPETITION_FULL_SCORE_AT)
+        return {
+            "repeated_core_content_count": repeated_count,
+            "concept_repetition_raw": round(raw, 4),
+            "concept_repetition_full_score_at": _CONCEPT_REPETITION_FULL_SCORE_AT,
+            "concept_repetition": round(score, 4),
+        }
+
     def score(self, paragraph: str | None) -> dict[str, Any]:
         text = str(paragraph or "")
         sentences = self.split_sentences(text)
@@ -136,10 +196,12 @@ class ParagraphScorer:
         aggregate = self._sentence_aggregate(sentence_scores)
         discourse = self._discourse_score(sentences)
         density = self._information_density(sentence_results)
+        repetition = self._concept_repetition(sentence_results)
 
         score_0_1 = (
             0.80 * float(aggregate["sentence_aggregate"])
-            + 0.20 * float(density["information_density"])
+            + 0.10 * float(density["information_density"])
+            + 0.10 * float(repetition["concept_repetition"])
         )
         score_0_1 = max(0.0, min(1.0, score_0_1))
 
@@ -153,9 +215,11 @@ class ParagraphScorer:
                 **aggregate,
                 **discourse,
                 **density,
+                **repetition,
                 "paragraph_weights": {
                     "sentence_aggregate": 0.80,
-                    "information_density": 0.20,
+                    "information_density": 0.10,
+                    "concept_repetition": 0.10,
                 },
             },
         }

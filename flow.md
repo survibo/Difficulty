@@ -406,7 +406,9 @@ hard boundary → 새 hard segment 시작
 ### 6.1 최종 문단 공식
 
 ```
-paragraph_score = 0.80 × sentence_aggregate + 0.20 × information_density
+paragraph_score = 0.80 × sentence_aggregate
+                + 0.10 × information_density
+                + 0.10 × concept_repetition
 ```
 
 ### 6.2 문장 점수 집계
@@ -447,7 +449,27 @@ information_density = min(1.0, unique_core_content_count / (sentence_count × 10
 - `MAG` 부사
 - `SL`, `SH` 외국어/한자 표기
 
-### 6.4 담화 표지
+### 6.4 반복 핵심어 처리 부담 (concept_repetition)
+
+문단 안에서 같은 핵심 내용어가 반복되면 중심 개념을 계속 추적해야 하므로 이해 부담이 커진다.
+반복 핵심어는 문장 구조 점수의 repetition처럼 단순 반복만 세지 않고,
+반복 횟수, lexical 난도, 여러 문장에 걸친 분포를 함께 반영한다.
+
+```
+concept_repetition = min(1.0, concept_repetition_raw / 10.0)
+
+concept_repetition_raw =
+  Σ (count - 1) × difficulty × spread × pos_weight
+```
+
+- `count`: 같은 `(lemma, 핵심품사)`의 문단 내 등장 횟수
+- `difficulty`: 해당 어휘의 lexical difficulty. 여러 값이 있으면 최댓값
+- `spread`: 여러 문장에 걸쳐 나오면 가산
+  `min(1.6, 1.0 + 0.2 × (등장 문장 수 - 1))`
+- `pos_weight`: 명사/어근(`NNG`, `NNP`, `XR`)은 1.0, 동사/형용사(`VV`, `VA`)는 0.8
+- 제외 lemma: `것`, `수`, `때`, `말`, `점`, `등`, `바`, `데`
+
+### 6.5 담화 표지
 
 문장 첫머리의 `그러나`, `따라서`, `한편`, `결국` 같은 담화 표지는
 `discourse_marker_score`로 따로 집계하지만 현재 문단 최종 점수에는 반영하지 않는다.

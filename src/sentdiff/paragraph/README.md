@@ -12,7 +12,8 @@
 ```text
 paragraph_score =
   0.80 × sentence_aggregate
-+ 0.20 × information_density
++ 0.10 × information_density
++ 0.10 × concept_repetition
 ```
 
 ## sentence_aggregate
@@ -58,6 +59,29 @@ discourse_marker_score = min(1.0, discourse_marker_weighted / sentence_count)
 information_density = min(1.0, unique_core_content_count / (sentence_count × 10))
 ```
 
+## concept_repetition
+
+문단 안에서 같은 핵심 내용어가 반복되면 중심 개념을 계속 추적해야 하므로 이해 부담이 커진다.
+`concept_repetition`은 반복된 핵심 내용어의 반복 횟수, 어휘 난도, 여러 문장에 걸친 분포를 함께 반영한다.
+
+```text
+concept_repetition = min(1.0, concept_repetition_raw / 10.0)
+
+concept_repetition_raw =
+  Σ (count - 1) × difficulty × spread × pos_weight
+```
+
+계산 기준:
+
+| 항목 | 의미 |
+|------|------|
+| `count` | 같은 `(lemma, 핵심품사)`의 문단 내 등장 횟수 |
+| `difficulty` | 해당 어휘의 lexical difficulty. 여러 값이 있으면 최댓값 |
+| `spread` | 여러 문장에 걸쳐 나오면 가산: `min(1.6, 1.0 + 0.2 × (등장 문장 수 - 1))` |
+| `pos_weight` | `NNG/NNP/XR=1.0`, `VV/VA=0.8` |
+
+제외 lemma: `것`, `수`, `때`, `말`, `점`, `등`, `바`, `데`
+
 ## 출력 구조
 
 ```python
@@ -78,6 +102,10 @@ information_density = min(1.0, unique_core_content_count / (sentence_count × 10
         "information_density": float,
         "information_density_full_score_at": int,
         "unique_core_content_count": int,
+        "concept_repetition": float,
+        "concept_repetition_raw": float,
+        "concept_repetition_full_score_at": float,
+        "repeated_core_content_count": int,
         "paragraph_weights": dict,
     },
 }

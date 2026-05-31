@@ -57,14 +57,19 @@ class ParagraphScorerTest(unittest.TestCase):
             result["paragraph_parts"]["paragraph_weights"],
             {
                 "sentence_aggregate": 0.80,
-                "information_density": 0.20,
+                "information_density": 0.10,
+                "concept_repetition": 0.10,
             },
         )
 
-    def test_paragraph_score_uses_sentence_and_density_only(self) -> None:
+    def test_paragraph_score_uses_sentence_density_and_concept_repetition(self) -> None:
         result = self.scorer.score("그러나 쉬운 문장이다.")
         parts = result["paragraph_parts"]
-        expected = 0.80 * parts["sentence_aggregate"] + 0.20 * parts["information_density"]
+        expected = (
+            0.80 * parts["sentence_aggregate"]
+            + 0.10 * parts["information_density"]
+            + 0.10 * parts["concept_repetition"]
+        )
         self.assertEqual(result["score_0_1"], round(expected, 4))
         self.assertEqual(parts["discourse_marker_score"], 1.0)
 
@@ -138,6 +143,27 @@ class ParagraphScorerTest(unittest.TestCase):
         self.assertEqual(parts["unique_core_content_count"], 2)
         self.assertEqual(parts["information_density_full_score_at"], 10)
         self.assertEqual(parts["information_density"], round(2 / 10, 4))
+
+    def test_concept_repetition_uses_repeated_core_words_with_difficulty_and_spread(self) -> None:
+        class RepeatedConceptSentenceScorer:
+            def score(self, sentence: str) -> dict:
+                words = [{"lemma": "변증법", "pos": "명사", "tag": "NNG", "difficulty": 0.9}]
+                if "둘째" in sentence:
+                    words.append({"lemma": "변증법", "pos": "명사", "tag": "NNG", "difficulty": 0.9})
+                    words.append({"lemma": "수", "pos": "명사", "tag": "NNB", "difficulty": 0.9})
+                return {
+                    "sentence": sentence,
+                    "score_0_1": 0.2,
+                    "score_10": 2.0,
+                    "scored_words_full": words,
+                }
+
+        result = ParagraphScorer(RepeatedConceptSentenceScorer()).score("첫째 문장. 둘째 문장.")
+        parts = result["paragraph_parts"]
+        self.assertEqual(parts["repeated_core_content_count"], 1)
+        self.assertEqual(parts["concept_repetition_full_score_at"], 10.0)
+        self.assertEqual(parts["concept_repetition_raw"], 2.16)
+        self.assertEqual(parts["concept_repetition"], 0.216)
 
 
 if __name__ == "__main__":
