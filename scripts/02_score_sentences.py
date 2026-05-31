@@ -160,9 +160,9 @@ def _structure_reasons(sp: dict) -> list[str]:
         reasons.append(f"  max_noun_chain={mc} → adj={adj_mc}/4 → modifier={sp['modifier_score']}")
 
     if dc == 0:
-        reasons.append("  no derivational suffixes → derivational=0")
+        reasons.append("  no derivational suffixes → derivational=0 (display-only)")
     else:
-        reasons.append(f"  derivational_count={dc}/3 → derivational={sp['derivational_score']}")
+        reasons.append(f"  derivational_count={dc}/3 → derivational={sp['derivational_score']} (display-only)")
 
     if rc == 0:
         reasons.append("  no word repetition → repetition=0")
@@ -172,7 +172,7 @@ def _structure_reasons(sp: dict) -> list[str]:
         for d in details:
             parts.append(f"{d['surface']}({d['count']}회×{d['difficulty']}d×{d['polysemy']}pol)")
         parts_str = ", ".join(parts)
-        reasons.append(f"  repetition_raw={rr}/5 → score={sp['repetition_score']}  ({parts_str})")
+        reasons.append(f"  repetition_raw={rr}/3.5 → score={sp['repetition_score']}  ({parts_str})")
 
     return reasons
 
@@ -193,8 +193,6 @@ def _active_features(sp: dict) -> list[str]:
         active.append("structural_span")
     if sp["modifier_score"] > 0:
         active.append("modifier")
-    if sp["derivational_score"] > 0:
-        active.append("derivational")
     if sp["repetition_score"] > 0:
         active.append("repetition")
     return active

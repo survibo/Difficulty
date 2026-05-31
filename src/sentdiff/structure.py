@@ -71,7 +71,7 @@ class StructureConfig:
     modifier_full_score_at: int = 4
     derivational_full_score_at: int = 3
     structural_span_full_score_at: float = 20.0
-    repetition_full_score_at: float = 5.0
+    repetition_full_score_at: float = 3.5
 
     # 8개 지표 고정 가중치 (합 1.0)
     weight_length: float = 0.12

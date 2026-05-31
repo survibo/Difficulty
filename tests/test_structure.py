@@ -347,5 +347,98 @@ class StructureScorerTest(unittest.TestCase):
         self.assertEqual(sp["structural_span_raw"], 1.0)
 
 
+    # -----------------------------------------------------------------
+    # repetition: duplicated surfaces
+    # -----------------------------------------------------------------
+
+    def test_repetition_no_duplicates(self) -> None:
+        tokens = [
+            _make_token("연구", "연구", "NNG"),
+            _make_token("분석", "분석", "NNG"),
+        ]
+        scored_words_full = [
+            {"surface": "연구", "lemma": "연구", "pos": "NNG", "difficulty": 0.6, "match_method": "exact", "matched_entry_id": 1},
+            {"surface": "분석", "lemma": "분석", "pos": "NNG", "difficulty": 0.7, "match_method": "exact", "matched_entry_id": 2},
+        ]
+        result = self.scorer.score_tokens(tokens, scored_words_full=scored_words_full, polysemy_map={})
+        sp = result["structure_parts"]
+        self.assertEqual(sp["repetition_score"], 0.0)
+        self.assertEqual(sp["repetition_count"], 0)
+        self.assertEqual(sp["repetition_raw"], 0.0)
+
+    def test_repetition_three_times(self) -> None:
+        tokens = [
+            _make_token("연구", "연구", "NNG"),
+            _make_token("연구", "연구", "NNG"),
+            _make_token("연구", "연구", "NNG"),
+        ]
+        scored_words_full = [
+            {"surface": "연구", "lemma": "연구", "pos": "NNG", "difficulty": 0.6, "match_method": "exact", "matched_entry_id": 1},
+            {"surface": "연구", "lemma": "연구", "pos": "NNG", "difficulty": 0.6, "match_method": "exact", "matched_entry_id": 1},
+            {"surface": "연구", "lemma": "연구", "pos": "NNG", "difficulty": 0.6, "match_method": "exact", "matched_entry_id": 1},
+        ]
+        polysemy_map = {"연구": 1}
+        result = self.scorer.score_tokens(tokens, scored_words_full=scored_words_full, polysemy_map=polysemy_map)
+        sp = result["structure_parts"]
+        self.assertEqual(sp["repetition_count"], 2)
+        expected_raw = (3 - 1) * 0.6 * 1  # (count-1) * difficulty * polysemy
+        self.assertAlmostEqual(sp["repetition_raw"], expected_raw, places=4)
+        expected_score = min(1.0, expected_raw / 3.5)
+        self.assertAlmostEqual(sp["repetition_score"], expected_score, places=4)
+
+    def test_repetition_excluded_lemma(self) -> None:
+        tokens = [
+            _make_token("말", "말", "NNG"),
+            _make_token("말", "말", "NNG"),
+        ]
+        scored_words_full = [
+            {"surface": "말", "lemma": "말", "pos": "NNG", "difficulty": 0.5, "match_method": "exact", "matched_entry_id": 1},
+            {"surface": "말", "lemma": "말", "pos": "NNG", "difficulty": 0.5, "match_method": "exact", "matched_entry_id": 1},
+        ]
+        result = self.scorer.score_tokens(tokens, scored_words_full=scored_words_full, polysemy_map={"말": 3})
+        sp = result["structure_parts"]
+        self.assertEqual(sp["repetition_score"], 0.0)
+        self.assertEqual(sp["repetition_count"], 0)
+
+    def test_repetition_multiple_surfaces(self) -> None:
+        tokens = [
+            _make_token("연구", "연구", "NNG"),
+            _make_token("연구", "연구", "NNG"),
+            _make_token("분석", "분석", "NNG"),
+            _make_token("분석", "분석", "NNG"),
+            _make_token("분석", "분석", "NNG"),
+        ]
+        scored_words_full = [
+            {"surface": "연구", "lemma": "연구", "pos": "NNG", "difficulty": 0.6, "match_method": "exact", "matched_entry_id": 1},
+            {"surface": "연구", "lemma": "연구", "pos": "NNG", "difficulty": 0.6, "match_method": "exact", "matched_entry_id": 1},
+            {"surface": "분석", "lemma": "분석", "pos": "NNG", "difficulty": 0.7, "match_method": "exact", "matched_entry_id": 2},
+            {"surface": "분석", "lemma": "분석", "pos": "NNG", "difficulty": 0.7, "match_method": "exact", "matched_entry_id": 2},
+            {"surface": "분석", "lemma": "분석", "pos": "NNG", "difficulty": 0.7, "match_method": "exact", "matched_entry_id": 2},
+        ]
+        polysemy_map = {"연구": 1, "분석": 2}
+        result = self.scorer.score_tokens(tokens, scored_words_full=scored_words_full, polysemy_map=polysemy_map)
+        sp = result["structure_parts"]
+        self.assertEqual(sp["repetition_count"], 3)  # (2-1) + (3-1) = 3
+        expected_raw = (2 - 1) * 0.6 * 1 + (3 - 1) * 0.7 * 2
+        self.assertAlmostEqual(sp["repetition_raw"], expected_raw, places=4)
+
+    def test_repetition_details_structure(self) -> None:
+        tokens = [
+            _make_token("연구", "연구", "NNG"),
+            _make_token("연구", "연구", "NNG"),
+        ]
+        scored_words_full = [
+            {"surface": "연구", "lemma": "연구", "pos": "NNG", "difficulty": 0.6, "match_method": "exact", "matched_entry_id": 1},
+            {"surface": "연구", "lemma": "연구", "pos": "NNG", "difficulty": 0.6, "match_method": "exact", "matched_entry_id": 1},
+        ]
+        result = self.scorer.score_tokens(tokens, scored_words_full=scored_words_full, polysemy_map={"연구": 2})
+        sp = result["structure_parts"]
+        self.assertEqual(len(sp["repetition_details"]), 1)
+        detail = sp["repetition_details"][0]
+        self.assertEqual(detail["surface"], "연구")
+        self.assertEqual(detail["count"], 2)
+        self.assertEqual(detail["polysemy"], 2)
+
+
 if __name__ == "__main__":
     unittest.main()

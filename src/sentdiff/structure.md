@@ -31,7 +31,7 @@ structure = 0.17×predicate + 0.17×embedding
 | logical | 논리표지+강한어미+약한어미 가중합 | 4.0 이상 | 0.12 |
 | structural_span | 절 구간 내용어 합계 (모든 EC/ETM/ETN에서 기록된 구간 길이의 총합) | 20.0 이상 (내용어 20개) | 0.12 |
 | modifier | 최장 명사 연쇄 길이 (-1 보정) | 5개 이상 (4+1) | 0.08 |
-| repetition | 단어 반복 부담 (반복 횟수×난도×다의성 계수 합계) | 5.0 이상 | 0.07 |
+| repetition | 단어 반복 부담 (반복 횟수×난도×다의성 계수 합계) | 3.5 이상 | 0.07 |
 
 ### repetition 계산
 
@@ -42,7 +42,7 @@ structure = 0.17×predicate + 0.17×embedding
 제외 lemma: 것, 수, 때, 말, 점, 등, 바, 데
 
 raw = Σ (count - 1) × difficulty × polysemy
-score = min(1.0, raw / 5.0)
+score = min(1.0, raw / 3.5)
 ```
 
 - `difficulty`: lexical lookup 난도값
