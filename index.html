@@ -232,7 +232,7 @@ function renderLexical(d) {
     const cls = w.match_method === "unknown" ? "word-item unknown" : isTop ? "word-item top3" : "word-item";
     const saved = customWords[w.lemma];
     html += `<span class="${cls}" style="cursor:default">${w.surface}<span class="diff">${saved !== undefined ? saved : w.difficulty}</span>`;
-    if (w.match_method === "unknown") {
+    if (w.match_method === "unknown" || saved !== undefined) {
       const val = saved !== undefined ? saved : "0.30";
       html += ` <input type="number" min="0" max="1" step="0.05" value="${val}" style="width:50px;font-size:0.75rem;border:1px solid #ccc;border-radius:3px;padding:1px 4px;" id="diff_${w.lemma}">`;
       html += ` <button onclick="registerWord('${w.lemma}')" style="font-size:0.7rem;padding:1px 8px;background:#e74c3c;color:#fff;border:none;border-radius:3px;cursor:pointer;">${saved !== undefined ? '수정' : '등록'}</button>`;
@@ -265,8 +265,8 @@ function renderStructure(d) {
     ["predicate_score", sp.predicate_score, sp.predicate_count + " VV/VA/VX/XSV/XSA"],
     ["embedding_score", sp.embedding_score, "ETM:" + sp.adnominal_count + " ETN:" + sp.nominalizer_count + " 부사절:" + (sp.adverbial_ending_count || 0)],
     ["length_score", sp.length_score, d.content_token_count + " tokens"],
-    ["modifier_score", sp.modifier_score, "max chain:" + sp.max_noun_chain],
-    ["logical_score", sp.logical_score, "marker:" + sp.logical_marker_weighted.toFixed(1) + " strong:" + sp.strong_logical_ending_weighted.toFixed(1)],
+    ["modifier_score", sp.modifier_score, "max chain:" + sp.max_noun_chain + " (XSN 뒤 새 명사는 분리)"],
+    ["logical_score", sp.logical_score, "marker:" + sp.logical_marker_weighted.toFixed(1) + " strong:" + sp.strong_logical_ending_weighted.toFixed(1) + " (첫 marker 제외)"],
     ["repetition_score", sp.repetition_score, "raw:" + sp.repetition_raw.toFixed(2) + " count:" + sp.repetition_count],
     ["connective_score", sp.connective_score, "EC:" + sp.connective_ending_count],
   ];
@@ -286,7 +286,7 @@ function renderNegation(d) {
   const negSection = document.getElementById("negationSection");
   negSection.style.display = "block";
   document.getElementById("negationFormula").textContent =
-    "negation_score = max(local, construction, embedded, density)";
+    "negation_score = max(local, construction, embedded, density); local: 0 if <=1, double=0.4, triple+=1.0";
   const items = [
     ["total negation count", nd.negation_count_total, ""],
     ["local_max (max per unit)", nd.negation_count_local_max, ""],

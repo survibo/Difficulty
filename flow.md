@@ -115,7 +115,7 @@ score = min(1.0, raw / <full_score_at>)
 
 ---
 
-**length** — 내용어 개수 (태그: NNG, NNP, NNB, VV, VA, MAG, XR, NP, NR, XSN, XSV, XSA 등 `is_content=True`인 토큰)
+**length** — 내용어 개수 (태그: NNG, NNP, NNB, VV, VA, MAG, XR, NP, NR, SL, SH 등 `is_content=True`인 토큰)
 
 ```
 raw = max(0, content_count - 5)
@@ -193,10 +193,11 @@ score = min(1.0, raw / 20.0)
 
 **logical** — 논리 관계 표지(접속부사 + 강한의미 EC) 가중합
 
-- `logical_score` = (논리표지 가중합 + 강한논리연결어미 가중합) / 4
+- `logical_score` = (첫 유효 토큰 제외 논리표지 가중합 + 강한논리연결어미 가중합) / 4
+- 문장 단위 분석에서는 앞 문맥 연결 표지가 과대평가될 수 있으므로, 문장 첫 유효 토큰의 논리표지는 제외한다.
 
 ```
-ls = min(1.0, (논리표지_가중합 + 강한논리연결어미_가중합) / 4)
+ls = min(1.0, (첫유효토큰제외_논리표지_가중합 + 강한논리연결어미_가중합) / 4)
 ```
 
 **논리표지** — 명시적 논리 접속 부사/표현 (가중치 0.5~1.0):
@@ -225,9 +226,11 @@ ls = min(1.0, (논리표지_가중합 + 강한논리연결어미_가중합) / 4)
 
 **modifier** — 최장 명사 연쇄 길이
 
-- 체인 태그: NNG, NNP, NNB, XR (연쇄 시작 가능), XSN (연쇄 이어주기만 가능)
+- 체인 태그: NNG, NNP, NNB, XR (연쇄 시작 가능), XSN (기존 연쇄 이어주기만 가능)
+- XSN 바로 뒤의 새 명사류는 같은 연쇄에 붙이지 않고 새 연쇄로 시작한다.
 - 조정: 모든 연쇄는 최소 1개 명사 포함 → **-1 보정**
 - 예: `경제(NNG) 성장(NNG) 둔화(NNG)` → chain length = 3, 보정 후 2
+- 예: `비교(NNG) 적(XSN) 안정세(NNG)` → `비교+적` chain length = 2, `안정세`는 새 chain
 
 ```
 raw = max(0, max_noun_chain - 1)
@@ -297,7 +300,7 @@ cs = min(1.0, EC_개수 / 4)
 | 경계 종류       | 판단 기준                                    | hard/soft                                |
 | --------------- | -------------------------------------------- | ---------------------------------------- |
 | `none`        | 일반 EC으로서 경계 없음                      | —                                       |
-| `aux`         | EC + 다음 3토큰 내 VX (보조용언 연결)        | —                                       |
+| `aux`         | EC 바로 뒤, 또는 JX/JKO/JKC 뒤에 VX (보조용언 연결) | —                                |
 | `quote`       | `라고/이라고/다고/ㄴ다고/는다고/냐고/자고` | **soft** (same segment, link 기록) |
 | `conditional` | `면/으면/다면/라면`                        | **soft** (same segment, link 기록) |
 | `nominal`     | ETM/ETN + NNB/NNG + JX/JKS/JKO/JKC           | **soft** (same segment, link 기록) |
@@ -318,6 +321,7 @@ hard boundary → 새 hard segment 시작
 | `안`   | MAG   | "안"                     |
 | `못`   | MAG   | "못"                     |
 | `않`   | VX/VV | lemma starts with "않"   |
+| `아니하` | VX/VV | lemma starts with "아니하" |
 | `못하` | VX/VV | lemma starts with "못하" |
 | `말`   | VX/VV | lemma starts with "말"   |
 | `없다` | VA    | lemma stem "없" (단, `없는 한` 관용구 제외) |
@@ -367,7 +371,7 @@ hard boundary → 새 hard segment 시작
 | predicate       | 0.18   | 서술어 7개+1개(-1 보정)          |
 | embedding       | 0.15   | 관형형/명사형/부사형(게·도록·듯이) 5개 이상 |
 | length          | 0.15   | 내용어 23개 이상                 |
-| modifier        | 0.10   | 명사 연쇄 4개+1개(-1 보정, /3) = 3개→1.0 |
+| modifier        | 0.10   | 명사 연쇄 4개 이상 (보정 후 3, /3) |
 | logical         | 0.08   | 논리표지·강한어미 가중합 4 이상 |
 | repetition      | 0.07   | 반복 부담 합계 3.5 이상          |
 | connective      | 0.05   | EC 개수 4개 이상                 |

@@ -144,8 +144,28 @@ class StructureScorerTest(unittest.TestCase):
     # logical markers: surface / lemma matching
     # -----------------------------------------------------------------
 
-    def test_logical_marker_surface(self) -> None:
+    def test_initial_logical_marker_surface_is_ignored(self) -> None:
         tokens = [
+            _make_token("따라서", "따르다", "MAG"),
+        ]
+        result = self.scorer.score_tokens(tokens)
+        sp = result["structure_parts"]
+        self.assertEqual(sp["logical_marker_weighted"], 0)
+        self.assertEqual(sp["logical_marker_count"], 0)
+
+    def test_initial_logical_marker_lemma_is_ignored(self) -> None:
+        tokens = [
+            _make_token("즉", "즉", "MAG"),
+        ]
+        result = self.scorer.score_tokens(tokens)
+        sp = result["structure_parts"]
+        self.assertEqual(sp["logical_marker_weighted"], 0)
+        self.assertEqual(sp["logical_marker_count"], 0)
+
+    def test_mid_sentence_logical_marker_surface(self) -> None:
+        tokens = [
+            _make_token("문제", "문제", "NNG"),
+            _make_token("는", "는", "JX"),
             _make_token("따라서", "따르다", "MAG"),
         ]
         result = self.scorer.score_tokens(tokens)
@@ -153,8 +173,10 @@ class StructureScorerTest(unittest.TestCase):
         self.assertEqual(sp["logical_marker_weighted"], 1.0)
         self.assertEqual(sp["logical_marker_count"], 1)
 
-    def test_logical_marker_lemma(self) -> None:
+    def test_mid_sentence_logical_marker_lemma(self) -> None:
         tokens = [
+            _make_token("문제", "문제", "NNG"),
+            _make_token("는", "는", "JX"),
             _make_token("즉", "즉", "MAG"),
         ]
         result = self.scorer.score_tokens(tokens)
@@ -201,6 +223,7 @@ class StructureScorerTest(unittest.TestCase):
 
     def test_logical_marker_increases_logical_score(self) -> None:
         tokens = [
+            _make_token("문제", "문제", "NNG"),
             _make_token("따라서", "따르다", "MAG"),
         ]
         result = self.scorer.score_tokens(tokens)
@@ -250,6 +273,16 @@ class StructureScorerTest(unittest.TestCase):
         result = self.scorer.score_tokens(tokens)
         sp = result["structure_parts"]
         self.assertEqual(sp["max_noun_chain"], 1)
+
+    def test_noun_chain_breaks_after_xsn_before_new_noun(self) -> None:
+        tokens = [
+            _make_token("비교", "비교", "NNG"),
+            _make_token("적", "적", "XSN"),
+            _make_token("안정세", "안정세", "NNG"),
+        ]
+        result = self.scorer.score_tokens(tokens)
+        sp = result["structure_parts"]
+        self.assertEqual(sp["max_noun_chain"], 2)
 
     # -----------------------------------------------------------------
     # derivational suffixes: XSN / XSV / XSA + surface check

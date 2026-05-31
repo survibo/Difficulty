@@ -75,24 +75,31 @@ class Handler(BaseHTTPRequestHandler):
             scorer = _get_scorer()
             ls = scorer._lexical_scorer
 
-            saved: dict[tuple[str, str], list[LexiconEntry]] = {}
+            saved_exact: dict[tuple[str, str], list[LexiconEntry]] = {}
+            saved_lemma: dict[str, list[LexiconEntry]] = {}
             for lemma, difficulty in custom_words.items():
+                entry = LexiconEntry(entry_id=-1, lemma=lemma, pos="NNG", difficulty=float(difficulty))
                 key = (lemma, "NNG")
                 if key in ls._exact_map:
-                    saved[key] = ls._exact_map[key]
-                ls._exact_map[key] = [
-                    LexiconEntry(entry_id=-1, lemma=lemma, pos="NNG", difficulty=float(difficulty))
-                ]
+                    saved_exact[key] = ls._exact_map[key]
+                if lemma in ls._lemma_map:
+                    saved_lemma[lemma] = ls._lemma_map[lemma]
+                ls._exact_map[key] = [entry]
+                ls._lemma_map[lemma] = [entry]
 
             try:
                 result = scorer.score(sentence)
             finally:
                 for lemma in custom_words:
                     key = (lemma, "NNG")
-                    if key in saved:
-                        ls._exact_map[key] = saved[key]
+                    if key in saved_exact:
+                        ls._exact_map[key] = saved_exact[key]
                     else:
                         ls._exact_map.pop(key, None)
+                    if lemma in saved_lemma:
+                        ls._lemma_map[lemma] = saved_lemma[lemma]
+                    else:
+                        ls._lemma_map.pop(lemma, None)
 
             self._ok("application/json", json.dumps(result, ensure_ascii=False, default=str).encode("utf-8"))
         except Exception as e:

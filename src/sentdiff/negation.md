@@ -27,18 +27,18 @@ MorphToken 리스트의 부정 표지를 분석하여 부정 처리 부담(negat
 
 ## 절 경계 종류
 
-NegationAnalyzer는 부정 단위를 나누기 위해 6가지 경계를 인식한다:
+NegationAnalyzer는 부정 단위를 나누기 위해 아래 경계/비경계 종류를 인식한다:
 
 | 경계 종류 | 조건 | 영향 |
 |-----------|------|------|
 | `none` | 해당 없음 | segment 유지 |
-| `aux` | EC + VX (보조용언) | segment 유지 |
+| `aux` | EC 바로 뒤, 또는 JX/JKO/JKC 뒤에 VX (보조용언) | segment 유지 |
 | `punct` | SP, SF, SE, SS* | hard break |
 | `coordinate` | 고/며/거나 등 대등 연결 | hard break |
 | `subordinate` | 종속 연결 | hard break |
 | `conditional` | 면/으면/다면/라면 | link tracking |
 | `quote` | 라고/다고/냐고/자고 | link tracking |
-| `nominal` | ETM/ETN + NNB + JX | link tracking |
+| `nominal` | ETM/ETN + NNB/NNG + JX/JKS/JKO/JKC | link tracking |
 
 - **hard break** → `hard_segment_id` 증가, link 정보 초기화
 - **link tracking** (conditional/quote/nominal) → `prev_link`에 저장, segment는 초기화되지만 hard_segment_id 유지

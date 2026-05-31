@@ -34,6 +34,7 @@ structure = 0.18×predicate + 0.15×embedding
 ### 보정 설명
 - **predicate**: 모든 문장에 서술어가 최소 1개 필수이므로 `predicate_count - 1` 후 score 계산.
 - **modifier**: 모든 명사 연쇄는 최소 1개 명사를 포함하므로 `max_noun_chain - 1` 후 score 계산.
+- **modifier chain**: NNG/NNP/NNB/XR은 연쇄를 시작·연장하고, XSN은 기존 연쇄만 연장한다. 단, XSN 바로 뒤의 새 명사류는 같은 연쇄에 붙이지 않고 새 연쇄로 시작한다. 예: `방법/NNG+론/XSN+적/XSN`은 3, `비교/NNG+적/XSN+안정세/NNG`는 2.
 
 ### structural_span 계산
 
@@ -52,8 +53,8 @@ for token in tokens:
         if not (token.tag == "EC" and 뒤에 VX가 3토큰 이내):
             segment_content_count = 0
 
-raw = mean(spans)  →  raw = sum(spans)
-normalized = raw / 5.5  →  normalized = raw / 20.0
+raw = sum(spans)
+normalized = raw / 20.0
 score = min(1.0, normalized)
 ```
 
@@ -66,11 +67,14 @@ score = min(1.0, normalized)
 
 ### logical 계산
 
-명시적 논리 관계 표지(접속부사 + 강한의미 EC)의 가중합을 4로 나눈다.
+명시적 논리 관계 표지(접속부사 + 강한의미 EC)의 가중합을 4로 나눈다. 문장 단위 분석에서는 앞 문맥을 잇는 첫머리 담화 표지가 과대평가될 수 있으므로, 첫 유효 토큰의 논리표지는 제외한다.
 
 ```
-ls = min(1.0, (논리표지 가중합 + 강한어미 가중합) / 4)
+ls = min(1.0, (첫 유효 토큰 제외 논리표지 가중합 + 강한어미 가중합) / 4)
 ```
+
+- `따라서 ...`, `즉 ...`처럼 문장 첫 유효 토큰에 온 논리표지는 제외한다.
+- 문장 내부 논리표지와 `-므로`, `-지만`, `-더라도` 같은 강한 논리 연결어미는 유지한다.
 
 ### repetition 계산
 

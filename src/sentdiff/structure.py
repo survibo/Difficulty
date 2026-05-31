@@ -124,6 +124,14 @@ class StructureScorer:
             return table[lemma]
         return 0.0
 
+    def _first_non_punctuation_index(self, tokens: list[Any]) -> int | None:
+        for i, token in enumerate(tokens):
+            tag = self._tag(token)
+            if tag in {"SP", "SF", "SE"} or tag.startswith("SS"):
+                continue
+            return i
+        return None
+
     @staticmethod
     def _is_aux_ec(tokens: list[Any], i: int) -> bool:
         tag = str(getattr(tokens[i], "tag", "") or "")
@@ -137,18 +145,22 @@ class StructureScorer:
     def _max_noun_chain(self, tokens: list[Any]) -> int:
         max_chain = 0
         current = 0
+        prev_was_xsn = False
 
         for token in tokens:
             tag = self._tag(token)
 
             if tag in {"NNG", "NNP", "NNB", "XR"}:
-                current += 1
+                current = 1 if prev_was_xsn else current + 1
                 max_chain = max(max_chain, current)
+                prev_was_xsn = False
             elif tag == "XSN" and current > 0:
                 current += 1
                 max_chain = max(max_chain, current)
+                prev_was_xsn = True
             else:
                 current = 0
+                prev_was_xsn = False
 
         return max_chain
 
@@ -263,13 +275,16 @@ class StructureScorer:
                  or self._lemma(t) in ADVERBIAL_EC_FORMS)
         )
 
+        first_token_index = self._first_non_punctuation_index(tokens)
         logical_marker_weighted = sum(
             self._match_weighted(t, LOGICAL_MARKERS)
-            for t in tokens
+            for i, t in enumerate(tokens)
+            if i != first_token_index
         )
         logical_marker_count = sum(
-            1 for t in tokens
-            if self._match_weighted(t, LOGICAL_MARKERS) > 0.0
+            1 for i, t in enumerate(tokens)
+            if i != first_token_index
+            and self._match_weighted(t, LOGICAL_MARKERS) > 0.0
         )
 
         strong_logical_ending_weighted = sum(
