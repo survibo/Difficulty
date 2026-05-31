@@ -110,7 +110,7 @@ class SentenceScorerTest(unittest.TestCase):
         expected = (
             0.5 * result["lexical_score_0_1"]
             + 0.5 * result["structure_score_0_1"]
-            + 0.3 * result["negation_score_0_1"]
+            + 0.2 * result["negation_score_0_1"]
         )
         self.assertAlmostEqual(result["score_0_1"], min(1.0, expected), places=4)
 
@@ -148,7 +148,7 @@ class SentenceScorerTest(unittest.TestCase):
         result = self.scorer.score("문장을 분석한다.")
         self.assertEqual(result["lexical_weight"], 5.0)
         self.assertEqual(result["structure_weight"], 5.0)
-        self.assertEqual(result["negation_bonus_coefficient"], 0.3)
+        self.assertEqual(result["negation_bonus_coefficient"], 0.2)
 
 
 if __name__ == "__main__":

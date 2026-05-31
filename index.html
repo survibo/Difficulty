@@ -207,10 +207,10 @@ function renderLexical(d) {
 function renderStructure(d) {
   const sp = d.structure_parts;
   document.getElementById("structureFormula").textContent =
-    "structure = 0.20×predicate + 0.15×embedding + 0.15×length + 0.20×structural_span + 0.10×logical + 0.08×modifier + 0.07×repetition + 0.05×connective";
+    "structure = 0.18×predicate + 0.15×embedding + 0.15×length + 0.22×structural_span + 0.08×logical + 0.10×modifier + 0.07×repetition + 0.05×connective";
   const items = [
-    ["predicate_score", sp.predicate_score, sp.predicate_count + " VV/VA"],
     ["structural_span_score", sp.structural_span_score, "raw:" + sp.structural_span_raw.toFixed(2) + " norm:" + sp.structural_span_normalized.toFixed(3) + " n=" + sp.structural_span_count],
+    ["predicate_score", sp.predicate_score, sp.predicate_count + " VV/VA"],
     ["embedding_score", sp.embedding_score, "ETM:" + sp.adnominal_count + " ETN:" + sp.nominalizer_count + " 부사절:" + (sp.adverbial_ending_count || 0)],
     ["length_score", sp.length_score, d.content_token_count + " tokens"],
     ["logical_score", sp.logical_score, "marker:" + sp.logical_marker_weighted.toFixed(1) + " strong:" + sp.strong_logical_ending_weighted.toFixed(1)],

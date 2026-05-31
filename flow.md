@@ -19,12 +19,9 @@
 ## 1. 최종 점수
 
 ```
-score = min(1.0, 0.5 × lexical + 0.5 × structure + 0.3 × negation)
-```
+score = min(1.0, 0.5 × lexical + 0.5 × structure + 0.2 × negation)
 
-- `lexical`: 문장에 쓰인 낱말(어휘)의 난이도
-- `structure`: 문장 구조의 복잡도 (8개 지표)
-- `negation`: 부정 처리 부담 — **보너스** (최대 +0.3). 이중/삼중 부정이 없는 보통 문장은 `0.5×lexical + 0.5×structure`로 1.0까지 도달 가능.
+- `negation`: 부정 처리 부담 — **보너스** (최대 +0.2). 이중/삼중 부정이 없는 보통 문장은 `0.5×lexical + 0.5×structure`로 1.0까지 도달 가능.
 
 ---
 
@@ -89,21 +86,21 @@ score = min(1.0, 0.5 × lexical + 0.5 × structure + 0.3 × negation)
 
 | 지표                      | 측정 대상                                                | 임계값        | 가중치         |
 | ------------------------- | -------------------------------------------------------- | ------------- | -------------- |
-| **predicate**       | 서술어(VV, VA, VCP, VCN, VX, XSV, XSA) 개수**(-1 보정)** | 8개 → 1.0    | **0.20** |
-| **structural_span** | 직전 절 경계~ETM/ETN/EC까지 절 구간 내용어 합계          | 20.0개 → 1.0 | **0.20** |
+| **structural_span** | 직전 절 경계~ETM/ETN/EC까지 절 구간 내용어 합계          | 20.0개 → 1.0 | **0.22** |
+| **predicate**       | 서술어(VV, VA, VX, XSV, XSA) 개수**(-1 보정)**           | 8개 → 1.0    | **0.18** |
 | **embedding**       | 관형형/명사형 전성어미(ETM, ETN) + 부사형 EC(-게/-도록/-듯이) 개수 | 5개 → 1.0    | **0.15** |
 | **length**          | 내용어(명사/동사 등) 개수                                | 23개 → 1.0   | **0.15** |
-| **logical**         | 논리부사·강한어미 가중합                                | 4 → 1.0      | **0.10** |
-| **modifier**        | 최장 명사 연쇄 길이**(-1 보정)**                         | 5개 → 1.0    | **0.08** |
+| **modifier**        | 최장 명사 연쇄 길이**(-1 보정)**                         | 4개 → 1.0    | **0.10** |
+| **logical**         | 논리부사·강한어미 가중합                                | 4 → 1.0      | **0.08** |
 | **repetition**      | 단어 반복 부담 (반복 횟수×난도×다의성 계수 합계)       | 3.5 → 1.0    | **0.07** |
 | **connective**      | 연결어미(EC) 개수                                        | 4개 → 1.0    | **0.05** |
 
 ### 3.3 점수 공식
 
 ```
-structure = 0.20×predicate + 0.15×embedding
-          + 0.15×length + 0.20×structural_span
-          + 0.10×logical + 0.08×modifier
+structure = 0.18×predicate + 0.15×embedding
+          + 0.15×length + 0.22×structural_span
+          + 0.08×logical + 0.10×modifier
           + 0.07×repetition + 0.05×connective
 ```
 
@@ -131,7 +128,7 @@ score = min(1.0, raw / 18)
 
 **predicate** — 서술어 태그 개수
 
-- 태그: VV, VA, VCP, VCN, VX, XSV, XSA
+- 태그: VV, VA, VX, XSV, XSA (VCP/VCN 제외 — 형식서술어는 실질적 복잡도에 기여하지 않음)
 - 조정: 모든 문장에 서술어 최소 1개 필수 → **-1 보정**
 
 ```
@@ -159,7 +156,7 @@ score = min(1.0, raw / 5)
 
 **structural_span** — 절 구간 내용어 합계
 
-ETM/ETN/EC가 나타날 때, 직전 절 경계(EC/EF/SF/SP/SE) 이후부터 해당 marker까지 누적된 내용어 개수들의 **합계**.
+ETM/ETN/EC가 나타날 때, 직전 절 경계(EC/ETM/ETN/EF/SF/SP/SE) 이후부터 해당 marker까지 누적된 내용어 개수들의 **합계**.
 
 ```
 segment_content_count = 0
@@ -170,7 +167,7 @@ for token in tokens:
         segment_content_count += 1
     if token.tag in {ETM, ETN, EC} and segment_content_count > 0:
         spans.append(segment_content_count)
-    if token.tag in {EC, EF, SF, SP, SE}:
+    if token.tag in {EC, ETM, ETN, EF, SF, SP, SE}:
         if not (token.tag == "EC" and 뒤에 VX가 3토큰 이내):
             segment_content_count = 0
 
@@ -178,10 +175,9 @@ raw = sum(spans)
 score = min(1.0, raw / 20.0)
 ```
 
-- EC는 marker이면서 boundary → span 기록 후 segment 초기화
+- EC/ETM/ETN은 marker이면서 boundary → span 기록 후 segment 초기화. 중복 누적 방지
 - 단, **aux EC** (EC + 3토큰 이내 VX)는 boundary로 보지 않음. `먹고 싶다`, `유지하고 있다` 식의 보조용언 연결은 절 경계가 아니므로 segment를 유지한다.
 - `고(EC)` + `싶(VX)` 또는 `고(EC)` + `있(VX)` 형태가 aux EC에 해당한다.
-- ETM/ETN은 boundary가 아니므로 span만 기록, segment 유지
 - marker 직전 내용어가 없으면(`segment_content_count == 0`) 해당 marker 제외
 - 측정 대상 marker가 없으면 score = 0.0
 
@@ -189,9 +185,9 @@ score = min(1.0, raw / 20.0)
 
 예시:
 
-- **"경제 성장의 둔화 때문에 유지하고 있다"** → `고(EC)`는 aux EC (뒤에 `있(VX)`) → boundary 아님 → 내용어 9개 단일 구간 → spans=[9], raw=9, **score=0.45**
+- **"경제 성장의 둔화 때문에 유지하고 있다"** → `고(EC)`는 aux EC (뒤에 `있(VX)`) → boundary 아님 → 내용어 5개 단일 구간 → spans=[5], raw=5, **score=0.25**
 - **"뛰고 점프하며"** → 두 EC 모두 일반 EC → spans=[1,1], raw=2, **score=0.10**
-- **"즉 세계의 근원적 질서인 이념의..."** (변증법 문장) → 6구간 총합 ~23 → **score=1.0**
+- **"그가 어렸을 때 살던 마을에서"** → ETM 2개 → spans=[2,2], raw=4, **score=0.20**
 
 ---
 
@@ -235,10 +231,10 @@ ls = min(1.0, (논리표지_가중합 + 강한논리연결어미_가중합) / 4)
 
 ```
 raw = max(0, max_noun_chain - 1)
-score = min(1.0, raw / 4)
+score = min(1.0, raw / 3)
 ```
 
-명사 연쇄가 5개 이상(보정 후 4) → 1.0.
+명사 연쇄가 4개 이상(보정 후 3) → 1.0.
 
 ---
 
@@ -349,15 +345,11 @@ hard boundary → 새 hard segment 시작
 
 ### 전체 공식
 
-```
-score = min(1.0, 0.5 × lexical + 0.5 × structure + 0.3 × negation)
-```
-
 | 구성 요소 | 가중치/계수            |
 | --------- | ---------------------- |
 | lexical   | **0.5**          |
 | structure | **0.5**          |
-| negation  | **0.3** (보너스) |
+| negation  | **0.2** (보너스) |
 
 ### 어휘 점수 내부 가중치
 
@@ -371,11 +363,11 @@ score = min(1.0, 0.5 × lexical + 0.5 × structure + 0.3 × negation)
 
 | 지표            | 가중치 | 1.0 되는 조건                    |
 | --------------- | ------ | -------------------------------- |
-| predicate       | 0.20   | 서술어 7개+1개(-1 보정)          |
-| structural_span | 0.20   | 절 구간 내용어 합계 20.0 이상    |
+| structural_span | 0.22   | 절 구간 내용어 합계 20.0 이상    |
+| predicate       | 0.18   | 서술어 7개+1개(-1 보정)          |
 | embedding       | 0.15   | 관형형/명사형/부사형(게·도록·듯이) 5개 이상 |
 | length          | 0.15   | 내용어 23개 이상                 |
-| logical         | 0.10   | 논리표지·강한어미 가중합 4 이상 |
-| modifier        | 0.08   | 명사 연쇄 4개+1개(-1 보정)       |
+| modifier        | 0.10   | 명사 연쇄 4개+1개(-1 보정, /3) = 3개→1.0 |
+| logical         | 0.08   | 논리표지·강한어미 가중합 4 이상 |
 | repetition      | 0.07   | 반복 부담 합계 3.5 이상          |
 | connective      | 0.05   | EC 개수 4개 이상                 |

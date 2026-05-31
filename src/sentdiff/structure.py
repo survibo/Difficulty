@@ -53,7 +53,7 @@ REPETITION_EXCLUDE_LEMMAS: set[str] = {
 }
 
 _STRUCTURAL_SPAN_MARKER_TAGS: set[str] = {"ETM", "ETN", "EC"}
-_BOUNDARY_TAGS: set[str] = {"EC", "EF", "SF", "SP", "SE"}
+_BOUNDARY_TAGS: set[str] = {"EC", "ETM", "ETN", "EF", "SF", "SP", "SE"}
 _LENGTH_MIN: float = 5.0
 _LENGTH_MAX: float = 18.0
 
@@ -64,19 +64,19 @@ class StructureConfig:
     embedding_full_score_at: int = 5
     connective_full_score_at: int = 4
     logical_full_score_at: int = 4
-    modifier_full_score_at: int = 4
+    modifier_full_score_at: int = 3
     derivational_full_score_at: int = 3
     structural_span_full_score_at: float = 20.0
     repetition_full_score_at: float = 3.5
 
    # 8개 지표 고정 가중치 (합 1.0)
     weight_length: float = 0.15
-    weight_predicate: float = 0.20
+    weight_predicate: float = 0.18
     weight_embedding: float = 0.15
     weight_connective: float = 0.05
-    weight_logical: float = 0.10
-    weight_modifier: float = 0.08
-    weight_structural_span: float = 0.20
+    weight_logical: float = 0.08
+    weight_modifier: float = 0.10
+    weight_structural_span: float = 0.22
     weight_repetition: float = 0.07
 
 
@@ -233,7 +233,7 @@ class StructureScorer:
 
         predicate_count = sum(
             1 for t in tokens
-            if self._tag(t) in {"VV", "VA", "VCP", "VCN", "VX", "XSV", "XSA"}
+            if self._tag(t) in {"VV", "VA", "VX", "XSV", "XSA"}
         )
 
         ending_count = sum(

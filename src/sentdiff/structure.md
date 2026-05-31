@@ -13,21 +13,21 @@ MorphToken의 POS 태그 패턴을 기반으로 8개 지표로 문장 구조 복
 ## 점수 공식
 
 ```
-structure = 0.20×predicate + 0.15×embedding
-          + 0.15×length + 0.20×structural_span
-          + 0.10×logical + 0.08×modifier
+structure = 0.18×predicate + 0.15×embedding
+          + 0.15×length + 0.22×structural_span
+          + 0.08×logical + 0.10×modifier
           + 0.07×repetition + 0.05×connective
 
 ## 8개 지표
 
 | 지표 | 측정 대상 | 1.0이 되는 조건 | 가중치 |
 |------|----------|----------------|--------|
-| predicate | 서술어(VV, VA, VCP, VCN, VX, XSV, XSA) 개수 (-1 보정) | 8개 이상 (7+1) | 0.20 |
-| structural_span | 절 구간 내용어 합계 (모든 EC/ETM/ETN에서 기록된 구간 길이의 총합) | 20.0 이상 (내용어 20개) | 0.20 |
+| structural_span | 절 구간 내용어 합계 (모든 EC/ETM/ETN에서 기록된 구간 길이의 총합) | 20.0 이상 (내용어 20개) | 0.22 |
+| predicate | 서술어(VV, VA, VX, XSV, XSA) 개수 (-1 보정) | 8개 이상 (7+1) | 0.18 |
 | embedding | 관형형(ETM)+명사형(ETN)+부사형EC(게·도록·듯이) 개수 | 5개 이상 | 0.15 |
 | length | 내용어(명/동/형) token 수 | 23개 이상 | 0.15 |
-| logical | 논리표지·강한어미 가중합 | 4 이상 | 0.10 |
-| modifier | 최장 명사 연쇄 길이 (-1 보정) | 5개 이상 (4+1) | 0.08 |
+| modifier | 최장 명사 연쇄 길이 (-1 보정) | 4개 이상 (3+1) | 0.10 |
+| logical | 논리표지·강한어미 가중합 | 4 이상 | 0.08 |
 | repetition | 단어 반복 부담 (반복 횟수×난도×다의성 계수 합계) | 3.5 이상 | 0.07 |
 | connective | EC 개수 | 4개 이상 | 0.05 |
 
@@ -38,7 +38,7 @@ structure = 0.20×predicate + 0.15×embedding
 ### structural_span 계산
 
 ETM(관형형전성어미), ETN(명사형전성어미), EC(연결어미)가 나타날 때,
-직전 절 경계(EC/EF/SF/SP/SE) 이후부터 해당 marker까지 누적된 내용어 개수의 **합계**를 측정한다.
+직전 절 경계(EC/ETM/ETN/EF/SF/SP/SE) 이후부터 해당 marker까지 누적된 내용어 개수의 **합계**를 측정한다.
 
 ```
 segment_content_count = 0
@@ -48,7 +48,7 @@ for token in tokens:
         segment_content_count += 1
     if token.tag in {ETM, ETN, EC} and segment_content_count > 0:
         spans.append(segment_content_count)
-    if token.tag in {EC, EF, SF, SP, SE}:
+    if token.tag in {EC, ETM, ETN, EF, SF, SP, SE}:
         if not (token.tag == "EC" and 뒤에 VX가 3토큰 이내):
             segment_content_count = 0
 
@@ -57,9 +57,9 @@ normalized = raw / 5.5  →  normalized = raw / 20.0
 score = min(1.0, normalized)
 ```
 
-- EC는 marker이면서 boundary이므로, span 기록 후 segment를 초기화한다.
+- EC/ETM/ETN은 marker이면서 boundary이므로, span 기록 후 segment를 초기화한다.
 - 단, **aux EC** (EC + 3토큰 이내 VX)는 boundary로 보지 않는다. `먹고 싶다`, `유지하고 있다` 식의 보조용언 연결은 절 경계가 아니다.
-- ETM/ETN은 boundary가 아니므로 span만 기록하고 segment는 유지한다.
+- ETM/ETN도 boundary이므로 span 기록 후 segment를 초기화한다. (중복 누적 방지)
 - marker 직전 내용어가 없으면(segment_content_count == 0) 해당 marker는 제외한다.
 - spans가 비어 있으면 0.0 반환.
 - **full_score_at = 20.0** (모든 구간 내용어 합계가 20개 이상이면 1.0)
@@ -100,7 +100,7 @@ cs = min(1.0, EC_개수 / 4)
 
 > 부정(negation) 지표는 structure에서 제거되었음.
 > → `negation.py`의 `NegationAnalyzer`가 별도 점수로 처리.
-> → pipeline에서 `0.5×lexical + 0.5×structure + 0.3×negation`로 통합.
+> → pipeline에서 `0.5×lexical + 0.5×structure + 0.2×negation`로 통합.
 
 ## 논리 표지 예시
 - **강한 접속 부사:** 즉, 따라서, 그러므로, 그러나, 만약, 결론적으로 (가중치 0.7~1.0)

@@ -63,12 +63,24 @@ class MorphHelperTests(unittest.TestCase):
         excluded = ["VX", "XSV", "XSA", "JKO", "ETM", "SF", "SN", "MM", "MAJ"]
 
         for tag in included:
-            with self.subTest(tag=tag):
+            with self.subTest(f"included {tag}"):
                 self.assertTrue(is_content_tag(tag))
 
         for tag in excluded:
-            with self.subTest(tag=tag):
+            with self.subTest(f"excluded {tag}"):
                 self.assertFalse(is_content_tag(tag))
+
+    def test_content_tag_handles_irregular_suffix(self) -> None:
+        for base in ["VV", "VA"]:
+            with self.subTest(tag=f"{base}-I"):
+                self.assertTrue(is_content_tag(f"{base}-I"))
+        self.assertFalse(is_content_tag("VX-I"))
+
+    def test_excluded_lexical_tag_handles_irregular_suffix(self) -> None:
+        self.assertTrue(is_excluded_lexical_tag("VX-I"))
+        for base in ["VV", "VA"]:
+            with self.subTest(tag=f"{base}-I"):
+                self.assertFalse(is_excluded_lexical_tag(f"{base}-I"))
 
 
 class KiwiMorphAnalyzerTests(unittest.TestCase):

@@ -92,6 +92,11 @@ def token_to_lemma_candidate(surface: Any, tag: Any) -> str:
     return form
 
 
+def _base_tag(tag: str) -> str:
+    """Kiwi 접미사(-I 등) 제거한 기본 품사 태그를 반환한다."""
+    return tag.split("-")[0] if "-" in tag else tag
+
+
 def is_excluded_lexical_tag(tag: Any) -> bool:
     """
     lexical difficulty 계산에서 제외할 기능 표지를 판정한다.
@@ -101,15 +106,17 @@ def is_excluded_lexical_tag(tag: Any) -> bool:
     if not t:
         return True
 
-    if t in {"SL", "SH"}:
+    base = _base_tag(t)
+
+    if base in {"SL", "SH"}:
         return False
 
     return (
-        t == "VX"
-        or t in {"XSV", "XSA", "XPN", "XSN"}
-        or t.startswith("J")
-        or t.startswith("E")
-        or t.startswith("S")
+        base == "VX"
+        or base in {"XSV", "XSA", "XPN", "XSN"}
+        or base.startswith("J")
+        or base.startswith("E")
+        or base.startswith("S")
     )
 
 
@@ -122,7 +129,9 @@ def is_content_tag(tag: Any) -> bool:
     if not t or is_excluded_lexical_tag(t):
         return False
 
-    return t.startswith("NN") or t in {
+    base = _base_tag(t)
+
+    return base.startswith("NN") or base in {
         "NP",
         "NR",
         "VV",
