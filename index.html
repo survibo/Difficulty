@@ -26,6 +26,7 @@
   .score-card .value.green { color: #27ae60; }
   .score-card .value.orange { color: #e67e22; }
   .score-card .value.red { color: #e74c3c; }
+  .score-card .range { font-size: 0.7rem; color: #aaa; margin-top: 2px; }
   .section { background: #fff; border-radius: 10px; padding: 16px 20px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
   .section h3 { font-size: 0.95rem; color: #555; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid #eee; }
   .section table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
@@ -57,7 +58,9 @@
   </div>
 
   <h1>문장 난도 측정</h1>
-  <p class="sub">한국어 문장을 입력하면 어휘 + 구조 기반 난도 점수를 계산합니다.</p>
+  <p class="sub">한국어 문장을 입력하면 어휘 + 구조 + 부정 기반 난도 점수를 계산합니다.
+    <a href="https://github.com/survibo/Difficulty" target="_blank" style="color:#4a90d9;text-decoration:none;">GitHub</a>
+  </p>
 
   <div id="examples">
     <span class="example-btn" onclick="loadExample(this)">날씨가 좋다</span>
@@ -82,6 +85,11 @@
       <h3>구조 점수 (structure)</h3>
       <div id="structureFormula" class="formula"></div>
       <div id="structureBody"></div>
+    </div>
+    <div class="section" id="negationSection" style="display:none">
+      <h3>부정 점수 (negation)</h3>
+      <div id="negationFormula" class="formula"></div>
+      <div id="negationBody"></div>
     </div>
   </div>
 </div>
@@ -137,24 +145,28 @@ async function analyze() {
 }
 
 function render(d) {
+  const denom = d.lexical_weight + d.structure_weight + d.negation_weight;
   document.getElementById("finalFormula").textContent =
-    `score = ${d.lexical_weight} × lexical + ${d.structure_weight} × structure`;
+    `score = (${d.lexical_weight}×lexical + ${d.structure_weight}×structure + ${d.negation_weight}×negation) / ${denom}`;
 
   const scoreRow = document.getElementById("scoreRow");
-  scoreRow.innerHTML = card("최종 점수", d.score_10, d.score_10 >= 7 ? "red" : d.score_10 >= 4 ? "orange" : "green") +
-    card("어휘", d.lexical_score_10, "blue") +
-    card("구조", d.structure_score_10, d.structure_score_10 >= 5 ? "orange" : "green") +
+  scoreRow.innerHTML = card("최종 점수", d.score_10, d.score_10 >= 7 ? "red" : d.score_10 >= 4 ? "orange" : "green", "0 ~ 10") +
+    card("어휘", d.lexical_score_10, "blue", "0 ~ 10") +
+    card("구조", d.structure_score_10, d.structure_score_10 >= 5 ? "orange" : "green", "0 ~ 10") +
+    card("부정", d.negation_score_10, d.negation_score_10 >= 5 ? "red" : "green", "0 ~ 10") +
     card("내용어", d.content_token_count, "blue") +
     card("미등록어", d.unknown_token_count, d.unknown_token_count > 0 ? "red" : "green");
 
   renderLexical(d);
   renderStructure(d);
+  renderNegation(d);
 
   document.getElementById("result").classList.add("show");
 }
 
-function card(label, value, color) {
-  return `<div class="score-card"><div class="label">${label}</div><div class="value ${color}">${value}</div></div>`;
+function card(label, value, color, range) {
+  const rangeHtml = range ? `<div class="range">${range}</div>` : "";
+  return `<div class="score-card"><div class="label">${label}</div><div class="value ${color}">${value}</div>${rangeHtml}</div>`;
 }
 
 function renderLexical(d) {
@@ -187,13 +199,12 @@ function renderLexical(d) {
 function renderStructure(d) {
   const sp = d.structure_parts;
   document.getElementById("structureFormula").textContent =
-    "structure = 0.15×length + 0.15×predicate + 0.15×embedding + 0.15×connective + 0.15×negation + 0.10×logical + 0.10×modifier + 0.05×derivational";
+    "structure = 0.15×length + 0.15×predicate + 0.15×embedding + 0.15×connective + 0.10×logical + 0.10×modifier + 0.05×derivational";
   const items = [
     ["length_score", sp.length_score, d.content_token_count + " tokens"],
     ["predicate_score", sp.predicate_score, sp.predicate_count + " VV/VA"],
     ["embedding_score", sp.embedding_score, "ETM:" + sp.adnominal_count + " ETN:" + sp.nominalizer_count],
     ["connective_score", sp.connective_score, sp.connective_ending_count + " EC"],
-    ["negation_score", sp.negation_score, sp.negation_count + " negations"],
     ["logical_score", sp.logical_score, "marker:" + sp.logical_marker_weighted + " strong:" + sp.strong_logical_ending_weighted + " weak:" + sp.weak_connective_weighted],
     ["modifier_score", sp.modifier_score, "max chain:" + sp.max_noun_chain],
     ["derivational_score", sp.derivational_score, sp.derivational_suffix_count + " suffixes"],
@@ -204,6 +215,30 @@ function renderStructure(d) {
   for (const [k, v, detail] of items) {
     const pct = Math.round(v * 100);
     html += `<tr><td>${k}</td><td><div class="histogram"><div class="bar-wrap"><div class="bar" style="width:${pct}%"></div></div>${v.toFixed(2)}</div></td><td><span class="badge">${detail}</span></td></tr>`;
+  }
+  html += '</table>';
+  body.innerHTML = html;
+}
+
+function renderNegation(d) {
+  const nd = d.negation_detail;
+  const negSection = document.getElementById("negationSection");
+  negSection.style.display = "block";
+  document.getElementById("negationFormula").textContent =
+    "negation_score = max(local, construction, embedded, density)";
+  const items = [
+    ["total negation count", nd.negation_count_total, ""],
+    ["local_max (max per unit)", nd.negation_count_local_max, ""],
+    ["local_score", nd.local_negation_score, nd.local_negation_score.toFixed(2)],
+    ["construction_score", nd.construction_negation_score, nd.negation_construction_hits > 0 ? "hit: " + nd.negation_construction_hits : ""],
+    ["embedded_score", nd.embedded_negation_score, "links: " + nd.negation_embedded_links],
+    ["density_score", nd.negation_density_score, ""],
+  ];
+
+  const body = document.getElementById("negationBody");
+  let html = '<table>';
+  for (const [k, v, detail] of items) {
+    html += `<tr><td>${k}</td><td>${typeof v === "number" ? v.toFixed(2) : v}</td><td><span class="badge">${detail}</span></td></tr>`;
   }
   html += '</table>';
   body.innerHTML = html;

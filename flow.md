@@ -9,20 +9,22 @@
 | 3 | `morph.py` | Kiwi 형태소 분석 → `MorphToken` 리스트 | normalize |
 | 4 | `lexical.py` | 사전 lookup → 내용어 난도 → 어휘 점수(lexical) | normalize, morph |
 | 5 | `structure.py` | 품사 태그 7개 지표 → 구조 점수(structure) | morph |
-| 6 | `pipeline.py` | `SentenceScorer` — morph + lexical + structure 통합 | morph, lexical, structure |
+| 6 | `negation.py` | 부정 표지 분석 → 부정 처리 부담 점수(negation) | morph |
+| 7 | `pipeline.py` | `SentenceScorer` — lexical + structure + negation 통합 | morph, lexical, structure, negation |
 
-> **실행 흐름:** `pipeline.score("문장")` → morph.analyze → lexical.compute + structure.score → 가중합산
+> **실행 흐름:** `pipeline.score("문장")` → morph.analyze → lexical.compute + structure.score + negation.analyze → 가중합산
 
 ---
 
 ## 1. 최종 점수
 
 ```
-score = 0.50 × lexical + 0.50 × structure
+score = (5.0 × lexical + 5.0 × structure + 2.0 × negation) / 12.0
 ```
 
 - `lexical`: 문장에 쓰인 낱말(어휘)의 난이도
-- `structure`: 문장 구조의 복잡도
+- `structure`: 문장 구조의 복잡도 (7개 지표)
+- `negation`: 부정 처리 부담 (이중/삼중 부정, 인용·조건절 내 부정 등)
 
 ---
 
@@ -79,27 +81,26 @@ lexical = 0.25 × mean_all + 0.50 × mean_top_3 + 0.25 × max
 ### 3.1 기본 원리
 
 형태소 분석 결과의 품사 태그(Sejong 품사 체계 기준)를 바탕으로
-문장 구조의 복잡도를 8개 지표로 측정한다.
+문장 구조의 복잡도를 7개 지표로 측정한다.
 각 지표는 일정 임계값을 넘으면 1.0이 된다.
 
-### 3.2 8개 지표
+### 3.2 7개 지표
 
-| 지표                   | 측정 대상                                  | 임계값      | 가중치         |
-| ---------------------- | ------------------------------------------ | ----------- | -------------- |
-| **length**       | 내용어(명사/동사 등) 개수                  | 30개 → 1.0 | **0.15** |
-| **predicate**    | 서술어(VV, VA, VCP, VCN) 개수 **(-1 보정)**| 7개 → 1.0  | **0.15** |
-| **embedding**    | 관형형/명사형 전성어미(ETM, ETN) 개수      | 4개 → 1.0  | **0.15** |
-| **connective**   | 연결어미(EC) 개수                          | 5개 → 1.0  | **0.15** |
-| **negation**     | 동일 절 내 부정 표지 개수 **(-1 보정)**   | 3개 → 1.0  | **0.15** |
-| **logical**      | 논리 표지·연결어미 가중합                 | 4.0 → 1.0  | **0.10** |
-| **modifier**     | 최장 명사 연쇄 길이 **(-1 보정)**          | 6개 → 1.0  | **0.10** |
-| **derivational** | 파생 접사(XSN, XSV, XSA, 적/성/화 등) 개수 | 5개 → 1.0  | **0.05** |
+| 지표           | 측정 대상                                  | 임계값      | 가중치         |
+| -------------- | ------------------------------------------ | ----------- | -------------- |
+| **length**     | 내용어(명사/동사 등) 개수                  | 30개 → 1.0  | **0.15** |
+| **predicate**  | 서술어(VV, VA, VCP, VCN) 개수 **(-1 보정)**| 7개 → 1.0  | **0.15** |
+| **embedding**  | 관형형/명사형 전성어미(ETM, ETN) 개수      | 4개 → 1.0  | **0.15** |
+| **connective** | 연결어미(EC) 개수                          | 5개 → 1.0  | **0.15** |
+| **logical**    | 논리 표지·연결어미 가중합                 | 4.0 → 1.0  | **0.10** |
+| **modifier**   | 최장 명사 연쇄 길이 **(-1 보정)**          | 6개 → 1.0  | **0.10** |
+| **derivational**| 파생 접사(XSN, XSV, XSA, 적/성/화 등) 개수 | 5개 → 1.0  | **0.05** |
 
 ### 3.3 점수 공식
 
 ```
 structure = 0.15×length + 0.15×predicate + 0.15×embedding
-          + 0.15×connective + 0.15×negation
+          + 0.15×connective
           + 0.10×logical + 0.10×modifier
           + 0.05×derivational
 ```
@@ -167,43 +168,77 @@ logical = min(1.0, logical_raw / 4.0)
 **derivational**: XSN(명사파생접미사: `-적`, `-성`), XSV(동사파생접미사: `-하-`), XSA(형용사파생접미사),
 또는 표면형이 `적`, `성`, `화`, `론`, `주의`인 토큰 개수.
 
-**negation**: 같은 절 내 부정 표지 개수를 **-1 보정** 후 `negation_full_score_at=2`로 나눈다.
+---
 
-```
-negation_score = min(1.0, max(0, 절_내_부정_수 - 1) / 2)
-```
+## 4. 부정 점수 (negation)
 
-의미: 부정 1개 → 0점, 2개 → 0.5, **3개 이상 → 1.0**.
+### 4.1 기본 원리
 
-절 경계 판단 기준:
-- `EC`(연결어미)는 **다음 토큰이 VX(보조용언)이면 경계로 보지 않음**
-  - `-고 싶다` → `고`(EC) + `싶`(VX) → 동일 절
-  - `-지 않다` → `지`(EC) + `않`(VX) → 동일 절
-  - `-고 안` → `고`(EC) + `안`(MAG) → 절 경계
-- `,` `.` 등 구두점(SP, SF, SE, SS)은 절 경계
+형태소 분석 결과에서 부정 표지(안/못/않/못하/말/없다/아니다)를 찾아
+**부정 처리 부담(negation processing burden)** 을 4개 하위 점수로 계산하고
+그 중 최댓값을 최종 점수로 사용한다.
 
-감지 대상 부정 표지:
+### 4.2 4개 하위 점수
+
+| 점수 | 측정 대상 | 공식 |
+|------|----------|------|
+| **local** | 동일 국소 단위 내 부정 중복 | `min(1.0, max(0, (local_max - 1) / 2))` |
+| **construction** | 조건절 분할 부정 (양쪽 부정) | `1.0` if 조건절 link + 동일 hard segment 내 두 번째 부정 |
+| **embedded** | 인용절/명사절 내 부정 | `min(1.0, embedded_links / 2)` |
+| **density** | hard segment 내 부정 밀집 | `0.5 × min(1.0, max(0, seg_neg - 1) / 3)` |
+
+### 4.3 절 경계 (boundary_kind)
+
+`EC`(연결어미)의 절 경계 판단:
+
+| 경계 종류 | 판단 기준 | hard/soft |
+|-----------|----------|-----------|
+| `none` | 일반 EC으로서 경계 없음 | — |
+| `aux` | EC + 다음 3토큰 내 VX (보조용언 연결) | — |
+| `quote` | `라고/이라고/다고/ㄴ다고/는다고/냐고/자고` | **soft** (same segment, link 기록) |
+| `conditional` | `면/으면/다면/라면` | **soft** (same segment, link 기록) |
+| `nominal` | ETM/ETN + NNB/NNG + JX/JKS/JKO/JKC | **soft** (same segment, link 기록) |
+| `coordinate` | `고/며/으며/거나/든지` | **hard** (new segment) |
+| `subordinate` | 나머지 EC (서/니까/므로/지만/으나/는데 등) | **hard** (new segment) |
+| `punct` | SP, SF, SE, SS* | **hard** (new segment) |
+
+soft boundary → 같은 hard segment로 유지, `prev_link` 기록
+hard boundary → 새 hard segment 시작
+
+**ETM 예외**: `할 수 없다` → ETM(ᆯ) + NNB(수) + VA(없) → JX가 아니므로 `none` (같은 unit 유지).
+`간 것은 아니다` → ETM(ᆫ) + NNB(것) + JX(은) → `nominal`.
+
+### 4.4 감지 대상 부정 표지
 
 | 패턴 | 태그 | Lemma 조건 |
 |------|------|-----------|
 | `안` | MAG | "안" |
 | `못` | MAG | "못" |
-| `않` | VX | lemma starts with "않" |
-| `못하` | VX | lemma starts with "못하" |
-| `말` | VX | lemma starts with "말" |
+| `않` | VX/VV | lemma starts with "않" |
+| `못하` | VX/VV | lemma starts with "못하" |
+| `말` | VX/VV | lemma starts with "말" |
 | `없다` | VA | lemma stem "없" |
-| `아니` | VCN | "아니" / "아니다" |
+| `아니` | VCN | lemma stem "아니" |
+
+### 4.5 link 추적 (construction / embedded)
+
+같은 hard segment 내에서 부정 단위 간 link(prev_link)를 추적:
+
+- 첫 부정 이후 `conditional` link가 있고 두 번째 부정 등장 → **construction hit**
+- 첫 부정 이후 `quote` 또는 `nominal` link가 있고 두 번째 부정 등장 → **embedded link**
 
 ---
 
-## 4. 현재 설정값 한눈에 보기
+## 5. 현재 설정값 한눈에 보기
 
 ### 전체 가중치
 
 | 구성 요소 | 가중치         |
 | --------- | -------------- |
-| lexical   | **0.50** |
-| structure | **0.50** |
+| lexical   | **5.0**  |
+| structure | **5.0**  |
+| negation  | **2.0**  |
+| 분모      | **12.0** |
 
 ### 어휘 점수 내부 가중치
 
@@ -221,7 +256,6 @@ negation_score = min(1.0, max(0, 절_내_부정_수 - 1) / 2)
 | predicate    | 0.15   | 서술어 6개+1개(-1 보정)          |
 | embedding    | 0.15   | 관형형/명사형 4개 이상           |
 | connective   | 0.15   | 연결어미 5개 이상                 |
-| negation     | 0.15   | 같은 절 내 부정 2개+1개(-1 보정)|
 | logical      | 0.10   | 논리표지 가중합 4.0 이상         |
 | modifier     | 0.10   | 명사 연쇄 5개+1개(-1 보정)       |
 | derivational | 0.05   | 접사 5개 이상                    |

@@ -252,118 +252,6 @@ class StructureScorerTest(unittest.TestCase):
         self.assertEqual(sp["derivational_suffix_count"], 1)
 
     # -----------------------------------------------------------------
-    # negation: single vs multiple
-    # -----------------------------------------------------------------
-
-    def _assert_negation_score(self, tokens: list, expected_count: int) -> None:
-        result = self.scorer.score_tokens(tokens)
-        sp = result["structure_parts"]
-        self.assertEqual(sp["negation_count"], expected_count)
-
-    def test_negation_none(self) -> None:
-        tokens = [
-            _make_token("문장", "문장", "NNG"),
-        ]
-        self._assert_negation_score(tokens, 0)
-
-    def test_negation_single_short(self) -> None:
-        tokens = [
-            _make_token("안", "안", "MAG"),
-            _make_token("가다", "가다", "VV"),
-        ]
-        self._assert_negation_score(tokens, 1)
-
-    def test_negation_single_long(self) -> None:
-        tokens = [
-            _make_token("가", "가다", "VV"),
-            _make_token("지", "지", "EC"),
-            _make_token("않", "않", "VX"),
-            _make_token("는다", "는다", "EF"),
-        ]
-        self._assert_negation_score(tokens, 1)
-
-    def test_negation_double_same_clause(self) -> None:
-        tokens = [
-            _make_token("안", "안", "MAG"),
-            _make_token("할", "하다", "VV"),
-            _make_token("수", "수", "NNB"),
-            _make_token("없다", "없다", "VA"),
-        ]
-        self._assert_negation_score(tokens, 2)
-
-    def test_negation_double_short_long(self) -> None:
-        tokens = [
-            _make_token("안", "안", "MAG"),
-            _make_token("하", "하다", "VV"),
-            _make_token("지", "지", "EC"),
-            _make_token("않", "않", "VX"),
-            _make_token("았다", "았다", "EF"),
-        ]
-        self._assert_negation_score(tokens, 2)
-
-    def test_negation_parallel_coordinate_boundary(self) -> None:
-        tokens = [
-            _make_token("안", "안", "MAG"),
-            _make_token("하", "하다", "VV"),
-            _make_token("고", "고", "EC"),
-            _make_token("안", "안", "MAG"),
-            _make_token("하", "하다", "VV"),
-        ]
-        self._assert_negation_score(tokens, 1)
-
-    def test_negation_multi_with_semicolon(self) -> None:
-        tokens = [
-            _make_token("안", "안", "MAG"),
-            _make_token("좋아하", "좋아하다", "VV"),
-            _make_token("고", "고", "EC"),
-            _make_token(",", ",", "SP"),
-            _make_token("안", "안", "MAG"),
-            _make_token("좋아하", "좋아하다", "VV"),
-        ]
-        self._assert_negation_score(tokens, 1)
-
-    def test_negation_aux_chain_no_boundary(self) -> None:
-        tokens = [
-            _make_token("안", "안", "MAG"),
-            _make_token("하", "하다", "VV"),
-            _make_token("고", "고", "EC"),
-            _make_token("싶", "싶다", "VX"),
-            _make_token("지", "지", "EC"),
-            _make_token("않", "않", "VX"),
-            _make_token("다", "다", "EF"),
-        ]
-        self._assert_negation_score(tokens, 2)
-
-    def test_negation_marker_mag_mot(self) -> None:
-        tokens = [
-            _make_token("못", "못", "MAG"),
-            _make_token("하", "하다", "VV"),
-            _make_token("지", "지", "EC"),
-            _make_token("못하", "못하", "VX"),
-            _make_token("다", "다", "EF"),
-        ]
-        self._assert_negation_score(tokens, 2)
-
-    def test_negation_vcn_ani(self) -> None:
-        tokens = [
-            _make_token("아니", "아니", "VCN"),
-            _make_token("안", "안", "MAG"),
-            _make_token("하", "하다", "VV"),
-        ]
-        self._assert_negation_score(tokens, 2)
-
-    def test_negation_prohibitive_mal(self) -> None:
-        tokens = [
-            _make_token("하", "하다", "VV"),
-            _make_token("지", "지", "EC"),
-            _make_token("말", "말", "VX"),
-            _make_token("고", "고", "EC"),
-            _make_token("안", "안", "MAG"),
-            _make_token("하", "하다", "VV"),
-        ]
-        self._assert_negation_score(tokens, 1)
-
-    # -----------------------------------------------------------------
     # output shape
     # -----------------------------------------------------------------
 
@@ -381,14 +269,14 @@ class StructureScorerTest(unittest.TestCase):
         sub_keys = {
             "length_score", "predicate_score", "embedding_score",
             "connective_score", "logical_score", "modifier_score",
-            "derivational_score", "negation_score",
+            "derivational_score",
             "content_token_count", "predicate_count", "ending_count",
             "connective_ending_count", "adnominal_count",
             "nominalizer_count", "logical_marker_count",
             "logical_marker_weighted",
             "strong_logical_ending_count", "strong_logical_ending_weighted",
             "weak_connective_count", "weak_connective_weighted",
-            "derivational_suffix_count", "negation_count", "negation_count_adj",
+            "derivational_suffix_count",
             "max_noun_chain",
             "predicate_count_adj", "max_noun_chain_adj",
         }
