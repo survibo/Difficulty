@@ -157,7 +157,7 @@ class NegationAnalyzerTest(unittest.TestCase):
         self._assert_negation(tokens, count=2, local_max=1, score=0.0)
 
     # =====================================================================
-    # direct multiple negation → score >= 0.5
+    # direct multiple negation → score >= 0.4 (이중은 0.4, 삼중부터 1.0)
     # =====================================================================
 
     def test_double_an_hal_su_eop(self):
@@ -169,7 +169,7 @@ class NegationAnalyzerTest(unittest.TestCase):
             _make_token("없", "없다", "VA"),
             _make_token("다", "다", "EF"),
         ]
-        self._assert_negation(tokens, count=2, local_max=2, score=0.5)
+        self._assert_negation(tokens, count=2, local_max=2, score=0.4)
 
     def test_double_mot_haji_anhassda(self):
         tokens = [
@@ -179,7 +179,7 @@ class NegationAnalyzerTest(unittest.TestCase):
             _make_token("않", "않", "VX"),
             _make_token("았다", "았다", "EF"),
         ]
-        self._assert_negation(tokens, count=2, local_max=2, score=0.5)
+        self._assert_negation(tokens, count=2, local_max=2, score=0.4)
 
     def test_double_an_mot_ganda(self):
         tokens = [
@@ -187,7 +187,7 @@ class NegationAnalyzerTest(unittest.TestCase):
             _make_token("못", "못", "MAG"),
             _make_token("가", "가다", "VV"),
         ]
-        self._assert_negation(tokens, count=2, local_max=2, score=0.5)
+        self._assert_negation(tokens, count=2, local_max=2, score=0.4)
 
     def test_double_aux_chain(self):
         tokens = [
@@ -198,7 +198,7 @@ class NegationAnalyzerTest(unittest.TestCase):
             _make_token("지", "지", "EC"),
             _make_token("않", "않", "VX"),
         ]
-        self._assert_negation(tokens, count=2, local_max=2, score=0.5)
+        self._assert_negation(tokens, count=2, local_max=2, score=0.4)
 
     def test_double_eopji_anhda(self):
         tokens = [
@@ -208,7 +208,42 @@ class NegationAnalyzerTest(unittest.TestCase):
             _make_token("않", "않", "VX"),
             _make_token("다", "다", "EF"),
         ]
-        self._assert_negation(tokens, count=2, local_max=2, score=0.5)
+        self._assert_negation(tokens, count=2, local_max=2, score=0.4)
+
+    def test_triple_an_meokji_anihal_su_eop(self):
+        tokens = [
+            _make_token("안", "안", "MAG"),
+            _make_token("먹", "먹다", "VV"),
+            _make_token("지", "지", "EC"),
+            _make_token("아니하", "아니하", "VX"),
+            _make_token("ᆯ", "ᆯ", "ETM"),
+            _make_token("수", "수", "NNB"),
+            _make_token("없", "없다", "VA"),
+            _make_token("다", "다", "EF"),
+        ]
+        self._assert_negation(tokens, count=3, local_max=3, score=1.0)
+
+    def test_no_negation_has_zero_score(self):
+        tokens = [
+            _make_token("경제", "경제", "NNG"),
+            _make_token("성장", "성장", "NNG"),
+            _make_token("의", "의", "JKG"),
+            _make_token("둔화", "둔화", "NNG"),
+            _make_token("에", "에", "JKB"),
+            _make_token("도", "도", "JX"),
+            _make_token("불구", "불구", "XR"),
+            _make_token("하", "하다", "XSV"),
+            _make_token("고", "고", "EC"),
+            _make_token("고용", "고용", "NNG"),
+            _make_token("시장", "시장", "NNG"),
+            _make_token("은", "은", "JX"),
+            _make_token("안정세", "안정세", "NNG"),
+        ]
+        result = self.analyzer.analyze(tokens)
+        self.assertEqual(result["negation_count_total"], 0)
+        self.assertEqual(result["negation_count_local_max"], 0)
+        self.assertEqual(result["local_negation_score"], 0.0)
+        self.assertEqual(result["negation_score"], 0.0)
 
     # =====================================================================
     # conditional multiple negation → score >= 1.0

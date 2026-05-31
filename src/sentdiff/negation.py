@@ -65,7 +65,7 @@ class NegationAnalyzer:
         if tag == "MAG":
             return form in {"안", "못"} or surface in {"안", "못"}
         if tag in {"VX", "VV"}:
-            return stem.startswith(("않", "못하", "말"))
+            return stem.startswith(("않", "아니하", "못하", "말"))
         if tag == "VA":
             if stem == "없":
                 if tokens is not None and i >= 0 and i + 2 < len(tokens):
@@ -185,8 +185,8 @@ class NegationAnalyzer:
         total_neg = sum(u["neg_count"] for u in units)
         max_local = max((u["neg_count"] for u in units), default=0)
 
-        # local
-        local_score = min(1.0, max(0.0, (max_local - 1) / 2))
+        # local — 단순 부정은 0, 이중은 0.4, 삼중부터 1.0으로 급등
+        local_score = min(1.0, (max_local - 1) ** 2 / 2.5) if max_local >= 2 else 0.0
 
         # segment-level density
         seg_neg_counts: dict[int, int] = {}

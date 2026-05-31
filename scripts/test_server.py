@@ -19,6 +19,7 @@ SRC = ROOT / "src"
 sys.path.insert(0, str(SRC))
 
 try:
+    from sentdiff.lexical import LexiconEntry, LexiconScorer
     from sentdiff.pipeline import SentenceScorer
 except Exception:
     print("IMPORT ERROR", flush=True)
@@ -69,8 +70,30 @@ class Handler(BaseHTTPRequestHandler):
             body = self.rfile.read(length)
             data = json.loads(body)
             sentence = data.get("sentence", "")
+            custom_words = data.get("custom_words", {})
+
             scorer = _get_scorer()
-            result = scorer.score(sentence)
+            ls = scorer._lexical_scorer
+
+            saved: dict[tuple[str, str], list[LexiconEntry]] = {}
+            for lemma, difficulty in custom_words.items():
+                key = (lemma, "NNG")
+                if key in ls._exact_map:
+                    saved[key] = ls._exact_map[key]
+                ls._exact_map[key] = [
+                    LexiconEntry(entry_id=-1, lemma=lemma, pos="NNG", difficulty=float(difficulty))
+                ]
+
+            try:
+                result = scorer.score(sentence)
+            finally:
+                for lemma in custom_words:
+                    key = (lemma, "NNG")
+                    if key in saved:
+                        ls._exact_map[key] = saved[key]
+                    else:
+                        ls._exact_map.pop(key, None)
+
             self._ok("application/json", json.dumps(result, ensure_ascii=False, default=str).encode("utf-8"))
         except Exception as e:
             self._err(500, str(e))
