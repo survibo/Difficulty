@@ -2,13 +2,14 @@
 structure.py
 
 MorphToken 리스트의 POS 태그 패턴을 기반으로 문장 구조 복잡도를 계산한다.
-8개 지표(length / predicate / embedding / connective / logical / modifier / derivational / structural_span)를
+8개 지표(length / predicate / embedding / connective / logical / modifier / repetition / structural_span)를
 weighted sum한 structure_score를 반환한다.
 negation 점수는 별도 negation.py의 NegationAnalyzer가 처리한다.
 """
 
 from __future__ import annotations
 
+from collections import Counter
 from dataclasses import dataclass
 from typing import Any
 
@@ -51,6 +52,10 @@ DERIVATIONAL_SUFFIXES: set[str] = {
     "적", "성", "화", "론", "주의",
 }
 
+REPETITION_EXCLUDE_LEMMAS: set[str] = {
+    "것", "수", "때", "말", "점", "등", "바", "데",
+}
+
 _STRUCTURAL_SPAN_MARKER_TAGS: set[str] = {"ETM", "ETN", "EC"}
 _BOUNDARY_TAGS: set[str] = {"EC", "EF", "SF", "SP", "SE"}
 _LENGTH_MIN: float = 5.0
@@ -66,6 +71,7 @@ class StructureConfig:
     modifier_full_score_at: int = 4
     derivational_full_score_at: int = 3
     structural_span_full_score_at: float = 20.0
+    repetition_full_score_at: float = 5.0
 
     # 8개 지표 고정 가중치 (합 1.0)
     weight_length: float = 0.12
@@ -74,8 +80,8 @@ class StructureConfig:
     weight_connective: float = 0.15
     weight_logical: float = 0.12
     weight_modifier: float = 0.08
-    weight_derivational: float = 0.07
     weight_structural_span: float = 0.12
+    weight_repetition: float = 0.07
 
 
 class StructureScorer:
@@ -180,7 +186,53 @@ class StructureScorer:
             "count": len(spans),
         }
 
-    def score_tokens(self, tokens: list[Any], sentence: str = "") -> dict[str, Any]:
+    def _compute_repetition_score(
+        self,
+        scored_words_full: list[dict[str, Any]],
+        polysemy_map: dict[str, int],
+    ) -> dict[str, Any]:
+        surface_counts: Counter[str] = Counter()
+        surface_difficulty: dict[str, float] = {}
+        surface_lemma: dict[str, str] = {}
+
+        for sw in scored_words_full:
+            surface = sw.get("surface", "")
+            surface_counts[surface] += 1
+            surface_difficulty.setdefault(surface, sw.get("difficulty", 0.3))
+            surface_lemma.setdefault(surface, sw.get("lemma", ""))
+
+        raw = 0.0
+        details: list[dict[str, Any]] = []
+        for surface, count in surface_counts.items():
+            lemma = surface_lemma.get(surface, "")
+            if lemma in REPETITION_EXCLUDE_LEMMAS:
+                continue
+            if count <= 1:
+                continue
+            difficulty = surface_difficulty.get(surface, 0.3)
+            polysemy = polysemy_map.get(surface, 1)
+            contribution = (count - 1) * difficulty * polysemy
+            raw += contribution
+            details.append({
+                "surface": surface,
+                "lemma": lemma,
+                "count": count,
+                "difficulty": round(difficulty, 4),
+                "polysemy": polysemy,
+                "contribution": round(contribution, 4),
+            })
+
+        score = min(1.0, raw / self.config.repetition_full_score_at)
+        return {
+            "raw": round(raw, 4),
+            "score": round(score, 4),
+            "repetition_count": sum(d["count"] - 1 for d in details),
+            "details": details,
+        }
+
+    def score_tokens(self, tokens: list[Any], sentence: str = "",
+                     scored_words_full: list[dict[str, Any]] | None = None,
+                     polysemy_map: dict[str, int] | None = None) -> dict[str, Any]:
         content_token_count = sum(1 for t in tokens if self._is_content(t))
 
         predicate_count = sum(
@@ -247,6 +299,10 @@ class StructureScorer:
 
         max_noun_chain = self._max_noun_chain(tokens)
         structural_span = self._compute_structural_span(tokens)
+        repetition = self._compute_repetition_score(
+            scored_words_full or [],
+            polysemy_map or {},
+        )
 
         length_score = self._compute_length_score(content_token_count)
         adj_predicate_count = max(0, predicate_count - 1)
@@ -280,8 +336,8 @@ class StructureScorer:
             + self.config.weight_connective * connective_score
             + self.config.weight_logical * logical_score
             + self.config.weight_modifier * modifier_score
-            + self.config.weight_derivational * derivational_score
             + self.config.weight_structural_span * structural_span["score"]
+            + self.config.weight_repetition * repetition["score"]
         )
         structure_score = max(0.0, min(1.0, structure_score))
         rounded_score = round(structure_score, 4)
@@ -301,6 +357,10 @@ class StructureScorer:
                 "structural_span_raw": structural_span["raw"],
                 "structural_span_normalized": structural_span["normalized"],
                 "structural_span_count": structural_span["count"],
+                "repetition_score": repetition["score"],
+                "repetition_raw": repetition["raw"],
+                "repetition_count": repetition["repetition_count"],
+                "repetition_details": repetition["details"],
                 "content_token_count": content_token_count,
                 "predicate_count": predicate_count,
                 "predicate_count_adj": adj_predicate_count,
@@ -326,6 +386,7 @@ __all__ = [
     "STRONG_LOGICAL_ENDINGS",
     "WEAK_CONNECTIVE_ENDINGS",
     "DERIVATIONAL_SUFFIXES",
+    "REPETITION_EXCLUDE_LEMMAS",
     "StructureConfig",
     "StructureScorer",
 ]

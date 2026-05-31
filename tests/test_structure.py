@@ -272,6 +272,8 @@ class StructureScorerTest(unittest.TestCase):
             "derivational_score", "structural_span_score",
             "structural_span_raw", "structural_span_normalized",
             "structural_span_count",
+            "repetition_score", "repetition_raw",
+            "repetition_count", "repetition_details",
             "content_token_count", "predicate_count", "ending_count",
             "connective_ending_count", "adnominal_count",
             "nominalizer_count", "logical_marker_count",

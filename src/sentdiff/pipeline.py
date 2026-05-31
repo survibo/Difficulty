@@ -39,7 +39,18 @@ class SentenceScorer:
 
         tokens = self._analyzer.analyze(sentence)
         lexical_result = self._lexical_scorer.compute_sentence_score(tokens)
-        structure_result = self._structure_scorer.score_tokens(tokens)
+
+        scored_full = lexical_result["scored_words_full"]
+        unique_surfaces = {s["surface"] for s in scored_full if s["surface"]}
+        polysemy_map: dict[str, int] = {}
+        for surface in unique_surfaces:
+            polysemy_map[surface] = self._analyzer.get_polysemy(surface)
+
+        structure_result = self._structure_scorer.score_tokens(
+            tokens, sentence,
+            scored_words_full=scored_full,
+            polysemy_map=polysemy_map,
+        )
         negation_result = self._negation_analyzer.analyze(tokens)
 
         lexical_score = lexical_result["lexical_score_0_1"]
@@ -73,6 +84,7 @@ class SentenceScorer:
             "content_token_count": lexical_result["content_token_count"],
             "content_token_count_capped": lexical_result.get("content_token_count_capped", lexical_result["content_token_count"]),
             "unknown_token_count": lexical_result["unknown_token_count"],
+            "scored_words_full": lexical_result["scored_words_full"],
             "scored_words": lexical_result["scored_words"],
             "score_parts": lexical_result["score_parts"],
             "structure_parts": structure_result["structure_parts"],

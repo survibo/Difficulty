@@ -97,7 +97,7 @@ lexical = 0.25 × mean_all + 0.50 × mean_top_3 + 0.25 × max
 | **logical**         | 논리 표지·연결어미 가중합                               | 4.0 → 1.0    | **0.12** |
 | **structural_span** | 직전 절 경계~ETM/ETN/EC까지 절 구간 내용어 합계          | 20.0개 → 1.0 | **0.12** |
 | **modifier**        | 최장 명사 연쇄 길이**(-1 보정)**                         | 5개 → 1.0    | **0.08** |
-| **derivational**    | 명사파생접미사(XSN) + 표면형(적/성/화/론/주의) 개수      | 3개 → 1.0    | **0.07** |
+| **repetition**      | 단어 반복 부담 (반복 횟수×난도×다의성 계수 합계)        | 5.0 → 1.0    | **0.07** |
 
 ### 3.3 점수 공식
 
@@ -106,7 +106,7 @@ structure = 0.17×predicate + 0.17×embedding
           + 0.15×connective
           + 0.12×length + 0.12×logical + 0.12×structural_span
           + 0.08×modifier
-          + 0.07×derivational
+          + 0.07×repetition
 ```
 
 ### 3.4 각 지표 계산 방식
@@ -228,17 +228,27 @@ score = min(1.0, raw / 4)
 
 ---
 
-**derivational** — 명사파생접미사 개수
+**repetition** — 단어 반복 처리 부담
 
-- 태그: XSN (`-적`, `-성` 등)
-- 표면형 추가: `적`, `성`, `화`, `론`, `주의` (태그와 무관)
+같은 표면형을 가진 내용어가 여러 번 등장하면, 다의어/동형어 판별 부담이 추가된다.
 
 ```
-raw = derivational_suffix_count
-score = min(1.0, raw / 3)
+raw = Σ (count - 1) × difficulty × polysemy
+      (반복된 각 단어 표면형에 대해, 제외 lemma 제외)
+score = min(1.0, raw / 5.0)
 ```
 
-3개 이상 → 1.0.
+**제외 lemma**: `것`, `수`, `때`, `말`, `점`, `등`, `바`, `데` (의존명사/고빈도 형식명사)
+
+**계산 상세**:
+- 각 **표면형** 기준으로 등장 횟수 count를 센다
+- count > 1이고 lemma가 제외 목록에 없으면 반복 부담 계산
+- `difficulty`: 해당 단어의 lexical lookup 난도값
+- `polysemy`: Kiwi로 해당 표면형을 분석했을 때 나오는 가능한 품사 태그의 가짓수
+- 예: `밥을 먹고 밥을 마신다` → `밥` count=2, difficulty=0.15, polysemy=2 → (2-1)×0.15×2 = 0.30
+
+**derivational**(명사파생접미사 XSN)은 구조 점수 가중합에서는 제외되었지만,
+계산 자체는 유지되어 구조 진단 정보로 출력된다.
 
 ---
 
@@ -372,4 +382,4 @@ score = min(1.0, 0.5 × lexical + 0.5 × structure + 0.2 × negation)
 | logical         | 0.12   | 논리표지 가중합 4.0 이상      |
 | structural_span | 0.12   | 절 구간 내용어 합계 20.0 이상 |
 | modifier        | 0.08   | 명사 연쇄 4개+1개(-1 보정)    |
-| derivational    | 0.07   | 접사(XSN+표면형) 3개 이상     |
+| repetition      | 0.07   | 반복 부담 합계 5.0 이상       |

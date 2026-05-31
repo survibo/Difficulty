@@ -17,7 +17,7 @@ structure = 0.17×predicate + 0.17×embedding
           + 0.15×connective
           + 0.12×length + 0.12×logical + 0.12×structural_span
           + 0.08×modifier
-          + 0.07×derivational
+          + 0.07×repetition
 ```
 
 ## 8개 지표
@@ -31,7 +31,25 @@ structure = 0.17×predicate + 0.17×embedding
 | logical | 논리표지+강한어미+약한어미 가중합 | 4.0 이상 | 0.12 |
 | structural_span | 절 구간 내용어 합계 (모든 EC/ETM/ETN에서 기록된 구간 길이의 총합) | 20.0 이상 (내용어 20개) | 0.12 |
 | modifier | 최장 명사 연쇄 길이 (-1 보정) | 5개 이상 (4+1) | 0.08 |
-| derivational | 명사파생접미사(XSN)+표면형 개수 | 3개 이상 | 0.07 |
+| repetition | 단어 반복 부담 (반복 횟수×난도×다의성 계수 합계) | 5.0 이상 | 0.07 |
+
+### repetition 계산
+
+같은 표면형을 가진 내용어가 여러 번 등장할 때, 다의어 판별 부담을 반영한다.
+
+```
+표면형별로 등장 횟수 count 수집
+제외 lemma: 것, 수, 때, 말, 점, 등, 바, 데
+
+raw = Σ (count - 1) × difficulty × polysemy
+score = min(1.0, raw / 5.0)
+```
+
+- `difficulty`: lexical lookup 난도값
+- `polysemy`: Kiwi analyze(top_n=5) 결과 서로 다른 품사 태그 가짓수
+
+> derivational(명사파생접미사 XSN)은 구조 점수 가중합에서는 제외되었으나,
+> 계산 자체는 유지되어 구조 진단 정보로 출력된다.
 
 ### 보정 설명
 - **predicate**: 모든 문장에 서술어가 최소 1개 필수이므로 `predicate_count - 1` 후 score 계산.

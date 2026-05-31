@@ -199,6 +199,18 @@ class KiwiMorphAnalyzer:
     def content_tokens(self, sentence: Any) -> list[MorphToken]:
         return [token for token in self.analyze(sentence) if token.is_content]
 
+    def get_polysemy(self, surface: str) -> int:
+        if not normalize_text(surface):
+            return 1
+        results = self._kiwi.analyze(surface, top_n=5)
+        if not results:
+            return 1
+        tags: set[str] = set()
+        for tokens, _ in results:
+            if tokens:
+                tags.add(tokens[0].tag)
+        return max(1, len(tags))
+
 
 __all__ = [
     "MorphToken",

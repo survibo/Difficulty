@@ -90,6 +90,7 @@ class SentenceScorerTest(unittest.TestCase):
             "content_token_count",
             "content_token_count_capped",
             "unknown_token_count",
+            "scored_words_full",
             "scored_words",
             "score_parts",
             "structure_parts",

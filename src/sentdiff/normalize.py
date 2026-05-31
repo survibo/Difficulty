@@ -5,17 +5,15 @@ normalize.py
 
 주요 역할:
 - 엑셀/CSV에서 읽어 온 문자열 정리
-- 5965 어휘 목록의 동형어번호 분리: 가격03 -> 가격, 3
+- 4만 어휘 목록의 동형어번호 분리
 - 4만 어휘 목록의 등급값 정리: 1등급 -> 1
-- 5965 A/B/C 등급을 보조 난도 신호로 변환
 - 품사명 정규화
-- 어휘 난도 계산을 위한 등급/순위 변환
+- 어휘 난도 계산을 위한 등급 변환
 - 어종/분야 신호와 파생 표제어 suffix 처리
 
 중요한 난도 정책:
-- 4만 개 5등급 목록을 메인 기준으로 사용한다.
-- 5965개 A/B/C 목록은 보조 기준으로만 사용한다.
-- 5965 기준에서 A/B는 쉬운 어휘, C는 2등급성 보조값으로 본다.
+- 4만 개 5등급 목록을 난도 기준으로 사용한다.
+- 1등급(0.00) ~ 5등급(1.00)으로 선형 매핑.
 """
 
 from __future__ import annotations
@@ -175,7 +173,7 @@ _HOMOGRAPH_SUFFIX_RE = re.compile(r"^(.+?)(\d{2})$")
 
 def split_homograph_suffix(word: Any) -> tuple[str, int]:
     """
-    5965개 어휘 목록처럼 표제어 뒤에 두 자리 동형어번호가 붙은 값을 분리한다.
+    표제어 뒤에 두 자리 동형어번호가 붙은 값을 분리한다.
 
     예:
     가격03 -> ("가격", 3)
@@ -257,66 +255,6 @@ def grade5_to_difficulty(grade: Any) -> Optional[float]:
         return None
 
     return clamp((g - 1) / 4)
-
-
-def grade5965_to_aux_difficulty(grade: Any) -> Optional[float]:
-    """
-    5965개 A/B/C 보조 난도 변환.
-
-    확정 기준:
-    - A -> 0.00
-    - B -> 0.00
-    - C -> 0.25
-
-    숫자 입력:
-    - 1 -> 0.00
-    - 2 -> 0.25
-    - 3 -> 0.25
-
-    이 값은 메인 난도값이 아니라 4만 사전 난도를 보조하는 약한 신호다.
-    """
-    if is_missing(grade):
-        return None
-
-    text = normalize_text(grade).upper()
-
-    if text in {"A", "B"}:
-        return 0.00
-    if text == "C":
-        return 0.25
-
-    n = safe_int(text)
-    if n == 1:
-        return 0.00
-    if n in {2, 3}:
-        return 0.25
-
-    return None
-
-
-def rank_to_difficulty(rank: Any, max_rank: Any) -> Optional[float]:
-    """
-    순위를 0~1 난도로 변환한다.
-
-    순위가 클수록 덜 기본적인 단어라고 보고 로그 변환한다.
-
-    예:
-    rank_difficulty = (log(1 + rank) - log(2)) / (log(1 + max_rank) - log(2))
-    """
-    r = safe_float(rank)
-    m = safe_float(max_rank)
-
-    if r is None or m is None:
-        return None
-
-    if r < 1 or m <= 1:
-        return None
-
-    denominator = math.log1p(m) - math.log1p(1)
-    if denominator <= 0:
-        return None
-
-    return clamp((math.log1p(r) - math.log1p(1)) / denominator)
 
 
 # ---------------------------------------------------------------------
@@ -627,8 +565,6 @@ __all__ = [
     "parse_homograph_no",
     "parse_grade5",
     "grade5_to_difficulty",
-    "grade5965_to_aux_difficulty",
-    "rank_to_difficulty",
     "normalize_pos",
     "normalize_origin",
     "normalize_domain",
