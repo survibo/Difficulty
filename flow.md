@@ -18,9 +18,10 @@
 
 ## 1. 최종 점수
 
+
 ```
 score = min(1.0, 0.5 × lexical + 0.5 × structure + 0.2 × negation)
-
+```
 - `negation`: 부정 처리 부담 — **보너스** (최대 +0.2). 이중/삼중 부정이 없는 보통 문장은 `0.5×lexical + 0.5×structure`로 1.0까지 도달 가능.
 
 ---
@@ -98,10 +99,12 @@ score = min(1.0, 0.5 × lexical + 0.5 × structure + 0.2 × negation)
 ### 3.3 점수 공식
 
 ```
+
 structure = 0.18×predicate + 0.15×embedding
           + 0.15×length + 0.22×structural_span
           + 0.08×logical + 0.10×modifier
           + 0.07×repetition + 0.05×connective
+
 ```
 
 ### 3.4 각 지표 계산 방식
@@ -109,8 +112,10 @@ structure = 0.18×predicate + 0.15×embedding
 8개 지표 모두 같은 구조로 계산된다:
 
 ```
+
 raw = <원시값>
 score = min(1.0, raw / <full_score_at>)
+
 ```
 
 ---
@@ -118,8 +123,10 @@ score = min(1.0, raw / <full_score_at>)
 **length** — 내용어 개수 (태그: NNG, NNP, NNB, VV, VA, MAG, XR, NP, NR, SL, SH 등 `is_content=True`인 토큰)
 
 ```
+
 raw = max(0, content_count - 5)
 score = min(1.0, raw / 18)
+
 ```
 
 내용어가 5개 이하 → 0.0, 23개 이상 → 1.0.
@@ -132,8 +139,10 @@ score = min(1.0, raw / 18)
 - 조정: 모든 문장에 서술어 최소 1개 필수 → **-1 보정**
 
 ```
+
 raw = max(0, predicate_count - 1)
 score = min(1.0, raw / 7)
+
 ```
 
 서술어가 8개 이상(보정 후 7) → 1.0.
@@ -146,8 +155,10 @@ score = min(1.0, raw / 7)
 - 부사형 EC: surface/lemma가 `게`, `도록`, `듯이`에 해당하는 연결어미
 
 ```
+
 raw = adnominal_count + nominalizer_count + adverbial_ending_count
 score = min(1.0, raw / 5)
+
 ```
 
 5개 이상 → 1.0.
@@ -159,6 +170,7 @@ score = min(1.0, raw / 5)
 ETM/ETN/EC가 나타날 때, 직전 절 경계(EC/ETM/ETN/EF/SF/SP/SE) 이후부터 해당 marker까지 누적된 내용어 개수들의 **합계**.
 
 ```
+
 segment_content_count = 0
 spans = []
 
@@ -173,6 +185,7 @@ for token in tokens:
 
 raw = sum(spans)
 score = min(1.0, raw / 20.0)
+
 ```
 
 - EC/ETM/ETN은 marker이면서 boundary → span 기록 후 segment 초기화. 중복 누적 방지
@@ -197,7 +210,9 @@ score = min(1.0, raw / 20.0)
 - 문장 단위 분석에서는 앞 문맥 연결 표지가 과대평가될 수 있으므로, 문장 첫 유효 토큰의 논리표지는 제외한다.
 
 ```
+
 ls = min(1.0, (첫유효토큰제외_논리표지_가중합 + 강한논리연결어미_가중합) / 4)
+
 ```
 
 **논리표지** — 명시적 논리 접속 부사/표현 (가중치 0.5~1.0):
@@ -233,8 +248,10 @@ ls = min(1.0, (첫유효토큰제외_논리표지_가중합 + 강한논리연결
 - 예: `비교(NNG) 적(XSN) 안정세(NNG)` → `비교+적` chain length = 2, `안정세`는 새 chain
 
 ```
+
 raw = max(0, max_noun_chain - 1)
 score = min(1.0, raw / 3)
+
 ```
 
 명사 연쇄가 4개 이상(보정 후 3) → 1.0.
@@ -246,9 +263,11 @@ score = min(1.0, raw / 3)
 같은 표면형을 가진 내용어가 여러 번 등장하면, 다의어/동형어 판별 부담이 추가된다.
 
 ```
+
 raw = Σ (count - 1) × difficulty × polysemy
       (반복된 각 단어 표면형에 대해, 제외 lemma 제외)
 score = min(1.0, raw / 3.5)
+
 ```
 
 **제외 lemma**: `것`, `수`, `때`, `말`, `점`, `등`, `바`, `데` (의존명사/고빈도 형식명사)
@@ -269,7 +288,9 @@ score = min(1.0, raw / 3.5)
 **connective** — 연결어미(EC) 개수
 
 ```
+
 cs = min(1.0, EC_개수 / 4)
+
 ```
 
 ---
@@ -375,3 +396,4 @@ hard boundary → 새 hard segment 시작
 | logical         | 0.08   | 논리표지·강한어미 가중합 4 이상 |
 | repetition      | 0.07   | 반복 부담 합계 3.5 이상          |
 | connective      | 0.05   | EC 개수 4개 이상                 |
+```

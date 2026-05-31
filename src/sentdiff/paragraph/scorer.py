@@ -91,18 +91,19 @@ class ParagraphScorer:
 
     @staticmethod
     def _information_density(sentence_results: list[dict[str, Any]]) -> dict[str, float | int]:
-        lemmas: set[str] = set()
+        lexical_items: set[tuple[str, str]] = set()
         for result in sentence_results:
             for word in result.get("scored_words_full", []):
                 lemma = str(word.get("lemma", "") or "").strip()
+                pos = str(word.get("pos", "") or "").strip()
                 if lemma:
-                    lemmas.add(lemma)
+                    lexical_items.add((lemma, pos))
 
-        unique_count = len(lemmas)
+        unique_count = len(lexical_items)
         full_score_at = len(sentence_results) * 10
         score = min(1.0, unique_count / full_score_at) if full_score_at > 0 else 0.0
         return {
-            "unique_content_lemma_count": unique_count,
+            "unique_content_lexical_count": unique_count,
             "information_density_full_score_at": full_score_at,
             "information_density": round(score, 4),
         }
@@ -118,8 +119,8 @@ class ParagraphScorer:
         density = self._information_density(sentence_results)
 
         score_0_1 = (
-            0.70 * float(aggregate["sentence_aggregate"])
-            + 0.30 * float(density["information_density"])
+            0.80 * float(aggregate["sentence_aggregate"])
+            + 0.20 * float(density["information_density"])
         )
         score_0_1 = max(0.0, min(1.0, score_0_1))
 
@@ -134,8 +135,8 @@ class ParagraphScorer:
                 **discourse,
                 **density,
                 "paragraph_weights": {
-                    "sentence_aggregate": 0.70,
-                    "information_density": 0.30,
+                    "sentence_aggregate": 0.80,
+                    "information_density": 0.20,
                 },
             },
         }

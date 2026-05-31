@@ -11,8 +11,8 @@
 
 ```text
 paragraph_score =
-  0.70 × sentence_aggregate
-+ 0.30 × information_density
+  0.80 × sentence_aggregate
++ 0.20 × information_density
 ```
 
 ## sentence_aggregate
@@ -38,10 +38,10 @@ discourse_marker_score = min(1.0, discourse_marker_weighted / sentence_count)
 
 ## information_density
 
-문단 전체에서 서로 다른 내용어 lemma 수를 정보량으로 본다. 문단 길이에 따라 기준을 조정하기 위해 `문장 수 × 10`을 1.0 기준으로 사용한다.
+문단 전체에서 서로 다른 내용어 lexical item `(lemma, pos)` 수를 정보량으로 본다. 문단 길이에 따라 기준을 조정하기 위해 `문장 수 × 10`을 1.0 기준으로 사용한다.
 
 ```text
-information_density = min(1.0, unique_content_lemma_count / (sentence_count × 10))
+information_density = min(1.0, unique_content_lexical_count / (sentence_count × 10))
 ```
 
 ## 출력 구조
@@ -63,7 +63,7 @@ information_density = min(1.0, unique_content_lemma_count / (sentence_count × 1
         "discourse_marker_count": int,
         "information_density": float,
         "information_density_full_score_at": int,
-        "unique_content_lemma_count": int,
+        "unique_content_lexical_count": int,
         "paragraph_weights": dict,
     },
 }
