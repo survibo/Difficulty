@@ -45,10 +45,10 @@ sentence_aggregate =
 | `XR` | 어근 |
 
 `NNB` 의존명사, `NP` 대명사, `NR` 수사, `MAG` 부사, 외국어/한자 표기는 정보 밀도 집계에서 제외한다.
-문단 길이에 따라 기준을 조정하기 위해 `문장 수 × 10`을 1.0 기준으로 사용한다.
+문단 길이에 따라 기준을 조정하기 위해 `문장 수 × 13`을 1.0 기준으로 사용한다.
 
 ```text
-information_density = min(1.0, unique_core_content_count / (sentence_count × 10))
+information_density = min(1.0, unique_core_content_count / (sentence_count × 13))
 ```
 
 ## concept_repetition

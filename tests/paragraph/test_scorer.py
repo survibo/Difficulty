@@ -76,8 +76,8 @@ class ParagraphScorerTest(unittest.TestCase):
         result = self.scorer.score("같은 단어. 같은 다른.")
         parts = result["paragraph_parts"]
         self.assertEqual(parts["unique_core_content_count"], 3)
-        self.assertEqual(parts["information_density_full_score_at"], 20)
-        self.assertEqual(parts["information_density"], round(3 / 20, 4))
+        self.assertEqual(parts["information_density_full_score_at"], 26)
+        self.assertEqual(parts["information_density"], round(3 / 26, 4))
 
     def test_information_density_counts_only_core_content_tags(self) -> None:
         class CoreTagSentenceScorer:
@@ -99,14 +99,14 @@ class ParagraphScorerTest(unittest.TestCase):
         result = ParagraphScorer(CoreTagSentenceScorer()).score("정책은 그 매우 어려운 구조일 수 있다.")
         parts = result["paragraph_parts"]
         self.assertEqual(parts["unique_core_content_count"], 3)
-        self.assertEqual(parts["information_density_full_score_at"], 10)
-        self.assertEqual(parts["information_density"], round(3 / 10, 4))
+        self.assertEqual(parts["information_density_full_score_at"], 13)
+        self.assertEqual(parts["information_density"], round(3 / 13, 4))
 
-    def test_information_density_caps_at_sentence_count_times_ten(self) -> None:
-        result = self.scorer.score("a b c d e f g h i j k.")
+    def test_information_density_caps_at_sentence_count_times_thirteen(self) -> None:
+        result = self.scorer.score("a b c d e f g h i j k l m n.")
         parts = result["paragraph_parts"]
-        self.assertEqual(parts["unique_core_content_count"], 11)
-        self.assertEqual(parts["information_density_full_score_at"], 10)
+        self.assertEqual(parts["unique_core_content_count"], 14)
+        self.assertEqual(parts["information_density_full_score_at"], 13)
         self.assertEqual(parts["information_density"], 1.0)
 
     def test_information_density_counts_same_lemma_different_pos(self) -> None:
@@ -125,8 +125,8 @@ class ParagraphScorerTest(unittest.TestCase):
         result = ParagraphScorer(PosSentenceScorer()).score("말 말.")
         parts = result["paragraph_parts"]
         self.assertEqual(parts["unique_core_content_count"], 2)
-        self.assertEqual(parts["information_density_full_score_at"], 10)
-        self.assertEqual(parts["information_density"], round(2 / 10, 4))
+        self.assertEqual(parts["information_density_full_score_at"], 13)
+        self.assertEqual(parts["information_density"], round(2 / 13, 4))
 
     def test_concept_repetition_uses_repeated_core_words_with_difficulty_and_spread(self) -> None:
         class RepeatedConceptSentenceScorer:

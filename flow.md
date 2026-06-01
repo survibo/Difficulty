@@ -429,10 +429,10 @@ sentence_aggregate =
 ### 6.3 정보 밀도
 
 정보 밀도는 사전 난도(lexical difficulty)가 아니라 형태소 품사 기준의 **핵심 내용어 수**로 계산한다.
-문단 전체에서 서로 다른 `(lemma, 핵심품사)` 쌍을 세고, `문장 수 × 10`을 1.0 기준으로 정규화한다.
+문단 전체에서 서로 다른 `(lemma, 핵심품사)` 쌍을 세고, `문장 수 × 13`을 1.0 기준으로 정규화한다.
 
 ```
-information_density = min(1.0, unique_core_content_count / (sentence_count × 10))
+information_density = min(1.0, unique_core_content_count / (sentence_count × 13))
 ```
 
 핵심 내용어로 세는 태그:

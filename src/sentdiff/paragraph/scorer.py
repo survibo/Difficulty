@@ -15,6 +15,7 @@ _SENTENCE_SPLIT_RE = re.compile(r"[^.!?。！？\n]+[.!?。！？]?", re.MULTILI
 _CORE_INFORMATION_TAGS: set[str] = {"NNG", "NNP", "VV", "VA", "XR"}
 _CORE_INFORMATION_POS: set[str] = {"명사", "동사", "형용사", "어근"}
 _CONCEPT_REPETITION_EXCLUDED_LEMMAS: set[str] = {"것", "수", "때", "말", "점", "등", "바", "데"}
+_INFORMATION_DENSITY_PER_SENTENCE: int = 13
 _CONCEPT_REPETITION_FULL_SCORE_AT: float = 10.0
 _CONCEPT_REPETITION_MIN_DIFFICULTY: float = 0.05
 
@@ -100,7 +101,7 @@ class ParagraphScorer:
                     core_items.add((lemma, item_type))
 
         unique_count = len(core_items)
-        full_score_at = len(sentence_results) * 10
+        full_score_at = len(sentence_results) * _INFORMATION_DENSITY_PER_SENTENCE
         score = min(1.0, unique_count / full_score_at) if full_score_at > 0 else 0.0
         return {
             "unique_core_content_count": unique_count,

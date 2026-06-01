@@ -242,7 +242,7 @@ function renderParagraph(d) {
   scoreRow.innerHTML = card("문단 점수", d.score_10, d.score_10 >= 7 ? "red" : d.score_10 >= 4 ? "orange" : "green", "0 ~ 10", `${GH}/src/sentdiff/paragraph/README.md`) +
     card("문장 수", d.sentence_count, "blue") +
     card("문장 집계", (p.sentence_aggregate * 10).toFixed(2), "blue", "0 ~ 10") +
-    card("정보 밀도", (p.information_density * 10).toFixed(2), p.information_density >= 0.5 ? "orange" : "green", "문장수×10 기준") +
+    card("정보 밀도", (p.information_density * 10).toFixed(2), p.information_density >= 0.5 ? "orange" : "green", "문장수×13 기준") +
     card("반복 핵심어", (p.concept_repetition * 10).toFixed(2), p.concept_repetition >= 0.5 ? "orange" : "green", `${p.repeated_core_content_count}개`) +
     card("핵심 내용어", p.unique_core_content_count, "blue");
 
