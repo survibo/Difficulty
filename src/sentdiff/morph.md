@@ -59,12 +59,13 @@ etc.
 
 lexical/structure 양쪽에서 공용. `is_excluded_lexical_tag`가 아니면서
 명사/대명사/수사/동사/형용사/부사/어근/외국어/한자인 경우 true.
+단, `NNB` 의존명사는 lexical/content 후보에서 제외한다.
 
 **POS 기준:**
 
 ```
 is_content = not is_excluded AND (
-    starts_with("NN") OR
+    (starts_with("NN") AND tag != "NNB") OR
     in {"NP", "NR", "VV", "VA", "MAG", "XR", "SL", "SH"}
 )
 ```

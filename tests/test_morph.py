@@ -60,7 +60,7 @@ class MorphHelperTests(unittest.TestCase):
 
     def test_content_tag_policy(self) -> None:
         included = ["NNG", "NNP", "NP", "NR", "VV", "VA", "MAG", "XR", "SL", "SH"]
-        excluded = ["VX", "XSV", "XSA", "JKO", "ETM", "SF", "SN", "MM", "MAJ"]
+        excluded = ["NNB", "VX", "XSV", "XSA", "JKO", "ETM", "SF", "SN", "MM", "MAJ"]
 
         for tag in included:
             with self.subTest(f"included {tag}"):

@@ -120,7 +120,7 @@ score = min(1.0, raw / <full_score_at>)
 
 ---
 
-**length** — 내용어 개수 (태그: NNG, NNP, NNB, VV, VA, MAG, XR, NP, NR, SL, SH 등 `is_content=True`인 토큰)
+**length** — 내용어 개수 (태그: NNG, NNP, VV, VA, MAG, XR, NP, NR, SL, SH 등 `is_content=True`인 토큰. `NNB` 의존명사는 lexical/content 후보에서 제외)
 
 ```
 

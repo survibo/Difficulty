@@ -131,6 +131,9 @@ def is_content_tag(tag: Any) -> bool:
 
     base = _base_tag(t)
 
+    if base == "NNB":
+        return False
+
     return base.startswith("NN") or base in {
         "NP",
         "NR",
