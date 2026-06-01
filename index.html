@@ -310,9 +310,9 @@ function renderLexical(d) {
     lw.mean_all + " × mean_all + " + lw.mean_top_n + " × mean_top_3 + " + lw.max + " × max";
   const body = document.getElementById("lexicalBody");
   body.innerHTML = table([
-    ["mean_all (" + lw.mean_all + ")", p.mean_all],
-    ["mean_top_n (" + lw.mean_top_n + ")", p.mean_top_n],
-    ["max (" + lw.max + ")", p.max],
+    ["mean_all (" + lw.mean_all + ")", fmt4(p.mean_all)],
+    ["mean_top_n (" + lw.mean_top_n + ")", fmt4(p.mean_top_n)],
+    ["max (" + lw.max + ")", fmt4(p.max)],
     ["내용어", d.content_token_count + " (중복보정 " + d.content_token_count_capped + ")"],
   ]);
 
@@ -324,7 +324,7 @@ function renderLexical(d) {
     const isTop = top3.has(key);
     const cls = w.match_method === "unknown" ? "word-item unknown" : isTop ? "word-item top3" : "word-item";
     const saved = customWords[w.lemma];
-    html += `<span class="${cls}" style="cursor:default">${w.surface}<span class="diff">${saved !== undefined ? saved : w.difficulty}</span>`;
+    html += `<span class="${cls}" style="cursor:default">${w.surface}<span class="diff">${fmt4(saved !== undefined ? saved : w.difficulty)}</span>`;
     if (w.match_method === "unknown" || saved !== undefined) {
       const val = saved !== undefined ? saved : "0.30";
       html += ` <input type="number" min="0" max="1" step="0.05" value="${val}" style="width:50px;font-size:0.75rem;border:1px solid #ccc;border-radius:3px;padding:1px 4px;" id="diff_${w.lemma}">`;
@@ -408,6 +408,11 @@ function table(rows) {
 function fmt(value) {
   const num = Number(value || 0);
   return num.toFixed(3);
+}
+
+function fmt4(value) {
+  const num = Number(value || 0);
+  return num.toFixed(4);
 }
 
 function fmt10(value) {
