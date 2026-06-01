@@ -165,6 +165,24 @@ class ParagraphScorerTest(unittest.TestCase):
         self.assertEqual(parts["concept_repetition_raw"], 2.16)
         self.assertEqual(parts["concept_repetition"], 0.216)
 
+    def test_concept_repetition_uses_minimum_difficulty_for_zero_difficulty_words(self) -> None:
+        class EasyRepeatedConceptSentenceScorer:
+            def score(self, sentence: str) -> dict:
+                return {
+                    "sentence": sentence,
+                    "score_0_1": 0.2,
+                    "score_10": 2.0,
+                    "scored_words_full": [
+                        {"lemma": "쉽다", "pos": "형용사", "tag": "VA", "difficulty": 0.0},
+                    ],
+                }
+
+        result = ParagraphScorer(EasyRepeatedConceptSentenceScorer()).score("첫째 문장. 둘째 문장.")
+        parts = result["paragraph_parts"]
+        self.assertEqual(parts["repeated_core_content_count"], 1)
+        self.assertEqual(parts["concept_repetition_raw"], 0.048)
+        self.assertEqual(parts["concept_repetition"], 0.0048)
+
 
 if __name__ == "__main__":
     unittest.main()

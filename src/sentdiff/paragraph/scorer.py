@@ -39,6 +39,7 @@ _CORE_INFORMATION_TAGS: set[str] = {"NNG", "NNP", "VV", "VA", "XR"}
 _CORE_INFORMATION_POS: set[str] = {"명사", "동사", "형용사", "어근"}
 _CONCEPT_REPETITION_EXCLUDED_LEMMAS: set[str] = {"것", "수", "때", "말", "점", "등", "바", "데"}
 _CONCEPT_REPETITION_FULL_SCORE_AT: float = 10.0
+_CONCEPT_REPETITION_MIN_DIFFICULTY: float = 0.05
 
 
 class ParagraphScorer:
@@ -120,7 +121,7 @@ class ParagraphScorer:
             difficulty = float(word.get("difficulty", 0.30))
         except (TypeError, ValueError):
             difficulty = 0.30
-        return max(0.0, min(1.0, difficulty))
+        return max(_CONCEPT_REPETITION_MIN_DIFFICULTY, min(1.0, difficulty))
 
     @staticmethod
     def _concept_pos_weight(item_type: str) -> float:

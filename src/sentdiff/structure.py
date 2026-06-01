@@ -51,6 +51,7 @@ ADVERBIAL_EC_FORMS: set[str] = {"게", "도록", "듯이"}
 REPETITION_EXCLUDE_LEMMAS: set[str] = {
     "것", "수", "때", "말", "점", "등", "바", "데",
 }
+REPETITION_MIN_DIFFICULTY: float = 0.05
 
 _STRUCTURAL_SPAN_MARKER_TAGS: set[str] = {"ETM", "ETN", "EC"}
 _BOUNDARY_TAGS: set[str] = {"EC", "ETM", "ETN", "EF", "SF", "SP", "SE"}
@@ -217,7 +218,7 @@ class StructureScorer:
                 continue
             if count <= 1:
                 continue
-            difficulty = surface_difficulty.get(surface, 0.3)
+            difficulty = max(REPETITION_MIN_DIFFICULTY, surface_difficulty.get(surface, 0.3))
             polysemy = polysemy_map.get(surface, 1)
             contribution = (count - 1) * difficulty * polysemy
             raw += contribution

@@ -474,6 +474,21 @@ class StructureScorerTest(unittest.TestCase):
         expected_score = min(1.0, expected_raw / 3.5)
         self.assertAlmostEqual(sp["repetition_score"], expected_score, places=4)
 
+    def test_repetition_uses_minimum_difficulty_for_zero_difficulty_words(self) -> None:
+        tokens = [
+            _make_token("쉽다", "쉽다", "VA"),
+            _make_token("쉽다", "쉽다", "VA"),
+        ]
+        scored_words_full = [
+            {"surface": "쉽다", "lemma": "쉽다", "pos": "형용사", "difficulty": 0.0, "match_method": "exact", "matched_entry_id": 1},
+            {"surface": "쉽다", "lemma": "쉽다", "pos": "형용사", "difficulty": 0.0, "match_method": "exact", "matched_entry_id": 1},
+        ]
+        result = self.scorer.score_tokens(tokens, scored_words_full=scored_words_full, polysemy_map={"쉽다": 2})
+        sp = result["structure_parts"]
+        self.assertEqual(sp["repetition_count"], 1)
+        self.assertAlmostEqual(sp["repetition_raw"], 0.10, places=4)
+        self.assertAlmostEqual(sp["repetition_details"][0]["difficulty"], 0.05, places=4)
+
     def test_repetition_excluded_lemma(self) -> None:
         tokens = [
             _make_token("말", "말", "NNG"),
