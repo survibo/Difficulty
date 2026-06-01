@@ -46,10 +46,25 @@
   .bar.bg { background: #eee; position: absolute; width: 100%; }
   .bar-wrap { position: relative; flex: 1; height: 8px; border-radius: 4px; background: #eee; }
   .word-list { margin-top: 8px; }
-  .word-item { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 3px; padding: 2px 10px; margin: 2px; border-radius: 4px; font-size: 0.8rem; background: #f0f4ff; }
+  .word-item { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 3px; padding: 2px 10px; margin: 2px; border-radius: 4px; font-size: 0.8rem; background: #f0f4ff; cursor: pointer; transition: filter .15s; }
+  .word-item:hover { filter: brightness(0.93); }
   .word-item.unknown { background: #ffe0e0; }
   .word-item.top3 { background: #fff0e0; border: 1px solid #e67e22; }
   .word-item .diff { color: #888; font-size: 0.7rem; margin-left: 4px; }
+  .modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.35); display:flex; align-items:center; justify-content:center; z-index:1000; visibility:hidden; opacity:0; transition:opacity .2s; }
+  .modal-overlay.show { visibility:visible; opacity:1; }
+  .modal-box { background:#fff; border-radius:12px; padding:24px; width:340px; max-width:90vw; box-shadow:0 8px 30px rgba(0,0,0,0.15); }
+  .modal-box h3 { margin-bottom:16px; font-size:1.1rem; }
+  .modal-row { margin-bottom:10px; display:flex; align-items:center; gap:8px; }
+  .modal-row label { min-width:70px; color:#888; font-size:0.85rem; }
+  .modal-row input[type=number] { flex:1; padding:8px 10px; font-size:1rem; border:2px solid #ddd; border-radius:6px; }
+  .modal-row input[type=number]:focus { outline:none; border-color:#4a90d9; }
+  .modal-actions { display:flex; gap:8px; margin-top:20px; justify-content:flex-end; }
+  .modal-actions button { margin:0; padding:8px 20px; }
+  .btn-cancel { background:#eee !important; color:#555 !important; }
+  .btn-cancel:hover { background:#ddd !important; }
+  .btn-reset { background:#e74c3c !important; }
+  .btn-reset:hover { background:#c0392b !important; }
   #examples { margin-bottom: 16px; }
   .example-btn { display: inline-block; max-width: 100%; padding: 4px 12px; margin: 2px; font-size: 0.8rem; line-height: 1.45; background: #e8eef7; color: #4a90d9; border: 1px solid #c8d8ed; border-radius: 14px; cursor: pointer; vertical-align: top; overflow-wrap: anywhere; }
   .example-btn:hover { background: #4a90d9; color: #fff; }
@@ -144,6 +159,21 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="wordModal" onclick="if(event.target===this)closeWordModal()">
+  <div class="modal-box">
+    <h3>단어 난도 설정</h3>
+    <div class="modal-row"><label>표면형</label><span id="modalSurface"></span></div>
+    <div class="modal-row"><label>lemma</label><span id="modalLemma"></span></div>
+    <div class="modal-row"><label>품사</label><span id="modalPos"></span></div>
+    <div class="modal-row"><label>사전 난도</label><span id="modalLexiconDiff"></span></div>
+    <div class="modal-row"><label>Override</label><input type="number" id="modalInput" min="0" max="1" step="0.05" value="0.30"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeWordModal()">취소</button>
+      <button class="btn-reset" id="modalResetBtn" onclick="resetWord()" style="display:none">초기화</button>
+      <button onclick="saveWordModal()">저장</button>
+    </div>
+  </div>
+</div>
 <script>
 const API = "/api/score";
 const PARAGRAPH_API = "/api/score-paragraph";
@@ -324,30 +354,67 @@ function renderLexical(d) {
     const isTop = top3.has(key);
     const cls = w.match_method === "unknown" ? "word-item unknown" : isTop ? "word-item top3" : "word-item";
     const saved = customWords[w.lemma];
-    html += `<span class="${cls}" style="cursor:default">${w.surface}<span class="diff">${fmt4(saved !== undefined ? saved : w.difficulty)}</span>`;
-    if (w.match_method === "unknown" || saved !== undefined) {
-      const val = saved !== undefined ? saved : "0.30";
-      html += ` <input type="number" min="0" max="1" step="0.05" value="${val}" style="width:50px;font-size:0.75rem;border:1px solid #ccc;border-radius:3px;padding:1px 4px;" id="diff_${w.lemma}">`;
-      html += ` <button onclick="registerWord('${w.lemma}')" style="font-size:0.7rem;padding:1px 8px;background:#e74c3c;color:#fff;border:none;border-radius:3px;cursor:pointer;">${saved !== undefined ? '수정' : '등록'}</button>`;
-    }
-    html += `</span>`;
+    const effectiveDiff = saved !== undefined ? saved : w.difficulty;
+    html += `<span class="${cls}" data-lemma="${escapeHtml(w.lemma)}" data-surface="${escapeHtml(w.surface)}" data-pos="${escapeHtml(w.pos)}" data-difficulty="${w.difficulty}" data-method="${escapeHtml(w.match_method)}">${w.surface}<span class="diff">${fmt4(effectiveDiff)}</span></span>`;
   }
   html += "</div>";
   body.innerHTML += html;
 }
 
-function registerWord(lemma) {
-  const input = document.getElementById("diff_" + lemma);
-  const difficulty = parseFloat(input.value);
+let _modalLemma = "";
+
+function showWordModal(lemma, surface, pos, lexiconDiff, matchMethod) {
+  _modalLemma = lemma;
+  document.getElementById("modalSurface").textContent = surface;
+  document.getElementById("modalLemma").textContent = lemma;
+  document.getElementById("modalPos").textContent = pos + (matchMethod === "unknown" ? " (미등록)" : "");
+  document.getElementById("modalLexiconDiff").textContent = fmt4(lexiconDiff);
+  const customWords = JSON.parse(localStorage.getItem("custom_words") || "{}");
+  const saved = customWords[lemma];
+  document.getElementById("modalInput").value = saved !== undefined ? saved : lexiconDiff;
+  const resetBtn = document.getElementById("modalResetBtn");
+  resetBtn.style.display = saved !== undefined ? "inline-block" : "none";
+  document.getElementById("wordModal").classList.add("show");
+}
+
+function saveWordModal() {
+  const difficulty = parseFloat(document.getElementById("modalInput").value);
   if (isNaN(difficulty) || difficulty < 0 || difficulty > 1) {
     alert("0.0~1.0 범위로 입력하세요.");
     return;
   }
   const customWords = JSON.parse(localStorage.getItem("custom_words") || "{}");
-  customWords[lemma] = difficulty;
+  customWords[_modalLemma] = difficulty;
   localStorage.setItem("custom_words", JSON.stringify(customWords));
+  closeWordModal();
   analyze();
 }
+
+function resetWord() {
+  const customWords = JSON.parse(localStorage.getItem("custom_words") || "{}");
+  delete customWords[_modalLemma];
+  localStorage.setItem("custom_words", JSON.stringify(customWords));
+  closeWordModal();
+  analyze();
+}
+
+function closeWordModal() {
+  document.getElementById("wordModal").classList.remove("show");
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+  document.getElementById("lexicalBody").addEventListener("click", function(e) {
+    const span = e.target.closest(".word-item");
+    if (!span) return;
+    showWordModal(
+      span.dataset.lemma,
+      span.dataset.surface,
+      span.dataset.pos,
+      parseFloat(span.dataset.difficulty),
+      span.dataset.method
+    );
+  });
+});
 
 function renderStructure(d) {
   const sp = d.structure_parts;
