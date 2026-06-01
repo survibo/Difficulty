@@ -117,10 +117,10 @@
   </div>
 
   <div id="examples">
-    <span class="example-btn" onclick="loadExample(this)">오늘 날씨가 맑다.</span>
     <span class="example-btn" onclick="loadExample(this)">나는 매일 아침 공원에서 산책을 한다.</span>
     <span class="example-btn" onclick="loadExample(this)">건강을 유지하려면 규칙적인 운동과 균형 잡힌 식단이 필요하다.</span>
     <span class="example-btn" onclick="loadExample(this)">현대 사회에서 급격한 기술 발전은 인간의 노동 구조를 근본적으로 변화시키며 다양한 사회적 문제를 야기하고 있다.</span>
+    <span class="example-btn" onclick="loadExample(this)">산업화 이후 도시로의 인구 집중이 가속화되면서 형성된 빈부 격차는, 교육 기회의 불균형을 심화시키고, 이는 다시 계층 이동의 가능성을 제한하는 악순환으로 이어진다는 점에서, 단순한 경제 문제가 아니라 사회 구조 전반의 문제로 보아야 한다.</span>
   </div>
 
   <div class="mode-row">
@@ -176,13 +176,6 @@
 <script>
 const API = "/api/score";
 const PARAGRAPH_API = "/api/score-paragraph";
-
-const EXAMPLES = [
-  "오늘 날씨가 맑다.",
-  "나는 매일 아침 공원에서 산책을 한다.",
-  "건강을 유지하려면 규칙적인 운동과 균형 잡힌 식단이 필요하다.",
-  "현대 사회에서 급격한 기술 발전은 인간의 노동 구조를 근본적으로 변화시키며 다양한 사회적 문제를 야기하고 있다."
-];
 
 function loadExample(el) {
   document.getElementById("input").value = el.textContent;
