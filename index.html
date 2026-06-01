@@ -272,7 +272,6 @@ function renderParagraphDetails(d) {
   html += paragraphMetricRow("sentence_max", p.sentence_max, "최고 문장");
   html += paragraphMetricRow("information_density", p.information_density, "핵심 내용어 " + p.unique_core_content_count);
   html += paragraphMetricRow("concept_repetition", p.concept_repetition, "반복 핵심어 " + p.repeated_core_content_count);
-  html += paragraphMetricRow("discourse_marker_score", p.discourse_marker_score, "담화 표지 " + p.discourse_marker_count + "개");
   html += '</table>';
 
   html += '<h3 class="mini-heading">문장별 점수</h3><table>';

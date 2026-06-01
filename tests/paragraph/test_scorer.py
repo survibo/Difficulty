@@ -71,22 +71,6 @@ class ParagraphScorerTest(unittest.TestCase):
             + 0.10 * parts["concept_repetition"]
         )
         self.assertEqual(result["score_0_1"], round(expected, 4))
-        self.assertEqual(parts["discourse_marker_score"], 1.0)
-
-    def test_initial_discourse_markers_count_for_paragraphs(self) -> None:
-        result = self.scorer.score("그러나 쉬운 문장이다. 따라서 어려운 문장이다.")
-        parts = result["paragraph_parts"]
-        self.assertEqual(parts["discourse_marker_count"], 2)
-        self.assertEqual(parts["discourse_marker_weighted"], 2.0)
-        self.assertEqual(parts["discourse_marker_score"], 1.0)
-
-    def test_discourse_marker_score_is_normalized_by_sentence_count(self) -> None:
-        result = self.scorer.score("그러나 쉬운 문장이다. 쉬운 문장이다. 쉬운 문장이다. 쉬운 문장이다.")
-        parts = result["paragraph_parts"]
-        self.assertEqual(parts["sentence_mean"], 0.2)
-        self.assertEqual(parts["discourse_marker_count"], 1)
-        self.assertEqual(parts["discourse_marker_weighted"], 1.0)
-        self.assertEqual(parts["discourse_marker_score"], 0.25)
 
     def test_information_density_uses_unique_core_content_items(self) -> None:
         result = self.scorer.score("같은 단어. 같은 다른.")

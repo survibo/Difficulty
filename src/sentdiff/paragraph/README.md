@@ -29,16 +29,6 @@ sentence_aggregate =
 + 0.20 × sentence_max
 ```
 
-## discourse_marker_score
-
-문장 단위 분석에서는 첫머리 logical marker를 제외하지만, 문단 분석에서는 참고 진단값으로 문장 첫머리 담화 표지를 집계한다. 현재 문단 최종 점수에는 반영하지 않는다.
-
-예: `그러나`, `따라서`, `한편`, `결국`, `또한`, `그럼에도 불구하고`
-
-```text
-discourse_marker_score = min(1.0, discourse_marker_weighted / sentence_count)
-```
-
 ## information_density
 
 문단 전체에서 서로 다른 **핵심 내용어** 수를 정보량으로 본다.
@@ -98,9 +88,6 @@ concept_repetition_raw =
         "sentence_mean": float,
         "sentence_top_3_mean": float,
         "sentence_max": float,
-        "discourse_marker_score": float,
-        "discourse_marker_weighted": float,
-        "discourse_marker_count": int,
         "information_density": float,
         "information_density_full_score_at": int,
         "unique_core_content_count": int,

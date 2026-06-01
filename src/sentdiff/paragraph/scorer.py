@@ -12,29 +12,6 @@ from sentdiff.pipeline import SentenceScorer
 
 _SENTENCE_SPLIT_RE = re.compile(r"[^.!?。！？\n]+[.!?。！？]?", re.MULTILINE)
 
-_DISCOURSE_MARKERS: dict[str, float] = {
-    "즉": 1.0,
-    "따라서": 1.0,
-    "그러므로": 1.0,
-    "그러나": 1.0,
-    "하지만": 1.0,
-    "그렇지만": 1.0,
-    "그럼에도": 0.9,
-    "그럼에도 불구하고": 1.0,
-    "반면": 0.9,
-    "한편": 0.8,
-    "또한": 0.7,
-    "더불어": 0.7,
-    "아울러": 0.7,
-    "나아가": 0.8,
-    "게다가": 0.7,
-    "결국": 0.9,
-    "요컨대": 1.0,
-    "종합하면": 1.0,
-    "정리하면": 0.9,
-    "결론적으로": 1.0,
-}
-
 _CORE_INFORMATION_TAGS: set[str] = {"NNG", "NNP", "VV", "VA", "XR"}
 _CORE_INFORMATION_POS: set[str] = {"명사", "동사", "형용사", "어근"}
 _CONCEPT_REPETITION_EXCLUDED_LEMMAS: set[str] = {"것", "수", "때", "말", "점", "등", "바", "데"}
@@ -75,25 +52,6 @@ class ParagraphScorer:
             "sentence_top_3_mean": round(top_3_mean, 4),
             "sentence_max": round(sentence_max, 4),
             "sentence_aggregate": round(aggregate, 4),
-        }
-
-    @staticmethod
-    def _discourse_marker_weight(sentence: str) -> float:
-        stripped = sentence.strip().lstrip("'\"“‘([{")
-        for marker, weight in sorted(_DISCOURSE_MARKERS.items(), key=lambda x: len(x[0]), reverse=True):
-            if stripped.startswith(marker):
-                return weight
-        return 0.0
-
-    @classmethod
-    def _discourse_score(cls, sentences: list[str]) -> dict[str, float | int]:
-        weighted = sum(cls._discourse_marker_weight(sentence) for sentence in sentences)
-        count = sum(1 for sentence in sentences if cls._discourse_marker_weight(sentence) > 0.0)
-        score = min(1.0, weighted / len(sentences)) if sentences else 0.0
-        return {
-            "discourse_marker_count": count,
-            "discourse_marker_weighted": round(weighted, 4),
-            "discourse_marker_score": round(score, 4),
         }
 
     @staticmethod
@@ -195,7 +153,6 @@ class ParagraphScorer:
         sentence_scores = [float(result.get("score_0_1", 0.0)) for result in sentence_results]
 
         aggregate = self._sentence_aggregate(sentence_scores)
-        discourse = self._discourse_score(sentences)
         density = self._information_density(sentence_results)
         repetition = self._concept_repetition(sentence_results)
 
@@ -214,7 +171,6 @@ class ParagraphScorer:
             "sentences": sentence_results,
             "paragraph_parts": {
                 **aggregate,
-                **discourse,
                 **density,
                 **repetition,
                 "paragraph_weights": {
