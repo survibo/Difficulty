@@ -11,10 +11,12 @@
 
 ```text
 paragraph_score =
-  0.80 × sentence_aggregate
-+ 0.10 × information_density
+  0.85 × sentence_aggregate
++ 0.15 × information_density
 + 0.10 × concept_repetition
 ```
+
+`concept_repetition`은 반복 핵심어 처리 부담을 더하는 **보너스** 항목이다. 최종 점수는 1.0을 넘지 않도록 clamp한다.
 
 ## sentence_aggregate
 

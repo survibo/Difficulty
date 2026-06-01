@@ -56,9 +56,9 @@ class ParagraphScorerTest(unittest.TestCase):
         self.assertEqual(
             result["paragraph_parts"]["paragraph_weights"],
             {
-                "sentence_aggregate": 0.80,
-                "information_density": 0.10,
-                "concept_repetition": 0.10,
+                "sentence_aggregate": 0.85,
+                "information_density": 0.15,
+                "concept_repetition_bonus": 0.10,
             },
         )
 
@@ -66,8 +66,8 @@ class ParagraphScorerTest(unittest.TestCase):
         result = self.scorer.score("그러나 쉬운 문장이다.")
         parts = result["paragraph_parts"]
         expected = (
-            0.80 * parts["sentence_aggregate"]
-            + 0.10 * parts["information_density"]
+            0.85 * parts["sentence_aggregate"]
+            + 0.15 * parts["information_density"]
             + 0.10 * parts["concept_repetition"]
         )
         self.assertEqual(result["score_0_1"], round(expected, 4))

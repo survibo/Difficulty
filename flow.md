@@ -407,10 +407,13 @@ hard boundary → 새 hard segment 시작
 ### 6.1 최종 문단 공식
 
 ```
-paragraph_score = 0.80 × sentence_aggregate
-                + 0.10 × information_density
+paragraph_score = 0.85 × sentence_aggregate
+                + 0.15 × information_density
                 + 0.10 × concept_repetition
 ```
+
+`concept_repetition`은 반복 핵심어 처리 부담을 더하는 **보너스** 항목이다.
+최종 문단 점수는 1.0을 넘지 않도록 clamp한다.
 
 ### 6.2 문장 점수 집계
 
