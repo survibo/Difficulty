@@ -160,7 +160,7 @@ class ParagraphScorer:
         score_0_1 = (
             0.85 * float(aggregate["sentence_aggregate"])
             + 0.15 * float(density["information_density"])
-            + 0.10 * float(repetition["concept_repetition"])
+            + 0.15 * float(repetition["concept_repetition"])
         )
         score_0_1 = max(0.0, min(1.0, score_0_1))
 
@@ -177,7 +177,7 @@ class ParagraphScorer:
                 "paragraph_weights": {
                     "sentence_aggregate": 0.85,
                     "information_density": 0.15,
-                    "concept_repetition_bonus": 0.10,
+                    "concept_repetition_bonus": 0.15,
                 },
             },
         }

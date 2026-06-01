@@ -235,7 +235,7 @@ function renderParagraph(d) {
 
   const p = d.paragraph_parts;
   document.getElementById("finalFormula").textContent =
-    "paragraph = 0.85×sentence_aggregate + 0.15×information_density + 0.10×concept_repetition";
+    "paragraph = 0.85×sentence_aggregate + 0.15×information_density + 0.15×concept_repetition";
 
   const GH = "https://github.com/survibo/Difficulty/blob/main";
   const scoreRow = document.getElementById("scoreRow");
@@ -254,10 +254,10 @@ function renderParagraphDetails(d) {
   const p = d.paragraph_parts;
   const sentenceContribution = 0.85 * p.sentence_aggregate;
   const densityContribution = 0.15 * p.information_density;
-  const repetitionContribution = 0.10 * p.concept_repetition;
+  const repetitionContribution = 0.15 * p.concept_repetition;
   const unclamped = sentenceContribution + densityContribution + repetitionContribution;
   document.getElementById("paragraphFormula").textContent =
-    `0.85×${fmt(p.sentence_aggregate)} + 0.15×${fmt(p.information_density)} + 0.10×${fmt(p.concept_repetition)} = ${fmt(unclamped)} → ${fmt(d.score_0_1)}`;
+    `0.85×${fmt(p.sentence_aggregate)} + 0.15×${fmt(p.information_density)} + 0.15×${fmt(p.concept_repetition)} = ${fmt(unclamped)} → ${fmt(d.score_0_1)}`;
 
   let html = '<table>';
   html += paragraphContributionRow("sentence_aggregate", p.sentence_aggregate, sentenceContribution, "mean=" + fmt(p.sentence_mean) + " top3=" + fmt(p.sentence_top_3_mean) + " max=" + fmt(p.sentence_max));

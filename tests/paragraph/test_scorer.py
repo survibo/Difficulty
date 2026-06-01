@@ -58,7 +58,7 @@ class ParagraphScorerTest(unittest.TestCase):
             {
                 "sentence_aggregate": 0.85,
                 "information_density": 0.15,
-                "concept_repetition_bonus": 0.10,
+                "concept_repetition_bonus": 0.15,
             },
         )
 
@@ -68,7 +68,7 @@ class ParagraphScorerTest(unittest.TestCase):
         expected = (
             0.85 * parts["sentence_aggregate"]
             + 0.15 * parts["information_density"]
-            + 0.10 * parts["concept_repetition"]
+            + 0.15 * parts["concept_repetition"]
         )
         self.assertEqual(result["score_0_1"], round(expected, 4))
 
