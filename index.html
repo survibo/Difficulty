@@ -54,6 +54,8 @@
   .example-btn { display: inline-block; max-width: 100%; padding: 4px 12px; margin: 2px; font-size: 0.8rem; line-height: 1.45; background: #e8eef7; color: #4a90d9; border: 1px solid #c8d8ed; border-radius: 14px; cursor: pointer; vertical-align: top; overflow-wrap: anywhere; }
   .example-btn:hover { background: #4a90d9; color: #fff; }
   .formula { font-family: 'Consolas', 'Courier New', monospace; font-size: 0.8rem; color: #666; background: #fafafa; padding: 8px 12px; border-radius: 6px; margin-bottom: 12px; border: 1px solid #eee; overflow-wrap: anywhere; }
+  .mini-heading { margin-top: 16px; font-size: 0.9rem; color: #555; }
+  .sentence-cell { line-height: 1.45; font-weight: 400 !important; }
   .server-banner { background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; font-size: 0.85rem; color: #856404; }
   .server-banner code { display: inline-block; max-width: 100%; background: #fff; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; overflow-wrap: anywhere; }
   @media (max-width: 600px) {
@@ -250,29 +252,46 @@ function renderParagraph(d) {
 
 function renderParagraphDetails(d) {
   const p = d.paragraph_parts;
+  const sentenceContribution = 0.85 * p.sentence_aggregate;
+  const densityContribution = 0.15 * p.information_density;
+  const repetitionContribution = 0.10 * p.concept_repetition;
+  const unclamped = sentenceContribution + densityContribution + repetitionContribution;
   document.getElementById("paragraphFormula").textContent =
-    `sentence=${p.sentence_aggregate} (mean=${p.sentence_mean}, top3=${p.sentence_top_3_mean}, max=${p.sentence_max}) + density=${p.information_density} (${p.unique_core_content_count}/${p.information_density_full_score_at}) + repetition=${p.concept_repetition} (raw=${p.concept_repetition_raw}/${p.concept_repetition_full_score_at}); discourse는 참고값`;
+    `0.85×${fmt(p.sentence_aggregate)} + 0.15×${fmt(p.information_density)} + 0.10×${fmt(p.concept_repetition)} = ${fmt(unclamped)} → ${fmt(d.score_0_1)}`;
 
-  let html = table([
-    ["sentence_mean", p.sentence_mean],
-    ["sentence_top_3_mean", p.sentence_top_3_mean],
-    ["sentence_max", p.sentence_max],
-    ["sentence_aggregate", p.sentence_aggregate],
-    ["information_density", p.information_density],
-    ["information_density_full_score_at", p.information_density_full_score_at],
-    ["unique_core_content_count", p.unique_core_content_count],
-    ["concept_repetition", p.concept_repetition],
-    ["concept_repetition_raw", p.concept_repetition_raw],
-    ["concept_repetition_full_score_at", p.concept_repetition_full_score_at],
-    ["repeated_core_content_count", p.repeated_core_content_count],
-  ]);
+  let html = '<table>';
+  html += paragraphContributionRow("sentence_aggregate", p.sentence_aggregate, sentenceContribution, "mean=" + fmt(p.sentence_mean) + " top3=" + fmt(p.sentence_top_3_mean) + " max=" + fmt(p.sentence_max));
+  html += paragraphContributionRow("information_density", p.information_density, densityContribution, p.unique_core_content_count + "/" + p.information_density_full_score_at);
+  html += paragraphContributionRow("concept_repetition", p.concept_repetition, repetitionContribution, "raw=" + fmt(p.concept_repetition_raw) + "/" + p.concept_repetition_full_score_at + " 반복=" + p.repeated_core_content_count);
+  html += paragraphContributionRow("clamped_score", d.score_0_1, d.score_0_1, unclamped > 1 ? "1.0 상한 적용" : "상한 미적용");
+  html += '</table>';
 
-  html += '<h3 style="margin-top:16px">문장별 점수</h3><table>';
+  html += '<h3 class="mini-heading">문단 지표</h3><table>';
+  html += paragraphMetricRow("sentence_mean", p.sentence_mean, "전체 문장 평균");
+  html += paragraphMetricRow("sentence_top_3_mean", p.sentence_top_3_mean, "상위 3개 평균");
+  html += paragraphMetricRow("sentence_max", p.sentence_max, "최고 문장");
+  html += paragraphMetricRow("information_density", p.information_density, "핵심 내용어 " + p.unique_core_content_count);
+  html += paragraphMetricRow("concept_repetition", p.concept_repetition, "반복 핵심어 " + p.repeated_core_content_count);
+  html += paragraphMetricRow("discourse_marker_score", p.discourse_marker_score, "담화 표지 " + p.discourse_marker_count + "개");
+  html += '</table>';
+
+  html += '<h3 class="mini-heading">문장별 점수</h3><table>';
+  html += '<tr><td>#</td><td>문장</td><td>score</td><td>lexical</td><td>structure</td><td>negation</td><td>content</td></tr>';
   for (const [i, s] of d.sentences.entries()) {
-    html += `<tr><td>${i + 1}</td><td>${escapeHtml(s.sentence)}</td><td><span class="badge">${s.score_10}/10</span></td></tr>`;
+    html += `<tr><td>${i + 1}</td><td class="sentence-cell">${escapeHtml(s.sentence)}</td><td><span class="badge">${s.score_10}/10</span></td><td>${fmt10(s.lexical_score_0_1)}</td><td>${fmt10(s.structure_score_0_1)}</td><td>${fmt10(s.negation_score_0_1)}</td><td>${s.content_token_count}</td></tr>`;
   }
   html += '</table>';
   document.getElementById("paragraphBody").innerHTML = html;
+}
+
+function paragraphContributionRow(label, score, contribution, detail) {
+  const pct = Math.round(Math.min(1, Math.max(0, score)) * 100);
+  return `<tr><td>${label}</td><td><div class="histogram"><div class="bar-wrap"><div class="bar" style="width:${pct}%"></div></div>${fmt(score)}</div></td><td><span class="badge">${detail}</span></td><td>${fmt(contribution)}</td></tr>`;
+}
+
+function paragraphMetricRow(label, value, detail) {
+  const pct = Math.round(Math.min(1, Math.max(0, value)) * 100);
+  return `<tr><td>${label}</td><td><div class="histogram"><div class="bar-wrap"><div class="bar" style="width:${pct}%"></div></div>${fmt(value)}</div></td><td><span class="badge">${detail}</span></td></tr>`;
 }
 
 function card(label, value, color, range, link) {
@@ -385,6 +404,16 @@ function table(rows) {
   for (const [k, v] of rows) html += `<tr><td>${k}</td><td>${typeof v === "number" ? v.toFixed(3) : v}</td></tr>`;
   html += "</table>";
   return html;
+}
+
+function fmt(value) {
+  const num = Number(value || 0);
+  return num.toFixed(3);
+}
+
+function fmt10(value) {
+  const num = Number(value || 0);
+  return (num * 10).toFixed(2);
 }
 
 function escapeHtml(value) {
