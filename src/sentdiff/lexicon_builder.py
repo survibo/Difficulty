@@ -7,7 +7,7 @@ lexicon_builder.py
 입력:
 - data/raw/vocab_40k.xlsx
   - 여섯 번째 시트 사용: sheet_name=5
-  - 예상 컬럼: 등급, 어휘, 동형어번호, 품사, 어종, 원어, 의미, 분야
+  - 예상 컬럼: 등급, 어휘, 표준동형어번호수정, 품사, 어종, 원어, 의미, 분야
 
 핵심 설계:
 - 4만 개 5등급 목록을 난도 기준으로 사용한다.
@@ -161,7 +161,12 @@ def load_vocab_40k(config: LexiconBuildConfig) -> pd.DataFrame:
 
     grade_col = _find_column(df, ["등급", "어휘등급", "급수"], table_name="vocab_40k")
     lemma_col = _find_column(df, ["어휘", "단어", "표제어"], table_name="vocab_40k")
-    homograph_col = _find_column(df, ["동형어번호", "동형어 번호", "동형 번호", "동형어"], required=False, table_name="vocab_40k")
+    homograph_col = _find_column(
+        df,
+        ["표준동형어번호수정", "동형어번호", "동형어 번호", "동형 번호", "동형어"],
+        required=False,
+        table_name="vocab_40k",
+    )
     pos_col = _find_column(df, ["품사"], table_name="vocab_40k")
     origin_col = _find_column(df, ["어종"], required=False, table_name="vocab_40k")
     original_col = _find_column(df, ["원어"], required=False, table_name="vocab_40k")

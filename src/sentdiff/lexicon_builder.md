@@ -22,6 +22,7 @@
 ### 1. 4만 목록 로드 (`load_vocab_40k`)
 
 - 표준 컬럼: `lemma`, `homograph_no`, `pos_norm`, `grade_5`, `origin`, `domain`, `meaning`
+- 원본 동형어번호 컬럼은 `표준동형어번호수정`이며, 빌드 시 `homograph_no`로 정규화한다.
 - 유효 lemma 필터, 완전 중복 제거
 
 ### 2. 난도 계산 (`add_difficulty_columns`)

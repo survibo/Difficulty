@@ -1,506 +1,1201 @@
 <!DOCTYPE html>
 <html lang="ko">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>문장 난도 측정 테스트</title>
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, 'Noto Sans KR', sans-serif; background: #f5f5f5; padding: 40px 20px; color: #333; }
-  .container { width: 100%; max-width: 720px; margin: 0 auto; }
-  h1 { font-size: 1.5rem; margin-bottom: 8px; }
-  p.sub { color: #777; font-size: 0.9rem; margin-bottom: 24px; }
-  .criteria { background: #fff; border-left: 4px solid #4a90d9; border-radius: 8px; padding: 12px 14px; margin-bottom: 18px; color: #555; font-size: 0.9rem; line-height: 1.55; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
-  .criteria strong { color: #333; }
-  .mode-row { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
-  .mode-row label { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border: 1px solid #d8e2ef; border-radius: 999px; background: #fff; color: #557; font-size: 0.85rem; cursor: pointer; }
-  .mode-row input { accent-color: #4a90d9; }
-  textarea { width: 100%; height: 100px; padding: 12px; font-size: 1rem; border: 2px solid #ddd; border-radius: 8px; resize: vertical; }
-  textarea:focus { outline: none; border-color: #4a90d9; }
-  button { margin-top: 12px; padding: 10px 28px; font-size: 1rem; background: #4a90d9; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
-  button:hover { background: #357abd; }
-  button:disabled { background: #aaa; cursor: not-allowed; }
-  .error { color: #d32; margin-top: 12px; }
-  #result { display: none; margin-top: 24px; }
-  #result.show { display: block; }
-  .score-row { display: flex; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
-  .score-card { flex: 1; min-width: 120px; background: #fff; border-radius: 10px; padding: 16px; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
-  .score-card .label { font-size: 0.8rem; color: #888; }
-  .score-card .value { font-size: 2rem; font-weight: 700; margin-top: 4px; }
-  .score-card .value.blue { color: #4a90d9; }
-  .score-card .value.green { color: #27ae60; }
-  .score-card .value.orange { color: #e67e22; }
-  .score-card .value.red { color: #e74c3c; }
-  .score-card .range { font-size: 0.7rem; color: #aaa; margin-top: 2px; }
-  .doc-link { color: inherit; text-decoration: none; border-bottom: 1px dotted #ccc; }
-  .doc-link:hover { border-bottom-color: #4a90d9; }
-  .section { background: #fff; border-radius: 10px; padding: 16px 20px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
-  .section h3 { font-size: 0.95rem; color: #555; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid #eee; }
-  .section table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-  .section td { padding: 4px 8px; }
-  .section td:first-child { color: #888; width: 160px; }
-  .section td:last-child { font-weight: 500; }
-  .badge { display: inline-block; padding: 1px 8px; border-radius: 4px; font-size: 0.75rem; background: #eee; color: #666; margin-left: 4px; }
-  .histogram { display: flex; align-items: center; gap: 6px; }
-  .bar { height: 8px; border-radius: 4px; background: #4a90d9; transition: width 0.3s; }
-  .bar.bg { background: #eee; position: absolute; width: 100%; }
-  .bar-wrap { position: relative; flex: 1; height: 8px; border-radius: 4px; background: #eee; }
-  .word-list { margin-top: 8px; }
-  .word-item { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 3px; padding: 2px 10px; margin: 2px; border-radius: 4px; font-size: 0.8rem; background: #f0f4ff; cursor: pointer; transition: filter .15s; }
-  .word-item:hover { filter: brightness(0.93); }
-  .word-item.unknown { background: #ffe0e0; }
-  .word-item.top3 { background: #fff0e0; border: 1px solid #e67e22; }
-  .word-item .diff { color: #888; font-size: 0.7rem; margin-left: 4px; }
-  .modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.35); display:flex; align-items:center; justify-content:center; z-index:1000; visibility:hidden; opacity:0; transition:opacity .2s; }
-  .modal-overlay.show { visibility:visible; opacity:1; }
-  .modal-box { background:#fff; border-radius:12px; padding:24px; width:340px; max-width:90vw; box-shadow:0 8px 30px rgba(0,0,0,0.15); }
-  .modal-box h3 { margin-bottom:16px; font-size:1.1rem; }
-  .modal-row { margin-bottom:10px; display:flex; align-items:center; gap:8px; }
-  .modal-row label { min-width:70px; color:#888; font-size:0.85rem; }
-  .modal-row input[type=number] { flex:1; padding:8px 10px; font-size:1rem; border:2px solid #ddd; border-radius:6px; }
-  .modal-row input[type=number]:focus { outline:none; border-color:#4a90d9; }
-  .modal-actions { display:flex; gap:8px; margin-top:20px; justify-content:flex-end; }
-  .modal-actions button { margin:0; padding:8px 20px; }
-  .btn-cancel { background:#eee !important; color:#555 !important; }
-  .btn-cancel:hover { background:#ddd !important; }
-  .btn-reset { background:#e74c3c !important; }
-  .btn-reset:hover { background:#c0392b !important; }
-  #examples { margin-bottom: 16px; }
-  .example-btn { display: inline-block; max-width: 100%; padding: 4px 12px; margin: 2px; font-size: 0.8rem; line-height: 1.45; background: #e8eef7; color: #4a90d9; border: 1px solid #c8d8ed; border-radius: 14px; cursor: pointer; vertical-align: top; overflow-wrap: anywhere; }
-  .example-btn:hover { background: #4a90d9; color: #fff; }
-  .formula { font-family: 'Consolas', 'Courier New', monospace; font-size: 0.8rem; color: #666; background: #fafafa; padding: 8px 12px; border-radius: 6px; margin-bottom: 12px; border: 1px solid #eee; overflow-wrap: anywhere; }
-  .mini-heading { margin-top: 16px; font-size: 0.9rem; color: #555; }
-  .sentence-cell { line-height: 1.45; font-weight: 400 !important; }
-  .server-banner { background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; font-size: 0.85rem; color: #856404; }
-  .server-banner code { display: inline-block; max-width: 100%; background: #fff; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; overflow-wrap: anywhere; }
-  @media (max-width: 600px) {
-    body { padding: 20px 12px; }
-    h1 { font-size: 1.35rem; }
-    p.sub { margin-bottom: 18px; line-height: 1.5; }
-    .criteria { padding: 10px 12px; font-size: 0.85rem; }
-    .mode-row { display: grid; grid-template-columns: 1fr 1fr; }
-    .mode-row label { justify-content: center; }
-    textarea { height: 120px; font-size: 16px; }
-    #btn { width: 100%; padding: 12px 18px; }
-    .server-banner { padding: 10px 12px; line-height: 1.55; }
-    #examples { display: flex; flex-direction: column; gap: 6px; }
-    .example-btn { margin: 0; border-radius: 10px; text-align: left; }
-    .score-row { gap: 10px; }
-    .score-card { flex: 1 1 calc(50% - 10px); min-width: 0; padding: 12px 8px; }
-    .score-card .value { font-size: 1.55rem; }
-    .section { padding: 14px 12px; }
-    .section table, .section tbody, .section tr, .section td { display: block; width: 100%; }
-    .section tr { padding: 8px 0; border-bottom: 1px solid #eee; }
-    .section tr:last-child { border-bottom: 0; }
-    .section td { padding: 2px 0; }
-    .section td:first-child { width: auto; font-weight: 600; }
-    .histogram { width: 100%; }
-    .badge { margin: 3px 4px 0 0; white-space: normal; }
-    .word-list { display: flex; flex-wrap: wrap; gap: 4px; }
-    .word-item { margin: 0; max-width: 100%; }
-  }
-</style>
-</head>
-<body>
-<div class="container">
-  <div class="server-banner" id="banner">
-    💡 로컬 서버 실행 시: <code>python scripts/test_server.py</code> → <code>http://localhost:8800</code>
-  </div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>문장 난도 측정 테스트</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: -apple-system, "Noto Sans KR", sans-serif;
+        background: #f5f5f5;
+        padding: 40px 20px;
+        color: #333;
+      }
+      .container {
+        width: 100%;
+        max-width: 720px;
+        margin: 0 auto;
+      }
+      h1 {
+        font-size: 1.5rem;
+        margin-bottom: 8px;
+      }
+      p.sub {
+        color: #777;
+        font-size: 0.9rem;
+        margin-bottom: 24px;
+      }
+      .criteria {
+        background: #fff;
+        border-left: 4px solid #4a90d9;
+        border-radius: 8px;
+        padding: 12px 14px;
+        margin-bottom: 18px;
+        color: #555;
+        font-size: 0.9rem;
+        line-height: 1.55;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+      }
+      .criteria strong {
+        color: #333;
+      }
+      .mode-row {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+      }
+      .mode-row label {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 12px;
+        border: 1px solid #d8e2ef;
+        border-radius: 999px;
+        background: #fff;
+        color: #557;
+        font-size: 0.85rem;
+        cursor: pointer;
+      }
+      .mode-row input {
+        accent-color: #4a90d9;
+      }
+      textarea {
+        width: 100%;
+        height: 100px;
+        padding: 12px;
+        font-size: 1rem;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        resize: vertical;
+      }
+      textarea:focus {
+        outline: none;
+        border-color: #4a90d9;
+      }
+      button {
+        margin-top: 12px;
+        padding: 10px 28px;
+        font-size: 1rem;
+        background: #4a90d9;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #357abd;
+      }
+      button:disabled {
+        background: #aaa;
+        cursor: not-allowed;
+      }
+      .error {
+        color: #d32;
+        margin-top: 12px;
+      }
+      #result {
+        display: none;
+        margin-top: 24px;
+      }
+      #result.show {
+        display: block;
+      }
+      .score-row {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+      }
+      .score-card {
+        flex: 1;
+        min-width: 120px;
+        background: #fff;
+        border-radius: 10px;
+        padding: 16px;
+        text-align: center;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+      }
+      .score-card .label {
+        font-size: 0.8rem;
+        color: #888;
+      }
+      .score-card .value {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-top: 4px;
+      }
+      .score-card .value.blue {
+        color: #4a90d9;
+      }
+      .score-card .value.green {
+        color: #27ae60;
+      }
+      .score-card .value.orange {
+        color: #e67e22;
+      }
+      .score-card .value.red {
+        color: #e74c3c;
+      }
+      .score-card .range {
+        font-size: 0.7rem;
+        color: #aaa;
+        margin-top: 2px;
+      }
+      .doc-link {
+        color: inherit;
+        text-decoration: none;
+        border-bottom: 1px dotted #ccc;
+      }
+      .doc-link:hover {
+        border-bottom-color: #4a90d9;
+      }
+      .section {
+        background: #fff;
+        border-radius: 10px;
+        padding: 16px 20px;
+        margin-bottom: 12px;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+      }
+      .section h3 {
+        font-size: 0.95rem;
+        color: #555;
+        margin-bottom: 10px;
+        padding-bottom: 6px;
+        border-bottom: 1px solid #eee;
+      }
+      .section table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.85rem;
+      }
+      .section td {
+        padding: 4px 8px;
+      }
+      .section td:first-child {
+        color: #888;
+        width: 160px;
+      }
+      .section td:last-child {
+        font-weight: 500;
+      }
+      .badge {
+        display: inline-block;
+        padding: 1px 8px;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        background: #eee;
+        color: #666;
+        margin-left: 4px;
+      }
+      .histogram {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .bar {
+        height: 8px;
+        border-radius: 4px;
+        background: #4a90d9;
+        transition: width 0.3s;
+      }
+      .bar.bg {
+        background: #eee;
+        position: absolute;
+        width: 100%;
+      }
+      .bar-wrap {
+        position: relative;
+        flex: 1;
+        height: 8px;
+        border-radius: 4px;
+        background: #eee;
+      }
+      .word-list {
+        margin-top: 8px;
+      }
+      .word-item {
+        display: inline-flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 3px;
+        padding: 2px 10px;
+        margin: 2px;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        background: #f0f4ff;
+        cursor: pointer;
+        transition: filter 0.15s;
+      }
+      .word-item:hover {
+        filter: brightness(0.93);
+      }
+      .word-item.unknown {
+        background: #ffe0e0;
+      }
+      .word-item.top3 {
+        background: #fff0e0;
+        border: 1px solid #e67e22;
+      }
+      .word-item .diff {
+        color: #888;
+        font-size: 0.7rem;
+        margin-left: 4px;
+      }
+      .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.35);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        visibility: hidden;
+        opacity: 0;
+        transition: opacity 0.2s;
+      }
+      .modal-overlay.show {
+        visibility: visible;
+        opacity: 1;
+      }
+      .modal-box {
+        background: #fff;
+        border-radius: 12px;
+        padding: 24px;
+        width: 340px;
+        max-width: 90vw;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+      }
+      .modal-box h3 {
+        margin-bottom: 16px;
+        font-size: 1.1rem;
+      }
+      .modal-row {
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .modal-row label {
+        min-width: 70px;
+        color: #888;
+        font-size: 0.85rem;
+      }
+      .modal-row input[type="number"] {
+        flex: 1;
+        padding: 8px 10px;
+        font-size: 1rem;
+        border: 2px solid #ddd;
+        border-radius: 6px;
+      }
+      .modal-row input[type="number"]:focus {
+        outline: none;
+        border-color: #4a90d9;
+      }
+      .modal-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 20px;
+        justify-content: flex-end;
+      }
+      .modal-actions button {
+        margin: 0;
+        padding: 8px 20px;
+      }
+      .btn-cancel {
+        background: #eee !important;
+        color: #555 !important;
+      }
+      .btn-cancel:hover {
+        background: #ddd !important;
+      }
+      .btn-reset {
+        background: #e74c3c !important;
+      }
+      .btn-reset:hover {
+        background: #c0392b !important;
+      }
+      #examples {
+        margin-bottom: 16px;
+      }
+      .example-btn {
+        display: inline-block;
+        max-width: 100%;
+        padding: 4px 12px;
+        margin: 2px;
+        font-size: 0.8rem;
+        line-height: 1.45;
+        background: #e8eef7;
+        color: #4a90d9;
+        border: 1px solid #c8d8ed;
+        border-radius: 14px;
+        cursor: pointer;
+        vertical-align: top;
+        overflow-wrap: anywhere;
+      }
+      .example-btn:hover {
+        background: #4a90d9;
+        color: #fff;
+      }
+      .formula {
+        font-family: "Consolas", "Courier New", monospace;
+        font-size: 0.8rem;
+        color: #666;
+        background: #fafafa;
+        padding: 8px 12px;
+        border-radius: 6px;
+        margin-bottom: 12px;
+        border: 1px solid #eee;
+        overflow-wrap: anywhere;
+      }
+      .mini-heading {
+        margin-top: 16px;
+        font-size: 0.9rem;
+        color: #555;
+      }
+      .sentence-cell {
+        line-height: 1.45;
+        font-weight: 400 !important;
+      }
+      .server-banner {
+        background: #fff3cd;
+        border: 1px solid #ffc107;
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin-bottom: 20px;
+        font-size: 0.85rem;
+        color: #856404;
+      }
+      .server-banner code {
+        display: inline-block;
+        max-width: 100%;
+        background: #fff;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        overflow-wrap: anywhere;
+      }
+      @media (max-width: 600px) {
+        body {
+          padding: 20px 12px;
+        }
+        h1 {
+          font-size: 1.35rem;
+        }
+        p.sub {
+          margin-bottom: 18px;
+          line-height: 1.5;
+        }
+        .criteria {
+          padding: 10px 12px;
+          font-size: 0.85rem;
+        }
+        .mode-row {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+        }
+        .mode-row label {
+          justify-content: center;
+        }
+        textarea {
+          height: 120px;
+          font-size: 16px;
+        }
+        #btn {
+          width: 100%;
+          padding: 12px 18px;
+        }
+        .server-banner {
+          padding: 10px 12px;
+          line-height: 1.55;
+        }
+        #examples {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+        .example-btn {
+          margin: 0;
+          border-radius: 10px;
+          text-align: left;
+        }
+        .score-row {
+          gap: 10px;
+        }
+        .score-card {
+          flex: 1 1 calc(50% - 10px);
+          min-width: 0;
+          padding: 12px 8px;
+        }
+        .score-card .value {
+          font-size: 1.55rem;
+        }
+        .section {
+          padding: 14px 12px;
+        }
+        .section table,
+        .section tbody,
+        .section tr,
+        .section td {
+          display: block;
+          width: 100%;
+        }
+        .section tr {
+          padding: 8px 0;
+          border-bottom: 1px solid #eee;
+        }
+        .section tr:last-child {
+          border-bottom: 0;
+        }
+        .section td {
+          padding: 2px 0;
+        }
+        .section td:first-child {
+          width: auto;
+          font-weight: 600;
+        }
+        .histogram {
+          width: 100%;
+        }
+        .badge {
+          margin: 3px 4px 0 0;
+          white-space: normal;
+        }
+        .word-list {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 4px;
+        }
+        .word-item {
+          margin: 0;
+          max-width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="server-banner" id="banner">
+        💡 로컬 서버 실행 시: <code>python scripts/test_server.py</code> →
+        <code>http://localhost:8800</code>
+      </div>
 
-  <h1>문장·문단 난도 측정</h1>
-  <p class="sub">한국어 문장이나 문단을 입력하면 난도 점수를 계산합니다.
-    <a href="https://github.com/survibo/Difficulty" target="_blank" style="color:#4a90d9;text-decoration:none;">GitHub</a>
-  </p>
+      <h1>문장·문단 난도 측정</h1>
+      <p class="sub">
+        한국어 문장이나 문단을 입력하면 난도 점수를 계산합니다.
+        <a
+          href="https://github.com/survibo/Difficulty"
+          target="_blank"
+          style="color: #4a90d9; text-decoration: none"
+          >GitHub</a
+        >
+      </p>
 
-  <div class="criteria">
-    <strong>난이도 기준:</strong> 문장을 암기한 뒤, 같은 의미를 다른 표현으로 자연스럽게 말할 수 있는 정도를 기준으로 봅니다. 점수가 높을수록 어휘·구조·부정 처리 부담이 커서 재표현하기 어렵습니다. 문단 분석은 4문장 이상에서만 작동합니다.
-  </div>
+      <div class="criteria">
+        <strong>난이도:</strong> 문장을 암기하여 같은 의미를 다른 표현으로
+        자연스럽게 말할 수 있는 정도<br />
+        점수가 높을수록 어휘·구조·부정 처리 부담이 커서 재표현하기 어렵습니다.
+        <br />문단 분석은 4문장 이상에서만 작동합니다.
+      </div>
 
-  <div id="examples">
-    <span class="example-btn" onclick="loadExample(this)">나는 매일 아침 공원에서 산책을 한다.</span>
-    <span class="example-btn" onclick="loadExample(this)">건강을 유지하려면 규칙적인 운동과 균형 잡힌 식단이 필요하다.</span>
-    <span class="example-btn" onclick="loadExample(this)">현대 사회에서 급격한 기술 발전은 인간의 노동 구조를 근본적으로 변화시키며 다양한 사회적 문제를 야기하고 있다.</span>
-    <span class="example-btn" onclick="loadExample(this)">산업화 이후 도시로의 인구 집중이 가속화되면서 형성된 빈부 격차는, 교육 기회의 불균형을 심화시키고, 이는 다시 계층 이동의 가능성을 제한하는 악순환으로 이어진다는 점에서, 단순한 경제 문제가 아니라 사회 구조 전반의 문제로 보아야 한다.</span>
-  </div>
+      <div id="examples">
+        <span class="example-btn" onclick="loadExample(this)"
+          >나는 매일 아침 공원에서 산책을 한다.</span
+        >
+        <span class="example-btn" onclick="loadExample(this)"
+          >건강을 유지하려면 규칙적인 운동과 균형 잡힌 식단이 필요하다.</span
+        >
+        <span class="example-btn" onclick="loadExample(this)"
+          >현대 사회에서 급격한 기술 발전은 인간의 노동 구조를 근본적으로
+          변화시키며 다양한 사회적 문제를 야기하고 있다.</span
+        >
+        <span class="example-btn" onclick="loadExample(this)"
+          >산업화 이후 도시로의 인구 집중이 가속화되면서 형성된 빈부 격차는,
+          교육 기회의 불균형을 심화시키고, 이는 다시 계층 이동의 가능성을
+          제한하는 악순환으로 이어진다는 점에서, 단순한 경제 문제가 아니라 사회
+          구조 전반의 문제로 보아야 한다.</span
+        >
+      </div>
 
-  <div class="mode-row">
-    <label><input type="radio" name="mode" value="sentence" checked> 문장 분석</label>
-    <label><input type="radio" name="mode" value="paragraph"> 문단 분석</label>
-  </div>
+      <div class="mode-row">
+        <label
+          ><input type="radio" name="mode" value="sentence" checked /> 문장
+          분석</label
+        >
+        <label
+          ><input type="radio" name="mode" value="paragraph" /> 문단 분석</label
+        >
+      </div>
 
-  <textarea id="input" placeholder="한국어 문장이나 문단을 입력하세요..."></textarea>
-  <button id="btn" onclick="analyze()">분석</button>
-  <div id="error" class="error"></div>
+      <textarea
+        id="input"
+        placeholder="한국어 문장이나 문단을 입력하세요..."
+      ></textarea>
+      <button id="btn" onclick="analyze()">분석</button>
+      <div id="error" class="error"></div>
 
-  <div id="result">
-    <div id="finalFormula" class="formula"></div>
-    <div class="score-row" id="scoreRow"></div>
-    <div class="section" id="paragraphSection" style="display:none">
-      <h3>문단 점수 (paragraph)</h3>
-      <div id="paragraphFormula" class="formula"></div>
-      <div id="paragraphBody"></div>
+      <div id="result">
+        <div id="finalFormula" class="formula"></div>
+        <div class="score-row" id="scoreRow"></div>
+        <div class="section" id="paragraphSection" style="display: none">
+          <h3>문단 점수 (paragraph)</h3>
+          <div id="paragraphFormula" class="formula"></div>
+          <div id="paragraphBody"></div>
+        </div>
+        <div class="section" id="lexicalSection">
+          <h3>어휘 점수 (lexical)</h3>
+          <div id="lexicalFormula" class="formula"></div>
+          <div id="lexicalBody"></div>
+        </div>
+        <div class="section" id="structureSection">
+          <h3>구조 점수 (structure)</h3>
+          <div id="structureFormula" class="formula"></div>
+          <div id="structureBody"></div>
+        </div>
+        <div class="section" id="negationSection" style="display: none">
+          <h3>부정 점수 (negation)</h3>
+          <div id="negationFormula" class="formula"></div>
+          <div id="negationBody"></div>
+        </div>
+      </div>
     </div>
-    <div class="section" id="lexicalSection">
-      <h3>어휘 점수 (lexical)</h3>
-      <div id="lexicalFormula" class="formula"></div>
-      <div id="lexicalBody"></div>
+
+    <div
+      class="modal-overlay"
+      id="wordModal"
+      onclick="if(event.target===this)closeWordModal()"
+    >
+      <div class="modal-box">
+        <h3>단어 난도 설정</h3>
+        <div class="modal-row">
+          <label>표면형</label><span id="modalSurface"></span>
+        </div>
+        <div class="modal-row">
+          <label>lemma</label><span id="modalLemma"></span>
+        </div>
+        <div class="modal-row">
+          <label>품사</label><span id="modalPos"></span>
+        </div>
+        <div class="modal-row">
+          <label>사전 난도</label><span id="modalLexiconDiff"></span>
+        </div>
+        <div class="modal-row">
+          <label>Override</label
+          ><input
+            type="number"
+            id="modalInput"
+            min="0"
+            max="1"
+            step="0.05"
+            value="0.30"
+          />
+        </div>
+        <div class="modal-actions">
+          <button class="btn-cancel" onclick="closeWordModal()">취소</button>
+          <button
+            class="btn-reset"
+            id="modalResetBtn"
+            onclick="resetWord()"
+            style="display: none"
+          >
+            초기화
+          </button>
+          <button onclick="saveWordModal()">저장</button>
+        </div>
+      </div>
     </div>
-    <div class="section" id="structureSection">
-      <h3>구조 점수 (structure)</h3>
-      <div id="structureFormula" class="formula"></div>
-      <div id="structureBody"></div>
-    </div>
-    <div class="section" id="negationSection" style="display:none">
-      <h3>부정 점수 (negation)</h3>
-      <div id="negationFormula" class="formula"></div>
-      <div id="negationBody"></div>
-    </div>
-  </div>
-</div>
+    <script>
+      const API = "/api/score";
+      const PARAGRAPH_API = "/api/score-paragraph";
+      const MIN_PARAGRAPH_SENTENCES = 4;
+      const PARAGRAPH_MIN_SENTENCE_MESSAGE =
+        "문단 분석은 문장이 4개 이상일 때만 가능합니다.";
+      const SENTENCE_SPLIT_RE = /[^.!?。！？\n]+[.!?。！？]?/g;
 
-<div class="modal-overlay" id="wordModal" onclick="if(event.target===this)closeWordModal()">
-  <div class="modal-box">
-    <h3>단어 난도 설정</h3>
-    <div class="modal-row"><label>표면형</label><span id="modalSurface"></span></div>
-    <div class="modal-row"><label>lemma</label><span id="modalLemma"></span></div>
-    <div class="modal-row"><label>품사</label><span id="modalPos"></span></div>
-    <div class="modal-row"><label>사전 난도</label><span id="modalLexiconDiff"></span></div>
-    <div class="modal-row"><label>Override</label><input type="number" id="modalInput" min="0" max="1" step="0.05" value="0.30"></div>
-    <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeWordModal()">취소</button>
-      <button class="btn-reset" id="modalResetBtn" onclick="resetWord()" style="display:none">초기화</button>
-      <button onclick="saveWordModal()">저장</button>
-    </div>
-  </div>
-</div>
-<script>
-const API = "/api/score";
-const PARAGRAPH_API = "/api/score-paragraph";
-const MIN_PARAGRAPH_SENTENCES = 4;
-const PARAGRAPH_MIN_SENTENCE_MESSAGE = "문단 분석은 문장이 4개 이상일 때만 가능합니다.";
-const SENTENCE_SPLIT_RE = /[^.!?。！？\n]+[.!?。！？]?/g;
+      function loadExample(el) {
+        document.getElementById("input").value = el.textContent;
+        analyze();
+      }
 
-function loadExample(el) {
-  document.getElementById("input").value = el.textContent;
-  analyze();
-}
+      async function analyze() {
+        const input = document.getElementById("input").value.trim();
+        const mode = document.querySelector('input[name="mode"]:checked').value;
+        const btn = document.getElementById("btn");
+        const err = document.getElementById("error");
+        const result = document.getElementById("result");
 
-async function analyze() {
-  const input = document.getElementById("input").value.trim();
-  const mode = document.querySelector('input[name="mode"]:checked').value;
-  const btn = document.getElementById("btn");
-  const err = document.getElementById("error");
-  const result = document.getElementById("result");
+        err.textContent = "";
+        result.classList.remove("show");
 
-  err.textContent = "";
-  result.classList.remove("show");
+        if (!input) {
+          err.textContent =
+            mode === "paragraph" ? "문단을 입력하세요." : "문장을 입력하세요.";
+          return;
+        }
+        if (
+          mode === "paragraph" &&
+          splitSentences(input).length < MIN_PARAGRAPH_SENTENCES
+        ) {
+          err.textContent = PARAGRAPH_MIN_SENTENCE_MESSAGE;
+          return;
+        }
 
-  if (!input) { err.textContent = mode === "paragraph" ? "문단을 입력하세요." : "문장을 입력하세요."; return; }
-  if (mode === "paragraph" && splitSentences(input).length < MIN_PARAGRAPH_SENTENCES) {
-    err.textContent = PARAGRAPH_MIN_SENTENCE_MESSAGE;
-    return;
-  }
+        btn.disabled = true;
+        btn.textContent = "분석 중...";
 
-  btn.disabled = true;
-  btn.textContent = "분석 중...";
+        try {
+          const customWords = JSON.parse(
+            localStorage.getItem("custom_words") || "{}"
+          );
+          const payload =
+            mode === "paragraph"
+              ? { paragraph: input, custom_words: customWords }
+              : { sentence: input, custom_words: customWords };
+          const res = await fetch(mode === "paragraph" ? PARAGRAPH_API : API, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          if (!res.ok) {
+            const text = await res.text();
+            throw new Error(text || "Server error");
+          }
+          const data = await res.json();
+          document.getElementById("banner").style.display = "none";
+          if (mode === "paragraph") renderParagraph(data);
+          else render(data);
+        } catch (e) {
+          const message = e.message || "";
+          err.textContent =
+            message && message !== "Failed to fetch"
+              ? message
+              : "서버에 연결할 수 없습니다. `python scripts/test_server.py`를 먼저 실행해주세요.";
+        } finally {
+          btn.disabled = false;
+          btn.textContent = "분석";
+        }
+      }
 
-  try {
-    const customWords = JSON.parse(localStorage.getItem("custom_words") || "{}");
-    const payload = mode === "paragraph"
-      ? { paragraph: input, custom_words: customWords }
-      : { sentence: input, custom_words: customWords };
-    const res = await fetch(mode === "paragraph" ? PARAGRAPH_API : API, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(text || "Server error");
-    }
-    const data = await res.json();
-    document.getElementById("banner").style.display = "none";
-    if (mode === "paragraph") renderParagraph(data);
-    else render(data);
-  } catch (e) {
-    const message = e.message || "";
-    err.textContent = message && message !== "Failed to fetch"
-      ? message
-      : "서버에 연결할 수 없습니다. `python scripts/test_server.py`를 먼저 실행해주세요.";
-  } finally {
-    btn.disabled = false;
-    btn.textContent = "분석";
-  }
-}
+      function splitSentences(text) {
+        return (
+          String(text || "")
+            .match(SENTENCE_SPLIT_RE)
+            ?.map((s) => s.trim())
+            .filter(Boolean) || []
+        );
+      }
 
-function splitSentences(text) {
-  return String(text || "").match(SENTENCE_SPLIT_RE)?.map(s => s.trim()).filter(Boolean) || [];
-}
+      function render(d) {
+        document.getElementById("paragraphSection").style.display = "none";
+        document.getElementById("lexicalSection").style.display = "block";
+        document.getElementById("structureSection").style.display = "block";
+        document.getElementById("negationSection").style.display = "block";
+        const bonus = d.negation_bonus_coefficient;
+        document.getElementById(
+          "finalFormula"
+        ).textContent = `score = min(1.0, 0.5×lexical + 0.5×structure + ${bonus}×negation)`;
 
-function render(d) {
-  document.getElementById("paragraphSection").style.display = "none";
-  document.getElementById("lexicalSection").style.display = "block";
-  document.getElementById("structureSection").style.display = "block";
-  document.getElementById("negationSection").style.display = "block";
-  const bonus = d.negation_bonus_coefficient;
-  document.getElementById("finalFormula").textContent =
-    `score = min(1.0, 0.5×lexical + 0.5×structure + ${bonus}×negation)`;
+        const GH = "https://github.com/survibo/Difficulty/blob/main";
+        const scoreRow = document.getElementById("scoreRow");
+        scoreRow.innerHTML =
+          card(
+            "최종 점수",
+            d.score_10,
+            d.score_10 >= 7 ? "red" : d.score_10 >= 4 ? "orange" : "green",
+            "0 ~ 10",
+            `${GH}/flow.md`
+          ) +
+          card(
+            "어휘",
+            d.lexical_score_10,
+            "blue",
+            "0 ~ 10",
+            `${GH}/src/sentdiff/lexical.md`
+          ) +
+          card(
+            "구조",
+            d.structure_score_10,
+            d.structure_score_10 >= 5 ? "orange" : "green",
+            "0 ~ 10",
+            `${GH}/src/sentdiff/structure.md`
+          ) +
+          card(
+            "부정(보너스)",
+            d.negation_score_10,
+            d.negation_score_10 >= 5 ? "red" : "green",
+            "0 ~ 10",
+            `${GH}/src/sentdiff/negation.md`
+          ) +
+          card("내용어", d.content_token_count, "blue") +
+          card(
+            "미등록어",
+            d.unknown_token_count,
+            d.unknown_token_count > 0 ? "red" : "green"
+          ) +
+          card(
+            "신뢰도",
+            d.reliability.toFixed(2),
+            d.reliability >= 0.9
+              ? "green"
+              : d.reliability >= 0.7
+              ? "orange"
+              : "red",
+            "0 ~ 1"
+          );
 
-  const GH = "https://github.com/survibo/Difficulty/blob/main";
-  const scoreRow = document.getElementById("scoreRow");
-  scoreRow.innerHTML = card("최종 점수", d.score_10, d.score_10 >= 7 ? "red" : d.score_10 >= 4 ? "orange" : "green", "0 ~ 10", `${GH}/flow.md`) +
-    card("어휘", d.lexical_score_10, "blue", "0 ~ 10", `${GH}/src/sentdiff/lexical.md`) +
-    card("구조", d.structure_score_10, d.structure_score_10 >= 5 ? "orange" : "green", "0 ~ 10", `${GH}/src/sentdiff/structure.md`) +
-    card("부정(보너스)", d.negation_score_10, d.negation_score_10 >= 5 ? "red" : "green", "0 ~ 10", `${GH}/src/sentdiff/negation.md`) +
-    card("내용어", d.content_token_count, "blue") +
-    card("미등록어", d.unknown_token_count, d.unknown_token_count > 0 ? "red" : "green") +
-    card("신뢰도", d.reliability.toFixed(2), d.reliability >= 0.9 ? "green" : d.reliability >= 0.7 ? "orange" : "red", "0 ~ 1");
+        renderLexical(d);
+        renderStructure(d);
+        renderNegation(d);
 
-  renderLexical(d);
-  renderStructure(d);
-  renderNegation(d);
+        document.getElementById("result").classList.add("show");
+      }
 
-  document.getElementById("result").classList.add("show");
-}
+      function renderParagraph(d) {
+        document.getElementById("lexicalSection").style.display = "none";
+        document.getElementById("structureSection").style.display = "none";
+        document.getElementById("negationSection").style.display = "none";
+        document.getElementById("paragraphSection").style.display = "block";
 
-function renderParagraph(d) {
-  document.getElementById("lexicalSection").style.display = "none";
-  document.getElementById("structureSection").style.display = "none";
-  document.getElementById("negationSection").style.display = "none";
-  document.getElementById("paragraphSection").style.display = "block";
+        const p = d.paragraph_parts;
+        document.getElementById("finalFormula").textContent =
+          "paragraph = 0.85×sentence_aggregate + 0.15×information_density + 0.15×concept_repetition";
 
-  const p = d.paragraph_parts;
-  document.getElementById("finalFormula").textContent =
-    "paragraph = 0.85×sentence_aggregate + 0.15×information_density + 0.15×concept_repetition";
+        const GH = "https://github.com/survibo/Difficulty/blob/main";
+        const scoreRow = document.getElementById("scoreRow");
+        scoreRow.innerHTML =
+          card(
+            "문단 점수",
+            d.score_10,
+            d.score_10 >= 7 ? "red" : d.score_10 >= 4 ? "orange" : "green",
+            "0 ~ 10",
+            `${GH}/src/sentdiff/paragraph/README.md`
+          ) +
+          card("문장 수", d.sentence_count, "blue") +
+          card(
+            "문장 집계",
+            (p.sentence_aggregate * 10).toFixed(2),
+            "blue",
+            "0 ~ 10"
+          ) +
+          card(
+            "정보 밀도",
+            (p.information_density * 10).toFixed(2),
+            p.information_density >= 0.5 ? "orange" : "green",
+            "문장수×13 기준"
+          ) +
+          card(
+            "반복 핵심어",
+            (p.concept_repetition * 10).toFixed(2),
+            p.concept_repetition >= 0.5 ? "orange" : "green",
+            `${p.repeated_core_content_count}개`
+          ) +
+          card("핵심 내용어", p.unique_core_content_count, "blue");
 
-  const GH = "https://github.com/survibo/Difficulty/blob/main";
-  const scoreRow = document.getElementById("scoreRow");
-  scoreRow.innerHTML = card("문단 점수", d.score_10, d.score_10 >= 7 ? "red" : d.score_10 >= 4 ? "orange" : "green", "0 ~ 10", `${GH}/src/sentdiff/paragraph/README.md`) +
-    card("문장 수", d.sentence_count, "blue") +
-    card("문장 집계", (p.sentence_aggregate * 10).toFixed(2), "blue", "0 ~ 10") +
-    card("정보 밀도", (p.information_density * 10).toFixed(2), p.information_density >= 0.5 ? "orange" : "green", "문장수×13 기준") +
-    card("반복 핵심어", (p.concept_repetition * 10).toFixed(2), p.concept_repetition >= 0.5 ? "orange" : "green", `${p.repeated_core_content_count}개`) +
-    card("핵심 내용어", p.unique_core_content_count, "blue");
+        renderParagraphDetails(d);
+        document.getElementById("result").classList.add("show");
+      }
 
-  renderParagraphDetails(d);
-  document.getElementById("result").classList.add("show");
-}
+      function renderParagraphDetails(d) {
+        const p = d.paragraph_parts;
+        const sentenceContribution = 0.85 * p.sentence_aggregate;
+        const densityContribution = 0.15 * p.information_density;
+        const repetitionContribution = 0.15 * p.concept_repetition;
+        const unclamped =
+          sentenceContribution + densityContribution + repetitionContribution;
+        document.getElementById("paragraphFormula").textContent = `0.85×${fmt(
+          p.sentence_aggregate
+        )} + 0.15×${fmt(p.information_density)} + 0.15×${fmt(
+          p.concept_repetition
+        )} = ${fmt(unclamped)} → ${fmt(d.score_0_1)}`;
 
-function renderParagraphDetails(d) {
-  const p = d.paragraph_parts;
-  const sentenceContribution = 0.85 * p.sentence_aggregate;
-  const densityContribution = 0.15 * p.information_density;
-  const repetitionContribution = 0.15 * p.concept_repetition;
-  const unclamped = sentenceContribution + densityContribution + repetitionContribution;
-  document.getElementById("paragraphFormula").textContent =
-    `0.85×${fmt(p.sentence_aggregate)} + 0.15×${fmt(p.information_density)} + 0.15×${fmt(p.concept_repetition)} = ${fmt(unclamped)} → ${fmt(d.score_0_1)}`;
+        let html = "<table>";
+        html += paragraphContributionRow(
+          "sentence_aggregate",
+          p.sentence_aggregate,
+          sentenceContribution,
+          "mean=" +
+            fmt(p.sentence_mean) +
+            " top3=" +
+            fmt(p.sentence_top_3_mean) +
+            " max=" +
+            fmt(p.sentence_max)
+        );
+        html += paragraphContributionRow(
+          "information_density",
+          p.information_density,
+          densityContribution,
+          p.unique_core_content_count +
+            "/" +
+            p.information_density_full_score_at
+        );
+        html += paragraphContributionRow(
+          "concept_repetition",
+          p.concept_repetition,
+          repetitionContribution,
+          "raw=" +
+            fmt(p.concept_repetition_raw) +
+            "/" +
+            p.concept_repetition_full_score_at +
+            " 반복=" +
+            p.repeated_core_content_count
+        );
+        html += paragraphContributionRow(
+          "clamped_score",
+          d.score_0_1,
+          d.score_0_1,
+          unclamped > 1 ? "1.0 상한 적용" : "상한 미적용"
+        );
+        html += "</table>";
 
-  let html = '<table>';
-  html += paragraphContributionRow("sentence_aggregate", p.sentence_aggregate, sentenceContribution, "mean=" + fmt(p.sentence_mean) + " top3=" + fmt(p.sentence_top_3_mean) + " max=" + fmt(p.sentence_max));
-  html += paragraphContributionRow("information_density", p.information_density, densityContribution, p.unique_core_content_count + "/" + p.information_density_full_score_at);
-  html += paragraphContributionRow("concept_repetition", p.concept_repetition, repetitionContribution, "raw=" + fmt(p.concept_repetition_raw) + "/" + p.concept_repetition_full_score_at + " 반복=" + p.repeated_core_content_count);
-  html += paragraphContributionRow("clamped_score", d.score_0_1, d.score_0_1, unclamped > 1 ? "1.0 상한 적용" : "상한 미적용");
-  html += '</table>';
+        html += '<h3 class="mini-heading">문단 지표</h3><table>';
+        html += paragraphMetricRow(
+          "sentence_mean",
+          p.sentence_mean,
+          "전체 문장 평균"
+        );
+        html += paragraphMetricRow(
+          "sentence_top_3_mean",
+          p.sentence_top_3_mean,
+          "상위 3개 평균"
+        );
+        html += paragraphMetricRow("sentence_max", p.sentence_max, "최고 문장");
+        html += paragraphMetricRow(
+          "information_density",
+          p.information_density,
+          "핵심 내용어 " + p.unique_core_content_count
+        );
+        html += paragraphMetricRow(
+          "concept_repetition",
+          p.concept_repetition,
+          "반복 핵심어 " + p.repeated_core_content_count
+        );
+        html += "</table>";
 
-  html += '<h3 class="mini-heading">문단 지표</h3><table>';
-  html += paragraphMetricRow("sentence_mean", p.sentence_mean, "전체 문장 평균");
-  html += paragraphMetricRow("sentence_top_3_mean", p.sentence_top_3_mean, "상위 3개 평균");
-  html += paragraphMetricRow("sentence_max", p.sentence_max, "최고 문장");
-  html += paragraphMetricRow("information_density", p.information_density, "핵심 내용어 " + p.unique_core_content_count);
-  html += paragraphMetricRow("concept_repetition", p.concept_repetition, "반복 핵심어 " + p.repeated_core_content_count);
-  html += '</table>';
+        html += '<h3 class="mini-heading">문장별 점수</h3><table>';
+        html +=
+          "<tr><td>#</td><td>문장</td><td>score</td><td>lexical</td><td>structure</td><td>negation</td><td>content</td></tr>";
+        for (const [i, s] of d.sentences.entries()) {
+          html += `<tr><td>${i + 1}</td><td class="sentence-cell">${escapeHtml(
+            s.sentence
+          )}</td><td><span class="badge">${
+            s.score_10
+          }/10</span></td><td>${fmt10(s.lexical_score_0_1)}</td><td>${fmt10(
+            s.structure_score_0_1
+          )}</td><td>${fmt10(s.negation_score_0_1)}</td><td>${
+            s.content_token_count
+          }</td></tr>`;
+        }
+        html += "</table>";
+        document.getElementById("paragraphBody").innerHTML = html;
+      }
 
-  html += '<h3 class="mini-heading">문장별 점수</h3><table>';
-  html += '<tr><td>#</td><td>문장</td><td>score</td><td>lexical</td><td>structure</td><td>negation</td><td>content</td></tr>';
-  for (const [i, s] of d.sentences.entries()) {
-    html += `<tr><td>${i + 1}</td><td class="sentence-cell">${escapeHtml(s.sentence)}</td><td><span class="badge">${s.score_10}/10</span></td><td>${fmt10(s.lexical_score_0_1)}</td><td>${fmt10(s.structure_score_0_1)}</td><td>${fmt10(s.negation_score_0_1)}</td><td>${s.content_token_count}</td></tr>`;
-  }
-  html += '</table>';
-  document.getElementById("paragraphBody").innerHTML = html;
-}
+      function paragraphContributionRow(label, score, contribution, detail) {
+        const pct = Math.round(Math.min(1, Math.max(0, score)) * 100);
+        return `<tr><td>${label}</td><td><div class="histogram"><div class="bar-wrap"><div class="bar" style="width:${pct}%"></div></div>${fmt(
+          score
+        )}</div></td><td><span class="badge">${detail}</span></td><td>${fmt(
+          contribution
+        )}</td></tr>`;
+      }
 
-function paragraphContributionRow(label, score, contribution, detail) {
-  const pct = Math.round(Math.min(1, Math.max(0, score)) * 100);
-  return `<tr><td>${label}</td><td><div class="histogram"><div class="bar-wrap"><div class="bar" style="width:${pct}%"></div></div>${fmt(score)}</div></td><td><span class="badge">${detail}</span></td><td>${fmt(contribution)}</td></tr>`;
-}
+      function paragraphMetricRow(label, value, detail) {
+        const pct = Math.round(Math.min(1, Math.max(0, value)) * 100);
+        return `<tr><td>${label}</td><td><div class="histogram"><div class="bar-wrap"><div class="bar" style="width:${pct}%"></div></div>${fmt(
+          value
+        )}</div></td><td><span class="badge">${detail}</span></td></tr>`;
+      }
 
-function paragraphMetricRow(label, value, detail) {
-  const pct = Math.round(Math.min(1, Math.max(0, value)) * 100);
-  return `<tr><td>${label}</td><td><div class="histogram"><div class="bar-wrap"><div class="bar" style="width:${pct}%"></div></div>${fmt(value)}</div></td><td><span class="badge">${detail}</span></td></tr>`;
-}
+      function card(label, value, color, range, link) {
+        const labelHtml = link
+          ? `<div class="label"><a href="${link}" target="_blank" class="doc-link">${label}</a></div>`
+          : `<div class="label">${label}</div>`;
+        const rangeHtml = range ? `<div class="range">${range}</div>` : "";
+        return `<div class="score-card">${labelHtml}<div class="value ${color}">${value}</div>${rangeHtml}</div>`;
+      }
 
-function card(label, value, color, range, link) {
-  const labelHtml = link
-    ? `<div class="label"><a href="${link}" target="_blank" class="doc-link">${label}</a></div>`
-    : `<div class="label">${label}</div>`;
-  const rangeHtml = range ? `<div class="range">${range}</div>` : "";
-  return `<div class="score-card">${labelHtml}<div class="value ${color}">${value}</div>${rangeHtml}</div>`;
-}
+      function renderLexical(d) {
+        const p = d.score_parts;
+        const lw = p.lexical_weights || {
+          mean_all: 0.25,
+          mean_top_n: 0.5,
+          max: 0.25,
+        };
+        const words = d.scored_words || [];
+        const customWords = JSON.parse(
+          localStorage.getItem("custom_words") || "{}"
+        );
+        document.getElementById("lexicalFormula").textContent =
+          lw.mean_all +
+          " × mean_all + " +
+          lw.mean_top_n +
+          " × mean_top_3 + " +
+          lw.max +
+          " × max";
+        const body = document.getElementById("lexicalBody");
+        body.innerHTML = table([
+          ["mean_all (" + lw.mean_all + ")", fmt4(p.mean_all)],
+          ["mean_top_n (" + lw.mean_top_n + ")", fmt4(p.mean_top_n)],
+          ["max (" + lw.max + ")", fmt4(p.max)],
+          [
+            "내용어",
+            d.content_token_count +
+              " (중복보정 " +
+              d.content_token_count_capped +
+              ")",
+          ],
+        ]);
 
-function renderLexical(d) {
-  const p = d.score_parts;
-  const lw = p.lexical_weights || {mean_all:0.25, mean_top_n:0.50, max:0.25};
-  const words = d.scored_words || [];
-  const customWords = JSON.parse(localStorage.getItem("custom_words") || "{}");
-  document.getElementById("lexicalFormula").textContent =
-    lw.mean_all + " × mean_all + " + lw.mean_top_n + " × mean_top_3 + " + lw.max + " × max";
-  const body = document.getElementById("lexicalBody");
-  body.innerHTML = table([
-    ["mean_all (" + lw.mean_all + ")", fmt4(p.mean_all)],
-    ["mean_top_n (" + lw.mean_top_n + ")", fmt4(p.mean_top_n)],
-    ["max (" + lw.max + ")", fmt4(p.max)],
-    ["내용어", d.content_token_count + " (중복보정 " + d.content_token_count_capped + ")"],
-  ]);
+        let html = '<div class="word-list">';
+        const sorted = [...words].sort((a, b) => b.difficulty - a.difficulty);
+        const top3 = new Set(
+          sorted.slice(0, 3).map((w) => w.surface + w.lemma + w.pos)
+        );
+        for (const w of words) {
+          const key = w.surface + w.lemma + w.pos;
+          const isTop = top3.has(key);
+          const cls =
+            w.match_method === "unknown"
+              ? "word-item unknown"
+              : isTop
+              ? "word-item top3"
+              : "word-item";
+          const saved = customWords[w.lemma];
+          const effectiveDiff = saved !== undefined ? saved : w.difficulty;
+          html += `<span class="${cls}" data-lemma="${escapeHtml(
+            w.lemma
+          )}" data-surface="${escapeHtml(w.surface)}" data-pos="${escapeHtml(
+            w.pos
+          )}" data-difficulty="${w.difficulty}" data-method="${escapeHtml(
+            w.match_method
+          )}">${w.surface}<span class="diff">${fmt4(
+            effectiveDiff
+          )}</span></span>`;
+        }
+        html += "</div>";
+        body.innerHTML += html;
+      }
 
-  let html = '<div class="word-list">';
-  const sorted = [...words].sort((a, b) => b.difficulty - a.difficulty);
-  const top3 = new Set(sorted.slice(0, 3).map(w => w.surface + w.lemma + w.pos));
-  for (const w of words) {
-    const key = w.surface + w.lemma + w.pos;
-    const isTop = top3.has(key);
-    const cls = w.match_method === "unknown" ? "word-item unknown" : isTop ? "word-item top3" : "word-item";
-    const saved = customWords[w.lemma];
-    const effectiveDiff = saved !== undefined ? saved : w.difficulty;
-    html += `<span class="${cls}" data-lemma="${escapeHtml(w.lemma)}" data-surface="${escapeHtml(w.surface)}" data-pos="${escapeHtml(w.pos)}" data-difficulty="${w.difficulty}" data-method="${escapeHtml(w.match_method)}">${w.surface}<span class="diff">${fmt4(effectiveDiff)}</span></span>`;
-  }
-  html += "</div>";
-  body.innerHTML += html;
-}
+      let _modalLemma = "";
 
-let _modalLemma = "";
+      function showWordModal(lemma, surface, pos, lexiconDiff, matchMethod) {
+        _modalLemma = lemma;
+        document.getElementById("modalSurface").textContent = surface;
+        document.getElementById("modalLemma").textContent = lemma;
+        document.getElementById("modalPos").textContent =
+          pos + (matchMethod === "unknown" ? " (미등록)" : "");
+        document.getElementById("modalLexiconDiff").textContent =
+          fmt4(lexiconDiff);
+        const customWords = JSON.parse(
+          localStorage.getItem("custom_words") || "{}"
+        );
+        const saved = customWords[lemma];
+        document.getElementById("modalInput").value =
+          saved !== undefined ? saved : lexiconDiff;
+        const resetBtn = document.getElementById("modalResetBtn");
+        resetBtn.style.display = saved !== undefined ? "inline-block" : "none";
+        document.getElementById("wordModal").classList.add("show");
+      }
 
-function showWordModal(lemma, surface, pos, lexiconDiff, matchMethod) {
-  _modalLemma = lemma;
-  document.getElementById("modalSurface").textContent = surface;
-  document.getElementById("modalLemma").textContent = lemma;
-  document.getElementById("modalPos").textContent = pos + (matchMethod === "unknown" ? " (미등록)" : "");
-  document.getElementById("modalLexiconDiff").textContent = fmt4(lexiconDiff);
-  const customWords = JSON.parse(localStorage.getItem("custom_words") || "{}");
-  const saved = customWords[lemma];
-  document.getElementById("modalInput").value = saved !== undefined ? saved : lexiconDiff;
-  const resetBtn = document.getElementById("modalResetBtn");
-  resetBtn.style.display = saved !== undefined ? "inline-block" : "none";
-  document.getElementById("wordModal").classList.add("show");
-}
+      function saveWordModal() {
+        const difficulty = parseFloat(
+          document.getElementById("modalInput").value
+        );
+        if (isNaN(difficulty) || difficulty < 0 || difficulty > 1) {
+          alert("0.0~1.0 범위로 입력하세요.");
+          return;
+        }
+        const customWords = JSON.parse(
+          localStorage.getItem("custom_words") || "{}"
+        );
+        customWords[_modalLemma] = difficulty;
+        localStorage.setItem("custom_words", JSON.stringify(customWords));
+        closeWordModal();
+        analyze();
+      }
 
-function saveWordModal() {
-  const difficulty = parseFloat(document.getElementById("modalInput").value);
-  if (isNaN(difficulty) || difficulty < 0 || difficulty > 1) {
-    alert("0.0~1.0 범위로 입력하세요.");
-    return;
-  }
-  const customWords = JSON.parse(localStorage.getItem("custom_words") || "{}");
-  customWords[_modalLemma] = difficulty;
-  localStorage.setItem("custom_words", JSON.stringify(customWords));
-  closeWordModal();
-  analyze();
-}
+      function resetWord() {
+        const customWords = JSON.parse(
+          localStorage.getItem("custom_words") || "{}"
+        );
+        delete customWords[_modalLemma];
+        localStorage.setItem("custom_words", JSON.stringify(customWords));
+        closeWordModal();
+        analyze();
+      }
 
-function resetWord() {
-  const customWords = JSON.parse(localStorage.getItem("custom_words") || "{}");
-  delete customWords[_modalLemma];
-  localStorage.setItem("custom_words", JSON.stringify(customWords));
-  closeWordModal();
-  analyze();
-}
+      function closeWordModal() {
+        document.getElementById("wordModal").classList.remove("show");
+      }
 
-function closeWordModal() {
-  document.getElementById("wordModal").classList.remove("show");
-}
+      document.addEventListener("DOMContentLoaded", function () {
+        document
+          .getElementById("lexicalBody")
+          .addEventListener("click", function (e) {
+            const span = e.target.closest(".word-item");
+            if (!span) return;
+            showWordModal(
+              span.dataset.lemma,
+              span.dataset.surface,
+              span.dataset.pos,
+              parseFloat(span.dataset.difficulty),
+              span.dataset.method
+            );
+          });
+      });
 
-document.addEventListener("DOMContentLoaded", function() {
-  document.getElementById("lexicalBody").addEventListener("click", function(e) {
-    const span = e.target.closest(".word-item");
-    if (!span) return;
-    showWordModal(
-      span.dataset.lemma,
-      span.dataset.surface,
-      span.dataset.pos,
-      parseFloat(span.dataset.difficulty),
-      span.dataset.method
-    );
-  });
-});
+      function renderStructure(d) {
+        const sp = d.structure_parts;
+        document.getElementById("structureFormula").textContent =
+          "structure = 0.18×predicate + 0.15×embedding + 0.15×length + 0.22×structural_span + 0.08×logical + 0.10×modifier + 0.07×repetition + 0.05×connective";
+        const items = [
+          [
+            "structural_span_score",
+            sp.structural_span_score,
+            "raw:" +
+              sp.structural_span_raw.toFixed(2) +
+              " norm:" +
+              sp.structural_span_normalized.toFixed(3) +
+              " n=" +
+              sp.structural_span_count,
+          ],
+          [
+            "predicate_score",
+            sp.predicate_score,
+            sp.predicate_count + " VV/VA/VX/XSV/XSA",
+          ],
+          [
+            "embedding_score",
+            sp.embedding_score,
+            "ETM:" +
+              sp.adnominal_count +
+              " ETN:" +
+              sp.nominalizer_count +
+              " 부사절:" +
+              (sp.adverbial_ending_count || 0),
+          ],
+          ["length_score", sp.length_score, d.content_token_count + "/29 tokens"],
+          [
+            "modifier_score",
+            sp.modifier_score,
+            "max chain:" + sp.max_noun_chain + " (XSN은 세지 않고 앞뒤 명사를 연결)",
+          ],
+          [
+            "logical_score",
+            sp.logical_score,
+            "marker:" +
+              sp.logical_marker_weighted.toFixed(1) +
+              " strong:" +
+              sp.strong_logical_ending_weighted.toFixed(1) +
+              " (첫 marker 제외)",
+          ],
+          [
+            "repetition_score",
+            sp.repetition_score,
+            "raw:" +
+              sp.repetition_raw.toFixed(2) +
+              " count:" +
+              sp.repetition_count,
+          ],
+          [
+            "connective_score",
+            sp.connective_score,
+            "EC:" + sp.connective_ending_count,
+          ],
+        ];
 
-function renderStructure(d) {
-  const sp = d.structure_parts;
-  document.getElementById("structureFormula").textContent =
-    "structure = 0.18×predicate + 0.15×embedding + 0.15×length + 0.22×structural_span + 0.08×logical + 0.10×modifier + 0.07×repetition + 0.05×connective";
-  const items = [
-    ["structural_span_score", sp.structural_span_score, "raw:" + sp.structural_span_raw.toFixed(2) + " norm:" + sp.structural_span_normalized.toFixed(3) + " n=" + sp.structural_span_count],
-    ["predicate_score", sp.predicate_score, sp.predicate_count + " VV/VA/VX/XSV/XSA"],
-    ["embedding_score", sp.embedding_score, "ETM:" + sp.adnominal_count + " ETN:" + sp.nominalizer_count + " 부사절:" + (sp.adverbial_ending_count || 0)],
-    ["length_score", sp.length_score, d.content_token_count + " tokens"],
-    ["modifier_score", sp.modifier_score, "max chain:" + sp.max_noun_chain + " (XSN 뒤 새 명사는 분리)"],
-    ["logical_score", sp.logical_score, "marker:" + sp.logical_marker_weighted.toFixed(1) + " strong:" + sp.strong_logical_ending_weighted.toFixed(1) + " (첫 marker 제외)"],
-    ["repetition_score", sp.repetition_score, "raw:" + sp.repetition_raw.toFixed(2) + " count:" + sp.repetition_count],
-    ["connective_score", sp.connective_score, "EC:" + sp.connective_ending_count],
-  ];
+        const body = document.getElementById("structureBody");
+        let html = "<table>";
+        for (const [k, v, detail] of items) {
+          const pct = Math.round(v * 100);
+          html += `<tr><td>${k}</td><td><div class="histogram"><div class="bar-wrap"><div class="bar" style="width:${pct}%"></div></div>${v.toFixed(
+            2
+          )}</div></td><td><span class="badge">${detail}</span></td></tr>`;
+        }
+        html += "</table>";
+        body.innerHTML = html;
+      }
 
-  const body = document.getElementById("structureBody");
-  let html = '<table>';
-  for (const [k, v, detail] of items) {
-    const pct = Math.round(v * 100);
-    html += `<tr><td>${k}</td><td><div class="histogram"><div class="bar-wrap"><div class="bar" style="width:${pct}%"></div></div>${v.toFixed(2)}</div></td><td><span class="badge">${detail}</span></td></tr>`;
-  }
-  html += '</table>';
-  body.innerHTML = html;
-}
+      function renderNegation(d) {
+        const nd = d.negation_detail;
+        const negSection = document.getElementById("negationSection");
+        negSection.style.display = "block";
+        document.getElementById("negationFormula").textContent =
+          "negation_score = max(local, construction, embedded, density); local: 0 if <=1, double=0.4, triple+=1.0";
+        const items = [
+          ["total negation count", nd.negation_count_total, ""],
+          ["local_max (max per unit)", nd.negation_count_local_max, ""],
+          [
+            "local_score",
+            nd.local_negation_score,
+            nd.local_negation_score.toFixed(2),
+          ],
+          [
+            "construction_score",
+            nd.construction_negation_score,
+            nd.negation_construction_hits > 0
+              ? "hit: " + nd.negation_construction_hits
+              : "",
+          ],
+          [
+            "embedded_score",
+            nd.embedded_negation_score,
+            "links: " + nd.negation_embedded_links,
+          ],
+          ["density_score", nd.negation_density_score, ""],
+        ];
 
-function renderNegation(d) {
-  const nd = d.negation_detail;
-  const negSection = document.getElementById("negationSection");
-  negSection.style.display = "block";
-  document.getElementById("negationFormula").textContent =
-    "negation_score = max(local, construction, embedded, density); local: 0 if <=1, double=0.4, triple+=1.0";
-  const items = [
-    ["total negation count", nd.negation_count_total, ""],
-    ["local_max (max per unit)", nd.negation_count_local_max, ""],
-    ["local_score", nd.local_negation_score, nd.local_negation_score.toFixed(2)],
-    ["construction_score", nd.construction_negation_score, nd.negation_construction_hits > 0 ? "hit: " + nd.negation_construction_hits : ""],
-    ["embedded_score", nd.embedded_negation_score, "links: " + nd.negation_embedded_links],
-    ["density_score", nd.negation_density_score, ""],
-  ];
+        const body = document.getElementById("negationBody");
+        let html = "<table>";
+        for (const [k, v, detail] of items) {
+          html += `<tr><td>${k}</td><td>${
+            typeof v === "number" ? v.toFixed(2) : v
+          }</td><td><span class="badge">${detail}</span></td></tr>`;
+        }
+        html += "</table>";
+        body.innerHTML = html;
+      }
 
-  const body = document.getElementById("negationBody");
-  let html = '<table>';
-  for (const [k, v, detail] of items) {
-    html += `<tr><td>${k}</td><td>${typeof v === "number" ? v.toFixed(2) : v}</td><td><span class="badge">${detail}</span></td></tr>`;
-  }
-  html += '</table>';
-  body.innerHTML = html;
-}
+      function table(rows) {
+        let html = "<table>";
+        for (const [k, v] of rows)
+          html += `<tr><td>${k}</td><td>${
+            typeof v === "number" ? v.toFixed(3) : v
+          }</td></tr>`;
+        html += "</table>";
+        return html;
+      }
 
-function table(rows) {
-  let html = "<table>";
-  for (const [k, v] of rows) html += `<tr><td>${k}</td><td>${typeof v === "number" ? v.toFixed(3) : v}</td></tr>`;
-  html += "</table>";
-  return html;
-}
+      function fmt(value) {
+        const num = Number(value || 0);
+        return num.toFixed(3);
+      }
 
-function fmt(value) {
-  const num = Number(value || 0);
-  return num.toFixed(3);
-}
+      function fmt4(value) {
+        const num = Number(value || 0);
+        return num.toFixed(4);
+      }
 
-function fmt4(value) {
-  const num = Number(value || 0);
-  return num.toFixed(4);
-}
+      function fmt10(value) {
+        const num = Number(value || 0);
+        return (num * 10).toFixed(2);
+      }
 
-function fmt10(value) {
-  const num = Number(value || 0);
-  return (num * 10).toFixed(2);
-}
-
-function escapeHtml(value) {
-  return String(value)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-</script>
-</body>
+      function escapeHtml(value) {
+        return String(value)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+    </script>
+  </body>
 </html>

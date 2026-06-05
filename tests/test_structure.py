@@ -78,6 +78,23 @@ class StructureScorerTest(unittest.TestCase):
         self.assertEqual(result["structure_score_0_1"], 0.0)
         self.assertEqual(result["structure_parts"]["content_token_count"], 0)
 
+    def test_length_score_reaches_full_at_twenty_nine_content_tokens(self) -> None:
+        tokens = [
+            _make_token(f"단어{i}", f"단어{i}", "NNG")
+            for i in range(29)
+        ]
+        result = self.scorer.score_tokens(tokens)
+        self.assertEqual(result["structure_parts"]["content_token_count"], 29)
+        self.assertEqual(result["structure_parts"]["length_score"], 1.0)
+
+    def test_length_score_uses_expanded_twenty_four_token_range(self) -> None:
+        tokens = [
+            _make_token(f"단어{i}", f"단어{i}", "NNG")
+            for i in range(17)
+        ]
+        result = self.scorer.score_tokens(tokens)
+        self.assertEqual(result["structure_parts"]["length_score"], 0.5)
+
     # -----------------------------------------------------------------
     # predicate_count: VV / VA / VX / XSV / XSA
     # -----------------------------------------------------------------
@@ -255,7 +272,7 @@ class StructureScorerTest(unittest.TestCase):
         sp = result["structure_parts"]
         self.assertEqual(sp["max_noun_chain"], 4)
 
-    def test_noun_chain_xsn_extends(self) -> None:
+    def test_noun_chain_xsn_does_not_count_itself(self) -> None:
         tokens = [
             _make_token("방법", "방법", "NNG"),
             _make_token("론", "론", "XSN"),
@@ -263,7 +280,7 @@ class StructureScorerTest(unittest.TestCase):
         ]
         result = self.scorer.score_tokens(tokens)
         sp = result["structure_parts"]
-        self.assertEqual(sp["max_noun_chain"], 3)
+        self.assertEqual(sp["max_noun_chain"], 1)
 
     def test_noun_chain_xsn_does_not_start(self) -> None:
         tokens = [
@@ -274,15 +291,16 @@ class StructureScorerTest(unittest.TestCase):
         sp = result["structure_parts"]
         self.assertEqual(sp["max_noun_chain"], 1)
 
-    def test_noun_chain_breaks_after_xsn_before_new_noun(self) -> None:
+    def test_noun_chain_continues_after_xsn_before_new_noun(self) -> None:
         tokens = [
             _make_token("비교", "비교", "NNG"),
             _make_token("적", "적", "XSN"),
             _make_token("안정세", "안정세", "NNG"),
+            _make_token("흐름", "흐름", "NNG"),
         ]
         result = self.scorer.score_tokens(tokens)
         sp = result["structure_parts"]
-        self.assertEqual(sp["max_noun_chain"], 2)
+        self.assertEqual(sp["max_noun_chain"], 3)
 
     # -----------------------------------------------------------------
     # derivational suffixes: XSN / XSV / XSA + surface check

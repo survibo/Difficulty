@@ -56,7 +56,7 @@ REPETITION_MIN_DIFFICULTY: float = 0.05
 _STRUCTURAL_SPAN_MARKER_TAGS: set[str] = {"ETM", "ETN", "EC"}
 _BOUNDARY_TAGS: set[str] = {"EC", "ETM", "ETN", "EF", "SF", "SP", "SE"}
 _LENGTH_MIN: float = 5.0
-_LENGTH_MAX: float = 18.0
+_LENGTH_MAX: float = 24.0
 
 
 @dataclass(frozen=True)
@@ -146,22 +146,17 @@ class StructureScorer:
     def _max_noun_chain(self, tokens: list[Any]) -> int:
         max_chain = 0
         current = 0
-        prev_was_xsn = False
 
         for token in tokens:
             tag = self._tag(token)
 
             if tag in {"NNG", "NNP", "NNB", "XR"}:
-                current = 1 if prev_was_xsn else current + 1
+                current = current + 1 if current > 0 else 1
                 max_chain = max(max_chain, current)
-                prev_was_xsn = False
             elif tag == "XSN" and current > 0:
-                current += 1
-                max_chain = max(max_chain, current)
-                prev_was_xsn = True
+                continue
             else:
                 current = 0
-                prev_was_xsn = False
 
         return max_chain
 

@@ -17,6 +17,7 @@ structure = 0.18×predicate + 0.15×embedding
           + 0.15×length + 0.22×structural_span
           + 0.08×logical + 0.10×modifier
           + 0.07×repetition + 0.05×connective
+```
 
 ## 8개 지표
 
@@ -25,7 +26,7 @@ structure = 0.18×predicate + 0.15×embedding
 | structural_span | 절 구간 내용어 합계 (모든 EC/ETM/ETN에서 기록된 구간 길이의 총합) | 20.0 이상 (내용어 20개) | 0.22 |
 | predicate | 서술어(VV, VA, VX, XSV, XSA) 개수 (-1 보정) | 8개 이상 (7+1) | 0.18 |
 | embedding | 관형형(ETM)+명사형(ETN)+부사형EC(게·도록·듯이) 개수 | 5개 이상 | 0.15 |
-| length | 내용어(명/동/형) token 수 | 23개 이상 | 0.15 |
+| length | 내용어(명/동/형) token 수 | 29개 이상 | 0.15 |
 | modifier | 최장 명사 연쇄 길이 (-1 보정) | 4개 이상 (3+1) | 0.10 |
 | logical | 논리표지·강한어미 가중합 | 4 이상 | 0.08 |
 | repetition | 단어 반복 부담 (반복 횟수×난도×다의성 계수 합계) | 3.5 이상 | 0.07 |
@@ -34,7 +35,7 @@ structure = 0.18×predicate + 0.15×embedding
 ### 보정 설명
 - **predicate**: 모든 문장에 서술어가 최소 1개 필수이므로 `predicate_count - 1` 후 score 계산.
 - **modifier**: 모든 명사 연쇄는 최소 1개 명사를 포함하므로 `max_noun_chain - 1` 후 score 계산.
-- **modifier chain**: NNG/NNP/NNB/XR은 연쇄를 시작·연장하고, XSN은 기존 연쇄만 연장한다. 단, XSN 바로 뒤의 새 명사류는 같은 연쇄에 붙이지 않고 새 연쇄로 시작한다. 예: `방법/NNG+론/XSN+적/XSN`은 3, `비교/NNG+적/XSN+안정세/NNG`는 2.
+- **modifier chain**: NNG/NNP/NNB/XR은 연쇄를 시작·연장한다. XSN은 연쇄 길이에 포함하지 않지만, 앞뒤 명사류를 이어 주는 bridge로 본다. 예: `방법/NNG+론/XSN+적/XSN`은 1, `비교/NNG+적/XSN+안정세/NNG`는 2.
 
 ### structural_span 계산
 

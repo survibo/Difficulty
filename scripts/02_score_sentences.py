@@ -132,10 +132,10 @@ def _structure_reasons(sp: dict) -> list[str]:
 
     if bc <= 5:
         reasons.append(f"  content_words={bc} ≤ 5 → length=0")
-    elif bc < 23:
-        reasons.append(f"  content_words={bc} → ({bc}-5)/18={sp['length_score']}")
+    elif bc < 29:
+        reasons.append(f"  content_words={bc} → ({bc}-5)/24={sp['length_score']}")
     else:
-        reasons.append(f"  content_words={bc} → length=1.0 (≥23)")
+        reasons.append(f"  content_words={bc} → length=1.0 (≥29)")
 
     if em == 0 and ae == 0:
         reasons.append("  no ETM/ETN/부사절 → embedding=0")
@@ -148,7 +148,7 @@ def _structure_reasons(sp: dict) -> list[str]:
     if cc == 0 and lr == 0:
         reasons.append("  no EC/logical markers → connective=0, logical=0")
     else:
-        reasons.append(f"  EC={cc}/4 → cs={cs:.3f} (×0.05)  +  logical_weighted={lr:.1f}/4 → ls={ls:.3f} (×0.10)")
+        reasons.append(f"  EC={cc}/4 → cs={cs:.3f} (×0.05)  +  logical_weighted={lr:.1f}/4 → ls={ls:.3f} (×0.08)")
 
     if sr == 0:
         reasons.append("  no structural spans → span=0")

@@ -68,6 +68,7 @@ score_0_1 = clamp(score_0_1, 0, 1)
     "content_token_count_capped": int,   # 반복 제거 후 개수
     "unknown_token_count": int,          # unknown 판정 개수
 
+    "scored_words_full": [dict],         # 전체 scored word 리스트
     "scored_words": [dict],              # 개별 어휘 난도 리스트(surface, lemma, tag, pos 등)
     "score_parts": dict,                 # lexical 세부 (mean_all, mean_top_n, max)
     "structure_parts": dict,             # structure 8개 지표 + raw counts
@@ -76,6 +77,7 @@ score_0_1 = clamp(score_0_1, 0, 1)
     "lexical_weight": 5.0,
     "structure_weight": 5.0,
     "negation_bonus_coefficient": 0.2,
+    "reliability": float,
 }
 ```
 

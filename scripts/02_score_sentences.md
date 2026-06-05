@@ -1,6 +1,6 @@
 # 02_score_sentences.py — CLI 문장 분석기
 
-**위치:** `scripts/02_score_sentences.py` (154줄)
+**위치:** `scripts/02_score_sentences.py`
 
 ## 역할
 
@@ -29,6 +29,8 @@ python scripts/02_score_sentences.py --debug "문장을 분석한다."
   score_10:        3.12
   lexical_score:   2.89
   structure_score: 3.67
+  negation_score:  0.0
+  reliability:     0.75
   content_words:   4
   unknown_words:   1
 ```
