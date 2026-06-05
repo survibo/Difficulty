@@ -18,6 +18,7 @@ _CONCEPT_REPETITION_EXCLUDED_LEMMAS: set[str] = {"것", "수", "때", "말", "�
 _INFORMATION_DENSITY_PER_SENTENCE: int = 13
 _CONCEPT_REPETITION_FULL_SCORE_AT: float = 10.0
 _CONCEPT_REPETITION_MIN_DIFFICULTY: float = 0.05
+_MIN_PARAGRAPH_SENTENCES: int = 4
 
 
 class ParagraphScorer:
@@ -150,6 +151,9 @@ class ParagraphScorer:
     def score(self, paragraph: str | None) -> dict[str, Any]:
         text = str(paragraph or "")
         sentences = self.split_sentences(text)
+        if len(sentences) < _MIN_PARAGRAPH_SENTENCES:
+            raise ValueError("문단 분석은 문장이 4개 이상일 때만 가능합니다.")
+
         sentence_results = [self._sentence_scorer.score(sentence) for sentence in sentences]
         sentence_scores = [float(result.get("score_0_1", 0.0)) for result in sentence_results]
 

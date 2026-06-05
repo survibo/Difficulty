@@ -38,10 +38,12 @@ class ParagraphScorerTest(unittest.TestCase):
         )
 
     def test_empty_paragraph(self) -> None:
-        result = self.scorer.score("  ")
-        self.assertEqual(result["score_0_1"], 0.0)
-        self.assertEqual(result["sentence_count"], 0)
-        self.assertEqual(result["paragraph_parts"]["information_density_full_score_at"], 0)
+        with self.assertRaisesRegex(ValueError, "4개 이상"):
+            self.scorer.score("  ")
+
+    def test_paragraph_requires_at_least_four_sentences(self) -> None:
+        with self.assertRaisesRegex(ValueError, "4개 이상"):
+            self.scorer.score("첫 문장이다. 둘째 문장이다. 셋째 문장이다.")
 
     def test_sentence_aggregate_uses_mean_top3_and_max(self) -> None:
         result = self.scorer.score("쉬운 문장이다. 쉬운 문장이다. 어렵다. 어렵다.")
@@ -52,7 +54,7 @@ class ParagraphScorerTest(unittest.TestCase):
         self.assertEqual(parts["sentence_aggregate"], 0.6)
 
     def test_paragraph_weights(self) -> None:
-        result = self.scorer.score("쉬운 문장이다.")
+        result = self.scorer.score("쉬운 문장이다. 쉬운 문장이다. 쉬운 문장이다. 쉬운 문장이다.")
         self.assertEqual(
             result["paragraph_parts"]["paragraph_weights"],
             {
@@ -63,7 +65,7 @@ class ParagraphScorerTest(unittest.TestCase):
         )
 
     def test_paragraph_score_uses_sentence_density_and_concept_repetition(self) -> None:
-        result = self.scorer.score("그러나 쉬운 문장이다.")
+        result = self.scorer.score("그러나 쉬운 문장이다. 쉬운 문장이다. 쉬운 문장이다. 쉬운 문장이다.")
         parts = result["paragraph_parts"]
         expected = (
             0.85 * parts["sentence_aggregate"]
@@ -73,11 +75,11 @@ class ParagraphScorerTest(unittest.TestCase):
         self.assertEqual(result["score_0_1"], round(expected, 4))
 
     def test_information_density_uses_unique_core_content_items(self) -> None:
-        result = self.scorer.score("같은 단어. 같은 다른.")
+        result = self.scorer.score("같은 단어. 같은 다른. 같은. 단어.")
         parts = result["paragraph_parts"]
         self.assertEqual(parts["unique_core_content_count"], 3)
-        self.assertEqual(parts["information_density_full_score_at"], 26)
-        self.assertEqual(parts["information_density"], round(3 / 26, 4))
+        self.assertEqual(parts["information_density_full_score_at"], 52)
+        self.assertEqual(parts["information_density"], round(3 / 52, 4))
 
     def test_information_density_counts_only_core_content_tags(self) -> None:
         class CoreTagSentenceScorer:
@@ -96,17 +98,30 @@ class ParagraphScorerTest(unittest.TestCase):
                     ],
                 }
 
-        result = ParagraphScorer(CoreTagSentenceScorer()).score("정책은 그 매우 어려운 구조일 수 있다.")
+        result = ParagraphScorer(CoreTagSentenceScorer()).score("문장 하나. 문장 둘. 문장 셋. 문장 넷.")
         parts = result["paragraph_parts"]
         self.assertEqual(parts["unique_core_content_count"], 3)
-        self.assertEqual(parts["information_density_full_score_at"], 13)
-        self.assertEqual(parts["information_density"], round(3 / 13, 4))
+        self.assertEqual(parts["information_density_full_score_at"], 52)
+        self.assertEqual(parts["information_density"], round(3 / 52, 4))
 
     def test_information_density_caps_at_sentence_count_times_thirteen(self) -> None:
-        result = self.scorer.score("a b c d e f g h i j k l m n.")
+        class DenseSentenceScorer:
+            def score(self, sentence: str) -> dict:
+                words = [
+                    {"lemma": f"w{i}", "pos": "명사", "tag": "NNG"}
+                    for i in range(60)
+                ]
+                return {
+                    "sentence": sentence,
+                    "score_0_1": 0.2,
+                    "score_10": 2.0,
+                    "scored_words_full": words,
+                }
+
+        result = ParagraphScorer(DenseSentenceScorer()).score("문장 하나. 문장 둘. 문장 셋. 문장 넷.")
         parts = result["paragraph_parts"]
-        self.assertEqual(parts["unique_core_content_count"], 14)
-        self.assertEqual(parts["information_density_full_score_at"], 13)
+        self.assertEqual(parts["unique_core_content_count"], 60)
+        self.assertEqual(parts["information_density_full_score_at"], 52)
         self.assertEqual(parts["information_density"], 1.0)
 
     def test_information_density_counts_same_lemma_different_pos(self) -> None:
@@ -122,11 +137,11 @@ class ParagraphScorerTest(unittest.TestCase):
                     ],
                 }
 
-        result = ParagraphScorer(PosSentenceScorer()).score("말 말.")
+        result = ParagraphScorer(PosSentenceScorer()).score("문장 하나. 문장 둘. 문장 셋. 문장 넷.")
         parts = result["paragraph_parts"]
         self.assertEqual(parts["unique_core_content_count"], 2)
-        self.assertEqual(parts["information_density_full_score_at"], 13)
-        self.assertEqual(parts["information_density"], round(2 / 13, 4))
+        self.assertEqual(parts["information_density_full_score_at"], 52)
+        self.assertEqual(parts["information_density"], round(2 / 52, 4))
 
     def test_concept_repetition_uses_repeated_core_words_with_difficulty_and_spread(self) -> None:
         class RepeatedConceptSentenceScorer:
@@ -142,12 +157,12 @@ class ParagraphScorerTest(unittest.TestCase):
                     "scored_words_full": words,
                 }
 
-        result = ParagraphScorer(RepeatedConceptSentenceScorer()).score("첫째 문장. 둘째 문장.")
+        result = ParagraphScorer(RepeatedConceptSentenceScorer()).score("첫째 문장. 둘째 문장. 셋째 문장. 넷째 문장.")
         parts = result["paragraph_parts"]
         self.assertEqual(parts["repeated_core_content_count"], 1)
         self.assertEqual(parts["concept_repetition_full_score_at"], 10.0)
-        self.assertEqual(parts["concept_repetition_raw"], 2.16)
-        self.assertEqual(parts["concept_repetition"], 0.216)
+        self.assertEqual(parts["concept_repetition_raw"], 5.76)
+        self.assertEqual(parts["concept_repetition"], 0.576)
 
     def test_concept_repetition_uses_minimum_difficulty_for_zero_difficulty_words(self) -> None:
         class EasyRepeatedConceptSentenceScorer:
@@ -161,11 +176,11 @@ class ParagraphScorerTest(unittest.TestCase):
                     ],
                 }
 
-        result = ParagraphScorer(EasyRepeatedConceptSentenceScorer()).score("첫째 문장. 둘째 문장.")
+        result = ParagraphScorer(EasyRepeatedConceptSentenceScorer()).score("첫째 문장. 둘째 문장. 셋째 문장. 넷째 문장.")
         parts = result["paragraph_parts"]
         self.assertEqual(parts["repeated_core_content_count"], 1)
-        self.assertEqual(parts["concept_repetition_raw"], 0.048)
-        self.assertEqual(parts["concept_repetition"], 0.0048)
+        self.assertEqual(parts["concept_repetition_raw"], 0.192)
+        self.assertEqual(parts["concept_repetition"], 0.0192)
 
 
 if __name__ == "__main__":

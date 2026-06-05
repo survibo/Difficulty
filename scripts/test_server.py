@@ -137,6 +137,8 @@ class Handler(BaseHTTPRequestHandler):
             )
 
             self._ok("application/json", json.dumps(result, ensure_ascii=False, default=str).encode("utf-8"))
+        except ValueError as e:
+            self._err(400, str(e))
         except Exception as e:
             self._err(500, str(e))
 

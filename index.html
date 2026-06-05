@@ -113,7 +113,7 @@
   </p>
 
   <div class="criteria">
-    <strong>난이도 기준:</strong> 문장을 암기한 뒤, 같은 의미를 다른 표현으로 자연스럽게 말할 수 있는 정도를 기준으로 봅니다. 점수가 높을수록 어휘·구조·부정 처리 부담이 커서 재표현하기 어렵습니다.
+    <strong>난이도 기준:</strong> 문장을 암기한 뒤, 같은 의미를 다른 표현으로 자연스럽게 말할 수 있는 정도를 기준으로 봅니다. 점수가 높을수록 어휘·구조·부정 처리 부담이 커서 재표현하기 어렵습니다. 문단 분석은 4문장 이상에서만 작동합니다.
   </div>
 
   <div id="examples">
@@ -176,6 +176,9 @@
 <script>
 const API = "/api/score";
 const PARAGRAPH_API = "/api/score-paragraph";
+const MIN_PARAGRAPH_SENTENCES = 4;
+const PARAGRAPH_MIN_SENTENCE_MESSAGE = "문단 분석은 문장이 4개 이상일 때만 가능합니다.";
+const SENTENCE_SPLIT_RE = /[^.!?。！？\n]+[.!?。！？]?/g;
 
 function loadExample(el) {
   document.getElementById("input").value = el.textContent;
@@ -193,6 +196,10 @@ async function analyze() {
   result.classList.remove("show");
 
   if (!input) { err.textContent = mode === "paragraph" ? "문단을 입력하세요." : "문장을 입력하세요."; return; }
+  if (mode === "paragraph" && splitSentences(input).length < MIN_PARAGRAPH_SENTENCES) {
+    err.textContent = PARAGRAPH_MIN_SENTENCE_MESSAGE;
+    return;
+  }
 
   btn.disabled = true;
   btn.textContent = "분석 중...";
@@ -216,11 +223,18 @@ async function analyze() {
     if (mode === "paragraph") renderParagraph(data);
     else render(data);
   } catch (e) {
-    err.textContent = "서버에 연결할 수 없습니다. `python scripts/test_server.py`를 먼저 실행해주세요.";
+    const message = e.message || "";
+    err.textContent = message && message !== "Failed to fetch"
+      ? message
+      : "서버에 연결할 수 없습니다. `python scripts/test_server.py`를 먼저 실행해주세요.";
   } finally {
     btn.disabled = false;
     btn.textContent = "분석";
   }
+}
+
+function splitSentences(text) {
+  return String(text || "").match(SENTENCE_SPLIT_RE)?.map(s => s.trim()).filter(Boolean) || [];
 }
 
 function render(d) {
