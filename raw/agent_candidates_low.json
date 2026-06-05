@@ -1,0 +1,290 @@
+[
+  {
+    "entry_id": 340,
+    "lemma": "가정하다",
+    "difficulty": 0.241,
+    "estimated_intuitive": 0.65,
+    "delta": 0.409,
+    "reason": "사실 여부가 불분명한 전제를 논리적 근거로 세운다는 뜻이라 추상성과 학술적 문맥 부담이 크다."
+  },
+  {
+    "entry_id": 495,
+    "lemma": "간섭",
+    "difficulty": 0.02,
+    "estimated_intuitive": 0.5,
+    "delta": 0.48,
+    "reason": "일상적 참견 뜻에 물리학의 파동 현상까지 함께 있어 다의성과 전문 개념 부담이 있다."
+  },
+  {
+    "entry_id": 686,
+    "lemma": "감독",
+    "difficulty": 0.02,
+    "estimated_intuitive": 0.55,
+    "delta": 0.53,
+    "reason": "지휘자라는 쉬운 뜻을 넘어서 감시와 제재, 종교 직위, 역사 관직까지 포함해 의미 범위가 넓다."
+  },
+  {
+    "entry_id": 688,
+    "lemma": "감독하다",
+    "difficulty": 0.241,
+    "estimated_intuitive": 0.65,
+    "delta": 0.409,
+    "reason": "단순히 살피는 행위보다 기관의 행위를 감시하고 명령이나 제재를 가한다는 제도적 뜻이 강하다."
+  },
+  {
+    "entry_id": 2871,
+    "lemma": "공간",
+    "difficulty": 0.02,
+    "estimated_intuitive": 0.65,
+    "delta": 0.63,
+    "reason": "빈 곳이라는 쉬운 뜻 뒤에 수학적 구조와 칸트 철학의 선험적 형식까지 이어져 추상 부담이 매우 크다."
+  },
+  {
+    "entry_id": 3269,
+    "lemma": "과학",
+    "difficulty": 0.02,
+    "estimated_intuitive": 0.5,
+    "delta": 0.48,
+    "reason": "보편적 진리와 법칙을 목적으로 한 체계적 지식이라는 정의가 개념적이고 학문 분류 부담을 동반한다."
+  },
+  {
+    "entry_id": 3289,
+    "lemma": "관계",
+    "difficulty": 0.02,
+    "estimated_intuitive": 0.5,
+    "delta": 0.48,
+    "reason": "관련성, 영역 관련, 완곡 표현, 까닭 표시까지 의미가 갈라져 문맥 판별 부담이 크다."
+  },
+  {
+    "entry_id": 4445,
+    "lemma": "규칙",
+    "difficulty": 0.02,
+    "estimated_intuitive": 0.45,
+    "delta": 0.43,
+    "reason": "약속된 질서라는 기본 뜻에 법률에 입각한 제정법 형식까지 포함되어 제도적 추상성이 있다."
+  },
+  {
+    "entry_id": 5195,
+    "lemma": "기억",
+    "difficulty": 0.02,
+    "estimated_intuitive": 0.5,
+    "delta": 0.48,
+    "reason": "경험을 떠올리는 쉬운 뜻을 넘어 정보 저장과 인출의 정신 기능까지 설명해 인지 개념 부담이 있다."
+  },
+  {
+    "entry_id": 11738,
+    "lemma": "명령",
+    "difficulty": 0.02,
+    "estimated_intuitive": 0.55,
+    "delta": 0.53,
+    "reason": "상급자가 시키는 말이라는 뜻 외에 공법, 소송법, 컴퓨터 제어까지 걸쳐 전문적 다의성이 크다."
+  },
+  {
+    "entry_id": 16430,
+    "lemma": "비교",
+    "difficulty": 0.02,
+    "estimated_intuitive": 0.55,
+    "delta": 0.53,
+    "reason": "둘을 견주는 기본 뜻보다 일반 법칙 고찰과 교수 단계의 추상적 개념 구성까지 포함해 어렵다."
+  },
+  {
+    "entry_id": 16434,
+    "lemma": "비교하다",
+    "difficulty": 0.0225,
+    "estimated_intuitive": 0.5,
+    "delta": 0.4775,
+    "reason": "단순 대조가 아니라 유사점과 공통점, 차이점을 밝혀 고찰한다는 분석적 의미 부담이 있다."
+  },
+  {
+    "entry_id": 17915,
+    "lemma": "상대",
+    "difficulty": 0.02,
+    "estimated_intuitive": 0.5,
+    "delta": 0.48,
+    "reason": "마주 보는 대상, 겨루는 대상, 대비 관계, 독립 불가능한 존재라는 뜻이 함께 있어 추상성이 높다."
+  },
+  {
+    "entry_id": 18062,
+    "lemma": "상태",
+    "difficulty": 0.02,
+    "estimated_intuitive": 0.5,
+    "delta": 0.48,
+    "reason": "일반적인 형편 뜻에 자연 현상을 완전히 기술한 계의 존재 상황이라는 과학적 의미가 붙어 있다."
+  },
+  {
+    "entry_id": 18246,
+    "lemma": "생각",
+    "difficulty": 0.0,
+    "estimated_intuitive": 0.5,
+    "delta": 0.5,
+    "reason": "판단 작용, 기억, 관심, 의도, 상상, 의견, 성의, 분별까지 포괄해 쉬운 표면보다 다의 부담이 크다."
+  },
+  {
+    "entry_id": 18911,
+    "lemma": "성격",
+    "difficulty": 0.02,
+    "estimated_intuitive": 0.55,
+    "delta": 0.53,
+    "reason": "개인의 품성뿐 아니라 사물의 본질과 심리적 체계까지 뜻해 추상성과 전문 정의 부담이 크다."
+  },
+  {
+    "entry_id": 20733,
+    "lemma": "습관",
+    "difficulty": 0.02,
+    "estimated_intuitive": 0.45,
+    "delta": 0.43,
+    "reason": "반복 행동이라는 익숙한 말이지만 학습된 반응 양식이라는 추상적 정의가 함께 제시된다."
+  },
+  {
+    "entry_id": 23879,
+    "lemma": "역할",
+    "difficulty": 0.02,
+    "estimated_intuitive": 0.45,
+    "delta": 0.43,
+    "reason": "맡은 직책이나 임무와 연극의 배역을 오가므로 문맥에 따라 사회적 기능과 표현 영역을 구분해야 한다."
+  },
+  {
+    "entry_id": 25983,
+    "lemma": "원인",
+    "difficulty": 0.02,
+    "estimated_intuitive": 0.45,
+    "delta": 0.43,
+    "reason": "사물이나 상태를 변화시키는 근본이라는 정의가 눈에 보이는 사물보다 인과 개념 이해를 요구한다."
+  },
+  {
+    "entry_id": 26898,
+    "lemma": "의미",
+    "difficulty": 0.02,
+    "estimated_intuitive": 0.5,
+    "delta": 0.48,
+    "reason": "말의 뜻에서 행위와 현상의 뜻, 사물과 현상의 가치로 확장되어 추상적 해석 부담이 있다."
+  },
+  {
+    "entry_id": 27290,
+    "lemma": "이유",
+    "difficulty": 0.02,
+    "estimated_intuitive": 0.5,
+    "delta": 0.48,
+    "reason": "까닭과 변명을 넘어 존재의 기초와 사상의 진리 조건까지 설명해 철학적 추상성이 있다."
+  },
+  {
+    "entry_id": 28286,
+    "lemma": "자연",
+    "difficulty": 0.02,
+    "estimated_intuitive": 0.6,
+    "delta": 0.58,
+    "reason": "산과 강 같은 쉬운 뜻을 포함하지만 본성, 현상의 전체, 교과 영역, 저절로의 뜻까지 다의성이 크다."
+  },
+  {
+    "entry_id": 29675,
+    "lemma": "전통",
+    "difficulty": 0.02,
+    "estimated_intuitive": 0.5,
+    "delta": 0.48,
+    "reason": "집단과 공동체 안에서 계통을 이루어 전해지는 사상과 관습의 양식이라는 사회문화적 추상어이다."
+  },
+  {
+    "entry_id": 30084,
+    "lemma": "정신",
+    "difficulty": 0.02,
+    "estimated_intuitive": 0.7,
+    "delta": 0.68,
+    "reason": "마음, 판단 능력, 태도, 이념, 헤겔의 비물질적 실재까지 연결되어 추상성과 철학 부담이 매우 크다."
+  },
+  {
+    "entry_id": 30668,
+    "lemma": "조직",
+    "difficulty": 0.02,
+    "estimated_intuitive": 0.55,
+    "delta": 0.53,
+    "reason": "집단 구성, 암석 내부 구조, 생물학적 세포 집단까지 뜻이 갈라져 영역별 해석 부담이 크다."
+  },
+  {
+    "entry_id": 30807,
+    "lemma": "종교",
+    "difficulty": 0.05,
+    "estimated_intuitive": 0.65,
+    "delta": 0.6,
+    "reason": "초자연적 절대자와 궁극적 의미를 추구하는 문화 체계라는 정의가 추상적이고 분류 부담도 크다."
+  },
+  {
+    "entry_id": 30897,
+    "lemma": "종합",
+    "difficulty": 0.02,
+    "estimated_intuitive": 0.65,
+    "delta": 0.63,
+    "reason": "여러 것을 모은다는 뜻 외에 개념과 판단의 결합, 변증법과 헤겔 철학의 단계까지 포함한다."
+  },
+  {
+    "entry_id": 31655,
+    "lemma": "지각하다",
+    "difficulty": 0.241,
+    "estimated_intuitive": 0.65,
+    "delta": 0.409,
+    "reason": "감각 기관을 통해 대상을 인식하고 지각체가 형성된다는 심리학적 의미가 있어 직관 난도가 높다."
+  },
+  {
+    "entry_id": 31828,
+    "lemma": "지식",
+    "difficulty": 0.02,
+    "estimated_intuitive": 0.65,
+    "delta": 0.63,
+    "reason": "아는 내용이라는 쉬운 뜻을 넘어 인식 성과와 객관적 타당성을 요구하는 판단 체계까지 포함한다."
+  },
+  {
+    "entry_id": 31963,
+    "lemma": "지혜",
+    "difficulty": 0.02,
+    "estimated_intuitive": 0.55,
+    "delta": 0.53,
+    "reason": "이치를 깨닫는 능력에서 불교와 히브리 사상의 속성까지 이어져 종교철학적 의미 부담이 있다."
+  },
+  {
+    "entry_id": 33090,
+    "lemma": "책임감",
+    "difficulty": 0.02,
+    "estimated_intuitive": 0.45,
+    "delta": 0.43,
+    "reason": "해야 할 임무나 의무를 중히 여기는 마음이라는 정의가 구체 사물보다 사회적 추상 개념에 가깝다."
+  },
+  {
+    "entry_id": 35415,
+    "lemma": "태도",
+    "difficulty": 0.02,
+    "estimated_intuitive": 0.45,
+    "delta": 0.43,
+    "reason": "몸가짐과 마음가짐, 어떤 상황에 대한 입장까지 뜻해 겉모습과 추상적 관점을 함께 구분해야 한다."
+  },
+  {
+    "entry_id": 36964,
+    "lemma": "표현",
+    "difficulty": 0.02,
+    "estimated_intuitive": 0.45,
+    "delta": 0.43,
+    "reason": "생각과 느낌을 언어나 몸짓의 형상으로 드러낸다는 뜻이라 매체와 추상 내용의 연결을 요구한다."
+  },
+  {
+    "entry_id": 38674,
+    "lemma": "형식",
+    "difficulty": 0.02,
+    "estimated_intuitive": 0.7,
+    "delta": 0.68,
+    "reason": "외형과 절차를 넘어 본질의 통일 원리, 선험적 조건, 논리 구조까지 포함해 매우 추상적이다."
+  },
+  {
+    "entry_id": 38853,
+    "lemma": "혼",
+    "difficulty": 0.02,
+    "estimated_intuitive": 0.45,
+    "delta": 0.43,
+    "reason": "몸과 정신을 다스리는 비물질적인 것이라는 정의라 구체적 지시 대상이 약하고 추상성이 높다."
+  },
+  {
+    "entry_id": 39116,
+    "lemma": "화해",
+    "difficulty": 0.02,
+    "estimated_intuitive": 0.5,
+    "delta": 0.48,
+    "reason": "감정을 푸는 일상적 뜻에 민사상 분쟁 해결과 한의학 치료법까지 함께 있어 다의 부담이 있다."
+  }
+]

@@ -1,0 +1,394 @@
+[
+  {
+    "entry_id": 378,
+    "lemma": "가치",
+    "difficulty": 0.2575,
+    "estimated_intuitive": 0.85,
+    "delta": 0.5925,
+    "reason": "쓸모라는 쉬운 뜻을 넘어 인간과 대상의 관계, 중요성, 진선미 같은 철학적 의미가 핵심이라 추상성이 높다."
+  },
+  {
+    "entry_id": 1852,
+    "lemma": "결론",
+    "difficulty": 0.2575,
+    "estimated_intuitive": 0.75,
+    "delta": 0.4925,
+    "reason": "글의 끝이라는 쉬운 뜻보다 판단과 추론 결과라는 논리적 의미가 함께 있어 사고 부담이 크다."
+  },
+  {
+    "entry_id": 2252,
+    "lemma": "계약",
+    "difficulty": 0.495,
+    "estimated_intuitive": 0.9,
+    "delta": 0.405,
+    "reason": "일상적 약속의 뜻이 있어도 법률 효과와 채권 관계, 종교적 약속까지 걸쳐 의미 부담이 크다."
+  },
+  {
+    "entry_id": 4433,
+    "lemma": "규범",
+    "difficulty": 0.495,
+    "estimated_intuitive": 0.95,
+    "delta": 0.455,
+    "reason": "행동과 판단의 가치 기준, 사유와 의지의 법칙을 뜻해 매우 추상적이고 철학적이다."
+  },
+  {
+    "entry_id": 7476,
+    "lemma": "능력",
+    "difficulty": 0.2575,
+    "estimated_intuitive": 0.75,
+    "delta": 0.4925,
+    "reason": "일을 해낼 힘이라는 쉬운 뜻 외에 법률 자격과 정신 기능의 가능성까지 포함해 다의 부담이 있다."
+  },
+  {
+    "entry_id": 8800,
+    "lemma": "도덕",
+    "difficulty": 0.495,
+    "estimated_intuitive": 0.9,
+    "delta": 0.405,
+    "reason": "양심, 관습, 규범, 내면 원리와 인간 관계를 포괄하는 추상 개념이라 체감 난도가 높다."
+  },
+  {
+    "entry_id": 10809,
+    "lemma": "마취",
+    "difficulty": 0.2575,
+    "estimated_intuitive": 0.75,
+    "delta": 0.4925,
+    "reason": "의식과 감각 상실이라는 의학적 의미에 사상이나 이념에 판단력을 잃는 비유 의미가 겹친다."
+  },
+  {
+    "entry_id": 12550,
+    "lemma": "무효",
+    "difficulty": 0.495,
+    "estimated_intuitive": 0.9,
+    "delta": 0.405,
+    "reason": "효과가 없다는 쉬운 말보다 법률 행위의 효력 발생 여부를 따지는 전문 의미가 중심에 있다."
+  },
+  {
+    "entry_id": 12660,
+    "lemma": "문자",
+    "difficulty": 0.2575,
+    "estimated_intuitive": 0.8,
+    "delta": 0.5425,
+    "reason": "글자만이 아니라 시각 기호 체계, 학문, 수학 기호, 컴퓨터 입력 문자까지 의미 범위가 넓다."
+  },
+  {
+    "entry_id": 12663,
+    "lemma": "문장",
+    "difficulty": 0.2575,
+    "estimated_intuitive": 0.85,
+    "delta": 0.5925,
+    "reason": "일상적인 글 단위를 넘어 예악과 제도, 완결된 언어 단위라는 문법 개념까지 포함한다."
+  },
+  {
+    "entry_id": 12888,
+    "lemma": "물질",
+    "difficulty": 0.2575,
+    "estimated_intuitive": 0.9,
+    "delta": 0.6425,
+    "reason": "재물이라는 쉬운 뜻이 있어도 자연계의 실체와 의식으로부터 독립된 객관적 실재라는 추상 의미가 어렵다."
+  },
+  {
+    "entry_id": 13198,
+    "lemma": "민주",
+    "difficulty": 0.2575,
+    "estimated_intuitive": 0.85,
+    "delta": 0.5925,
+    "reason": "주권, 권력 행사, 기본권, 법치주의 같은 정치 제도와 사상을 함께 이해해야 한다."
+  },
+  {
+    "entry_id": 13659,
+    "lemma": "반응",
+    "difficulty": 0.2575,
+    "estimated_intuitive": 0.8,
+    "delta": 0.5425,
+    "reason": "자극에 대한 현상, 유기체 행동, 화학 변화가 함께 제시되어 과학적 다의성이 크다."
+  },
+  {
+    "entry_id": 13784,
+    "lemma": "발달",
+    "difficulty": 0.2575,
+    "estimated_intuitive": 0.8,
+    "delta": 0.5425,
+    "reason": "신체 성장뿐 아니라 학문, 문명, 사회, 지리 현상의 수준 변화를 포괄해 추상 범위가 넓다."
+  },
+  {
+    "entry_id": 14669,
+    "lemma": "법률",
+    "difficulty": 0.495,
+    "estimated_intuitive": 0.95,
+    "delta": 0.455,
+    "reason": "국가 강제 규범, 헌법과 명령의 위계, 종교 규율까지 연결되어 전문성과 추상성이 매우 높다."
+  },
+  {
+    "entry_id": 14681,
+    "lemma": "법원",
+    "difficulty": 0.2875,
+    "estimated_intuitive": 0.75,
+    "delta": 0.4625,
+    "reason": "건물 이름처럼 익숙해 보여도 사법권과 소송 사건의 법률적 판단 권한을 이해해야 한다."
+  },
+  {
+    "entry_id": 14694,
+    "lemma": "법칙",
+    "difficulty": 0.2575,
+    "estimated_intuitive": 0.85,
+    "delta": 0.5925,
+    "reason": "규범, 연산 규칙, 사물과 현상의 필연적 관계를 모두 뜻해 추상성과 학문성이 높다."
+  },
+  {
+    "entry_id": 15102,
+    "lemma": "보상",
+    "difficulty": 0.2575,
+    "estimated_intuitive": 0.8,
+    "delta": 0.5425,
+    "reason": "손해를 갚는 뜻 외에 국가의 손실 보전과 심리적 보충 작용까지 있어 의미 층위가 복잡하다."
+  },
+  {
+    "entry_id": 15977,
+    "lemma": "분별",
+    "difficulty": 0.495,
+    "estimated_intuitive": 0.9,
+    "delta": 0.405,
+    "reason": "구별, 판단, 배려, 물질 분리라는 서로 다른 추상적ㆍ전문적 의미를 함께 지닌다."
+  },
+  {
+    "entry_id": 16013,
+    "lemma": "분열",
+    "difficulty": 0.495,
+    "estimated_intuitive": 0.9,
+    "delta": 0.405,
+    "reason": "물리적 나뉨에서 집단과 사상, 원자핵, 세포 생식까지 이어져 다의성과 전문성이 크다."
+  },
+  {
+    "entry_id": 16230,
+    "lemma": "불안",
+    "difficulty": 0.2575,
+    "estimated_intuitive": 0.8,
+    "delta": 0.5425,
+    "reason": "쉬운 감정어처럼 보이지만 심리 상태와 실존적 위기 의식까지 포함해 추상 부담이 크다."
+  },
+  {
+    "entry_id": 17240,
+    "lemma": "사상",
+    "difficulty": 0.495,
+    "estimated_intuitive": 0.95,
+    "delta": 0.455,
+    "reason": "생각에서 판단 체계와 사회ㆍ인생에 관한 인식까지 확장되어 매우 추상적인 개념어이다."
+  },
+  {
+    "entry_id": 17879,
+    "lemma": "상관",
+    "difficulty": 0.2575,
+    "estimated_intuitive": 0.8,
+    "delta": 0.5425,
+    "reason": "관련, 간섭, 육체관계, 통계적 관계, 언어학 개념까지 뜻이 갈라져 다의 부담이 크다."
+  },
+  {
+    "entry_id": 18973,
+    "lemma": "성분",
+    "difficulty": 0.2575,
+    "estimated_intuitive": 0.8,
+    "delta": 0.5425,
+    "reason": "부분이라는 쉬운 뜻을 넘어 사회 계층, 벡터, 문장 요소, 화학 구성 물질로 의미가 확장된다."
+  },
+  {
+    "entry_id": 19031,
+    "lemma": "성질",
+    "difficulty": 0.2575,
+    "estimated_intuitive": 0.75,
+    "delta": 0.4925,
+    "reason": "사람의 마음 바탕과 사물ㆍ현상의 고유 특성을 함께 가리켜 추상적 분류가 필요하다."
+  },
+  {
+    "entry_id": 19448,
+    "lemma": "소외",
+    "difficulty": 0.495,
+    "estimated_intuitive": 0.9,
+    "delta": 0.405,
+    "reason": "따돌림이라는 일상 의미보다 인간이 본질을 상실한 상태라는 철학적 의미가 어렵다."
+  },
+  {
+    "entry_id": 21260,
+    "lemma": "신분",
+    "difficulty": 0.2575,
+    "estimated_intuitive": 0.9,
+    "delta": 0.6425,
+    "reason": "사회적 위치와 계급, 법률적 지위, 형법상 인적 표지를 모두 포괄해 추상성과 전문성이 높다."
+  },
+  {
+    "entry_id": 21534,
+    "lemma": "실천",
+    "difficulty": 0.2575,
+    "estimated_intuitive": 0.85,
+    "delta": 0.5925,
+    "reason": "생각을 실제로 행한다는 뜻에서 윤리적 행위와 사회 변혁 활동까지 확장되어 추상성이 크다."
+  },
+  {
+    "entry_id": 21590,
+    "lemma": "심리",
+    "difficulty": 0.2875,
+    "estimated_intuitive": 0.85,
+    "delta": 0.5625,
+    "reason": "마음의 작용과 의식 상태, 그리고 이를 연구하는 학문까지 포함해 개념적 난도가 높다."
+  },
+  {
+    "entry_id": 22390,
+    "lemma": "안정",
+    "difficulty": 0.2575,
+    "estimated_intuitive": 0.75,
+    "delta": 0.4925,
+    "reason": "일정한 상태 유지라는 추상 뜻에 물리적 평형과 화학적 반응성까지 붙어 의미 제약이 복잡하다."
+  },
+  {
+    "entry_id": 23904,
+    "lemma": "연관",
+    "difficulty": 0.2575,
+    "estimated_intuitive": 0.75,
+    "delta": 0.4925,
+    "reason": "관계를 맺는다는 추상 뜻과 유전학의 염색체 단위 행동 의미가 함께 있어 체감 난도가 높다."
+  },
+  {
+    "entry_id": 23906,
+    "lemma": "연관성",
+    "difficulty": 0.495,
+    "estimated_intuitive": 0.9,
+    "delta": 0.405,
+    "reason": "사물이나 현상이 관계를 맺는 특성이라는 명사화된 추상 개념이라 직관적으로 어렵다."
+  },
+  {
+    "entry_id": 24684,
+    "lemma": "오류",
+    "difficulty": 0.2575,
+    "estimated_intuitive": 0.85,
+    "delta": 0.5925,
+    "reason": "이치에 맞지 않음, 논리적 추리의 잘못, 계산 오차와 시스템 착오를 모두 포함한다."
+  },
+  {
+    "entry_id": 25186,
+    "lemma": "외계",
+    "difficulty": 0.2575,
+    "estimated_intuitive": 0.85,
+    "delta": 0.5925,
+    "reason": "바깥 세계나 지구 밖 세계뿐 아니라 불교와 철학의 독립 실재 의미까지 포함한다."
+  },
+  {
+    "entry_id": 26887,
+    "lemma": "의무",
+    "difficulty": 0.2575,
+    "estimated_intuitive": 0.85,
+    "delta": 0.5925,
+    "reason": "해야 할 일이라는 쉬운 뜻을 넘어 법적ㆍ도덕적 규범이 부과하는 구속을 뜻해 추상성이 높다."
+  },
+  {
+    "entry_id": 26927,
+    "lemma": "의식",
+    "difficulty": 0.495,
+    "estimated_intuitive": 0.95,
+    "delta": 0.455,
+    "reason": "깨어 있음, 사회적 견해, 불교적 마음 작용, 정신 작용이 겹쳐 매우 추상적이다."
+  },
+  {
+    "entry_id": 27421,
+    "lemma": "인격",
+    "difficulty": 0.495,
+    "estimated_intuitive": 0.95,
+    "delta": 0.455,
+    "reason": "품격, 법률상 자격, 정신적 특성, 도덕적 주체를 모두 포함해 추상 개념 부담이 매우 크다."
+  },
+  {
+    "entry_id": 28494,
+    "lemma": "작용",
+    "difficulty": 0.2575,
+    "estimated_intuitive": 0.85,
+    "delta": 0.5925,
+    "reason": "영향을 미치는 일, 물리 현상, 현상학적 의식 과정까지 포괄해 학문적 추상성이 높다."
+  },
+  {
+    "entry_id": 29021,
+    "lemma": "재산",
+    "difficulty": 0.2575,
+    "estimated_intuitive": 0.75,
+    "delta": 0.4925,
+    "reason": "돈과 물건이라는 쉬운 뜻 외에 권리와 의무의 총체라는 법률적 의미가 포함된다."
+  },
+  {
+    "entry_id": 29088,
+    "lemma": "재판",
+    "difficulty": 0.2575,
+    "estimated_intuitive": 0.8,
+    "delta": 0.5425,
+    "reason": "옳고 그름의 판단에서 법원의 공권적 판단과 소송 형식까지 연결되어 전문성이 높다."
+  },
+  {
+    "entry_id": 29095,
+    "lemma": "재판하다",
+    "difficulty": 0.3835,
+    "estimated_intuitive": 0.8,
+    "delta": 0.4165,
+    "reason": "판단한다는 뜻과 구체적 소송 사건에 법원이 공권적 판단을 내리는 뜻이 함께 있다."
+  },
+  {
+    "entry_id": 30695,
+    "lemma": "조합",
+    "difficulty": 0.495,
+    "estimated_intuitive": 0.9,
+    "delta": 0.405,
+    "reason": "모아 짠다는 뜻에서 민법상 단체, 협동 조직, 수학적 조합까지 확장되어 다의 부담이 크다."
+  },
+  {
+    "entry_id": 31598,
+    "lemma": "증명",
+    "difficulty": 0.495,
+    "estimated_intuitive": 0.95,
+    "delta": 0.455,
+    "reason": "사실 확인, 문서, 논리적 명제 입증, 공적 증명, 소송법상 확신 형성까지 의미가 매우 넓다."
+  },
+  {
+    "entry_id": 32032,
+    "lemma": "직접적",
+    "difficulty": 0.2575,
+    "estimated_intuitive": 0.8,
+    "delta": 0.5425,
+    "reason": "매개 없이 연결된다는 기본 뜻에 헤겔 철학의 반성 없는 자기 긍정 의미가 붙어 어렵다."
+  },
+  {
+    "entry_id": 32099,
+    "lemma": "진리",
+    "difficulty": 0.495,
+    "estimated_intuitive": 0.95,
+    "delta": 0.455,
+    "reason": "참된 이치와 명제의 정합성, 보편 법칙을 뜻해 논리적ㆍ철학적 추상성이 매우 높다."
+  },
+  {
+    "entry_id": 32721,
+    "lemma": "차원",
+    "difficulty": 0.2575,
+    "estimated_intuitive": 0.85,
+    "delta": 0.5925,
+    "reason": "생각의 수준, 물리량의 성질, 기하학적 위치 개념을 모두 포함해 학문 간 의미 이동이 크다."
+  },
+  {
+    "entry_id": 36222,
+    "lemma": "판결",
+    "difficulty": 0.495,
+    "estimated_intuitive": 0.9,
+    "delta": 0.405,
+    "reason": "일반적 판단보다 법원이 소송 사건에 대해 내리는 형식적 결정이라는 법률 의미가 강하다."
+  },
+  {
+    "entry_id": 38067,
+    "lemma": "해석",
+    "difficulty": 0.2575,
+    "estimated_intuitive": 0.8,
+    "delta": 0.5425,
+    "reason": "내용을 이해하고 설명하는 행위와 사물ㆍ행위의 내용을 판단하는 추상적 과정이 함께 있다."
+  },
+  {
+    "entry_id": 38233,
+    "lemma": "행위",
+    "difficulty": 0.2575,
+    "estimated_intuitive": 0.85,
+    "delta": 0.5925,
+    "reason": "사람의 짓이라는 쉬운 뜻보다 법률 효과, 자극 반응, 윤리적 판단 대상까지 의미가 확장된다."
+  }
+]

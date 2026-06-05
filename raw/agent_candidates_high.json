@@ -1,0 +1,930 @@
+[
+  {
+    "entry_id": 8,
+    "lemma": "가겟집",
+    "difficulty": 0.97,
+    "estimated_intuitive": 0.45,
+    "delta": 0.52,
+    "reason": "Meaning is a concrete shop/house referent, everyday and visually transparent."
+  },
+  {
+    "entry_id": 23,
+    "lemma": "가공유",
+    "difficulty": 0.97,
+    "estimated_intuitive": 0.5,
+    "delta": 0.47,
+    "reason": "Processed milk is a familiar concrete food item; definition adds little abstract burden."
+  },
+  {
+    "entry_id": 31,
+    "lemma": "가구상",
+    "difficulty": 0.97,
+    "estimated_intuitive": 0.45,
+    "delta": 0.52,
+    "reason": "Furniture shop is an everyday place/object compound with low abstraction."
+  },
+  {
+    "entry_id": 41,
+    "lemma": "가꾸로",
+    "difficulty": 0.95,
+    "estimated_intuitive": 0.5,
+    "delta": 0.45,
+    "reason": "Simple spatial/directional adverb close to everyday reverse/upside-down use."
+  },
+  {
+    "entry_id": 43,
+    "lemma": "가끔가다가",
+    "difficulty": 0.95,
+    "estimated_intuitive": 0.35,
+    "delta": 0.6,
+    "reason": "Very familiar frequency adverb meaning sometimes/now and then."
+  },
+  {
+    "entry_id": 75,
+    "lemma": "가드레일",
+    "difficulty": 1.0,
+    "estimated_intuitive": 0.5,
+    "delta": 0.5,
+    "reason": "Roadside/rail safety barrier is a concrete everyday object despite technical wording."
+  },
+  {
+    "entry_id": 81,
+    "lemma": "가뜩",
+    "difficulty": 0.97,
+    "estimated_intuitive": 0.45,
+    "delta": 0.52,
+    "reason": "Full/packed sensory state is familiar and close to common ?? meaning."
+  },
+  {
+    "entry_id": 89,
+    "lemma": "가락국수",
+    "difficulty": 0.95,
+    "estimated_intuitive": 0.45,
+    "delta": 0.5,
+    "reason": "Thick noodle food is concrete and familiar from lemma and meaning alone."
+  },
+  {
+    "entry_id": 90,
+    "lemma": "가락지",
+    "difficulty": 0.97,
+    "estimated_intuitive": 0.45,
+    "delta": 0.52,
+    "reason": "Finger ring is a familiar wearable object; second sense is still physical."
+  },
+  {
+    "entry_id": 98,
+    "lemma": "가래침",
+    "difficulty": 0.97,
+    "estimated_intuitive": 0.5,
+    "delta": 0.47,
+    "reason": "Phlegm-spit is a bodily/sensory referent familiar in daily health contexts."
+  },
+  {
+    "entry_id": 102,
+    "lemma": "가려움증",
+    "difficulty": 0.9724999999999999,
+    "estimated_intuitive": 0.5,
+    "delta": 0.4725,
+    "reason": "Itching symptom is a basic bodily sensation despite a secondary medical definition."
+  },
+  {
+    "entry_id": 103,
+    "lemma": "가려워하다",
+    "difficulty": 0.95,
+    "estimated_intuitive": 0.35,
+    "delta": 0.6,
+    "reason": "Basic action/sensation meaning: to feel itchy."
+  },
+  {
+    "entry_id": 117,
+    "lemma": "가로무늬",
+    "difficulty": 0.95,
+    "estimated_intuitive": 0.45,
+    "delta": 0.5,
+    "reason": "Horizontal stripe is a simple visible pattern with transparent morphology."
+  },
+  {
+    "entry_id": 118,
+    "lemma": "가로선",
+    "difficulty": 0.9724999999999999,
+    "estimated_intuitive": 0.45,
+    "delta": 0.5225,
+    "reason": "Horizontal line is a basic visual/geometric object."
+  },
+  {
+    "entry_id": 121,
+    "lemma": "가로쓰기",
+    "difficulty": 0.95,
+    "estimated_intuitive": 0.5,
+    "delta": 0.45,
+    "reason": "Horizontal writing direction is a familiar school/literacy concept."
+  },
+  {
+    "entry_id": 127,
+    "lemma": "가로획",
+    "difficulty": 0.9724999999999999,
+    "estimated_intuitive": 0.5,
+    "delta": 0.4725,
+    "reason": "Horizontal stroke is a simple writing-shape term."
+  },
+  {
+    "entry_id": 148,
+    "lemma": "가마",
+    "difficulty": 0.95,
+    "estimated_intuitive": 0.5,
+    "delta": 0.45,
+    "reason": "Large deep pot is a concrete household/cooking object."
+  },
+  {
+    "entry_id": 167,
+    "lemma": "가맹점",
+    "difficulty": 0.97,
+    "estimated_intuitive": 0.55,
+    "delta": 0.42,
+    "reason": "Member shop/franchise store is an everyday commercial place, though slightly institutional."
+  },
+  {
+    "entry_id": 234,
+    "lemma": "가스난로",
+    "difficulty": 0.9724999999999999,
+    "estimated_intuitive": 0.45,
+    "delta": 0.5225,
+    "reason": "Gas heater/stove is a familiar household appliance."
+  },
+  {
+    "entry_id": 235,
+    "lemma": "가스라이터",
+    "difficulty": 0.975,
+    "estimated_intuitive": 0.4,
+    "delta": 0.575,
+    "reason": "Gas lighter is a concrete everyday object with transparent meaning."
+  },
+  {
+    "entry_id": 239,
+    "lemma": "가스스토브",
+    "difficulty": 0.975,
+    "estimated_intuitive": 0.45,
+    "delta": 0.525,
+    "reason": "Gas stove/heater is a familiar household appliance."
+  },
+  {
+    "entry_id": 325,
+    "lemma": "가재도구",
+    "difficulty": 0.97,
+    "estimated_intuitive": 0.45,
+    "delta": 0.52,
+    "reason": "Household goods are concrete everyday belongings."
+  },
+  {
+    "entry_id": 333,
+    "lemma": "가정용품",
+    "difficulty": 0.97,
+    "estimated_intuitive": 0.45,
+    "delta": 0.52,
+    "reason": "Household goods meaning is transparent and concrete."
+  },
+  {
+    "entry_id": 388,
+    "lemma": "가판대",
+    "difficulty": 0.97,
+    "estimated_intuitive": 0.5,
+    "delta": 0.47,
+    "reason": "Street sales stand is a concrete public-place object."
+  },
+  {
+    "entry_id": 413,
+    "lemma": "각목",
+    "difficulty": 0.97,
+    "estimated_intuitive": 0.45,
+    "delta": 0.52,
+    "reason": "Squared timber is a concrete material/object."
+  },
+  {
+    "entry_id": 419,
+    "lemma": "각봉투",
+    "difficulty": 0.97,
+    "estimated_intuitive": 0.35,
+    "delta": 0.62,
+    "reason": "Square envelope is a simple familiar stationery object."
+  },
+  {
+    "entry_id": 453,
+    "lemma": "간간하다",
+    "difficulty": 0.95,
+    "estimated_intuitive": 0.45,
+    "delta": 0.5,
+    "reason": "Slightly salty taste is a direct sensory food description."
+  },
+  {
+    "entry_id": 519,
+    "lemma": "간이매점",
+    "difficulty": 0.97,
+    "estimated_intuitive": 0.45,
+    "delta": 0.52,
+    "reason": "Small kiosk/store is a familiar everyday place."
+  },
+  {
+    "entry_id": 520,
+    "lemma": "간이식당",
+    "difficulty": 0.97,
+    "estimated_intuitive": 0.4,
+    "delta": 0.57,
+    "reason": "Small simple restaurant is an everyday place."
+  },
+  {
+    "entry_id": 521,
+    "lemma": "간이역",
+    "difficulty": 0.97,
+    "estimated_intuitive": 0.5,
+    "delta": 0.47,
+    "reason": "Unstaffed/simple station is a concrete public-transport place."
+  },
+  {
+    "entry_id": 522,
+    "lemma": "간이음식점",
+    "difficulty": 0.97,
+    "estimated_intuitive": 0.4,
+    "delta": 0.57,
+    "reason": "Small inexpensive eatery is a familiar concrete place."
+  },
+  {
+    "entry_id": 523,
+    "lemma": "간이주점",
+    "difficulty": 0.97,
+    "estimated_intuitive": 0.45,
+    "delta": 0.52,
+    "reason": "Small cheap bar is a familiar concrete place."
+  },
+  {
+    "entry_id": 524,
+    "lemma": "간이침대",
+    "difficulty": 0.97,
+    "estimated_intuitive": 0.4,
+    "delta": 0.57,
+    "reason": "Simple bed is a familiar concrete object."
+  },
+  {
+    "entry_id": 758,
+    "lemma": "감자채",
+    "difficulty": 0.95,
+    "estimated_intuitive": 0.45,
+    "delta": 0.5,
+    "reason": "Shredded potato side dish is concrete everyday food."
+  },
+  {
+    "entry_id": 968,
+    "lemma": "강판",
+    "difficulty": 0.97,
+    "estimated_intuitive": 0.5,
+    "delta": 0.47,
+    "reason": "Kitchen grater is a concrete tool used for food preparation."
+  },
+  {
+    "entry_id": 1109,
+    "lemma": "개수대",
+    "difficulty": 0.9724999999999999,
+    "estimated_intuitive": 0.45,
+    "delta": 0.5225,
+    "reason": "Kitchen sink is a familiar household fixture."
+  },
+  {
+    "entry_id": 1110,
+    "lemma": "개숫물",
+    "difficulty": 0.95,
+    "estimated_intuitive": 0.45,
+    "delta": 0.5,
+    "reason": "Dishwashing water is a concrete household substance/use."
+  },
+  {
+    "entry_id": 1232,
+    "lemma": "객줏집",
+    "difficulty": 0.9724999999999999,
+    "estimated_intuitive": 0.55,
+    "delta": 0.4225,
+    "reason": "Inn/tavern house is a concrete place, though older in use."
+  },
+  {
+    "entry_id": 1234,
+    "lemma": "객차",
+    "difficulty": 1.0,
+    "estimated_intuitive": 0.5,
+    "delta": 0.5,
+    "reason": "Passenger train car is a concrete transport object."
+  },
+  {
+    "entry_id": 1236,
+    "lemma": "갯가",
+    "difficulty": 0.97,
+    "estimated_intuitive": 0.45,
+    "delta": 0.52,
+    "reason": "Water edge by sea/stream is a familiar place referent."
+  },
+  {
+    "entry_id": 1238,
+    "lemma": "갯바람",
+    "difficulty": 0.95,
+    "estimated_intuitive": 0.35,
+    "delta": 0.6,
+    "reason": "Sea breeze is a familiar weather/sensory phenomenon."
+  },
+  {
+    "entry_id": 1248,
+    "lemma": "갱지",
+    "difficulty": 0.97,
+    "estimated_intuitive": 0.45,
+    "delta": 0.52,
+    "reason": "Low-quality paper/newspaper paper is a concrete stationery material."
+  },
+  {
+    "entry_id": 1260,
+    "lemma": "걀걀",
+    "difficulty": 0.95,
+    "estimated_intuitive": 0.45,
+    "delta": 0.5,
+    "reason": "Animal cry sound is sensory and familiar."
+  },
+  {
+    "entry_id": 1307,
+    "lemma": "거룻배",
+    "difficulty": 0.95,
+    "estimated_intuitive": 0.5,
+    "delta": 0.45,
+    "reason": "Small boat without sail is a concrete transport object."
+  },
+  {
+    "entry_id": 1313,
+    "lemma": "거름망",
+    "difficulty": 0.9724999999999999,
+    "estimated_intuitive": 0.5,
+    "delta": 0.4725,
+    "reason": "Strainer/filter net is a concrete household/kitchen object."
+  },
+  {
+    "entry_id": 1330,
+    "lemma": "거멀못",
+    "difficulty": 0.95,
+    "estimated_intuitive": 0.55,
+    "delta": 0.4,
+    "reason": "Repair nail is a concrete object, but somewhat narrower than common stationery/tools."
+  },
+  {
+    "entry_id": 1334,
+    "lemma": "거무칙칙하다",
+    "difficulty": 0.95,
+    "estimated_intuitive": 0.4,
+    "delta": 0.55,
+    "reason": "Dark dingy color description is an everyday visual adjective."
+  },
+  {
+    "entry_id": 1430,
+    "lemma": "거품기",
+    "difficulty": 0.9724999999999999,
+    "estimated_intuitive": 0.4,
+    "delta": 0.5725,
+    "reason": "Whisk/beater is a familiar kitchen tool."
+  },
+  {
+    "entry_id": 1466,
+    "lemma": "건넌방",
+    "difficulty": 0.9724999999999999,
+    "estimated_intuitive": 0.45,
+    "delta": 0.5225,
+    "reason": "Room across from the main room is a concrete household place."
+  },
+  {
+    "entry_id": 1469,
+    "lemma": "건넛방",
+    "difficulty": 0.9724999999999999,
+    "estimated_intuitive": 0.45,
+    "delta": 0.5225,
+    "reason": "Room across the way is a concrete household/place referent."
+  },
+  {
+    "entry_id": 1481,
+    "lemma": "건들바람",
+    "difficulty": 0.97,
+    "estimated_intuitive": 0.5,
+    "delta": 0.47,
+    "reason": "Gentle early-autumn breeze is a familiar sensory weather meaning."
+  },
+  {
+    "entry_id": 1519,
+    "lemma": "건조기",
+    "difficulty": 0.7625,
+    "estimated_intuitive": 0.3,
+    "delta": 0.4625,
+    "reason": "Drying machine/device is a familiar household appliance."
+  },
+  {
+    "entry_id": 1560,
+    "lemma": "걸레짝",
+    "difficulty": 0.95,
+    "estimated_intuitive": 0.45,
+    "delta": 0.5,
+    "reason": "Rag piece is a concrete everyday object with transparent colloquial meaning."
+  },
+  {
+    "entry_id": 1569,
+    "lemma": "걸상",
+    "difficulty": 0.9724999999999999,
+    "estimated_intuitive": 0.45,
+    "delta": 0.5225,
+    "reason": "Bench/chair is a basic concrete object."
+  },
+  {
+    "entry_id": 1583,
+    "lemma": "걸쭉하다",
+    "difficulty": 0.97,
+    "estimated_intuitive": 0.5,
+    "delta": 0.47,
+    "reason": "Thick liquid/food texture is a familiar sensory description."
+  },
+  {
+    "entry_id": 1613,
+    "lemma": "검색창",
+    "difficulty": 1.0,
+    "estimated_intuitive": 0.35,
+    "delta": 0.65,
+    "reason": "Search box is a very familiar interface place/object."
+  },
+  {
+    "entry_id": 1629,
+    "lemma": "검은자",
+    "difficulty": 0.95,
+    "estimated_intuitive": 0.35,
+    "delta": 0.6,
+    "reason": "Black part of the eye is a basic body-part referent."
+  },
+  {
+    "entry_id": 1630,
+    "lemma": "검은자위",
+    "difficulty": 0.95,
+    "estimated_intuitive": 0.35,
+    "delta": 0.6,
+    "reason": "Black part of the eye is a basic body-part referent."
+  },
+  {
+    "entry_id": 1640,
+    "lemma": "검정이",
+    "difficulty": 0.97,
+    "estimated_intuitive": 0.45,
+    "delta": 0.52,
+    "reason": "Black color/object or pigment is a familiar color referent."
+  },
+  {
+    "entry_id": 1666,
+    "lemma": "겅정거리다",
+    "difficulty": 0.95,
+    "estimated_intuitive": 0.45,
+    "delta": 0.5,
+    "reason": "Running/jumping with long legs is a concrete body movement."
+  },
+  {
+    "entry_id": 1667,
+    "lemma": "겅중",
+    "difficulty": 0.95,
+    "estimated_intuitive": 0.4,
+    "delta": 0.55,
+    "reason": "High springing jump is a concrete body movement/manner."
+  },
+  {
+    "entry_id": 1682,
+    "lemma": "겉봉투",
+    "difficulty": 0.9724999999999999,
+    "estimated_intuitive": 0.4,
+    "delta": 0.5725,
+    "reason": "Outer envelope is a simple stationery object."
+  },
+  {
+    "entry_id": 1684,
+    "lemma": "겉장",
+    "difficulty": 0.9724999999999999,
+    "estimated_intuitive": 0.4,
+    "delta": 0.5725,
+    "reason": "Outer sheet/book cover is a concrete paper/book part."
+  },
+  {
+    "entry_id": 1685,
+    "lemma": "겉절이",
+    "difficulty": 0.95,
+    "estimated_intuitive": 0.35,
+    "delta": 0.6,
+    "reason": "Fresh seasoned vegetable side dish is familiar everyday food."
+  },
+  {
+    "entry_id": 1710,
+    "lemma": "게우다",
+    "difficulty": 0.97,
+    "estimated_intuitive": 0.4,
+    "delta": 0.57,
+    "reason": "Vomit/bring food back out is a basic bodily action; secondary sense is separable."
+  },
+  {
+    "entry_id": 1720,
+    "lemma": "게장",
+    "difficulty": 0.9724999999999999,
+    "estimated_intuitive": 0.45,
+    "delta": 0.5225,
+    "reason": "Soy-marinated crab dish is concrete food."
+  },
+  {
+    "entry_id": 2456,
+    "lemma": "고무래",
+    "difficulty": 1.0,
+    "estimated_intuitive": 0.55,
+    "delta": 0.45,
+    "reason": "Rake-like farm/household tool is concrete, though somewhat narrower."
+  },
+  {
+    "entry_id": 2705,
+    "lemma": "곡괭이",
+    "difficulty": 1.0,
+    "estimated_intuitive": 0.5,
+    "delta": 0.5,
+    "reason": "Pickaxe is a concrete tool with transparent use."
+  },
+  {
+    "entry_id": 3786,
+    "lemma": "구두닦이",
+    "difficulty": 0.95,
+    "estimated_intuitive": 0.45,
+    "delta": 0.5,
+    "reason": "Shoe-shining job/action is an everyday concrete activity."
+  },
+  {
+    "entry_id": 3788,
+    "lemma": "구두약",
+    "difficulty": 0.9724999999999999,
+    "estimated_intuitive": 0.45,
+    "delta": 0.5225,
+    "reason": "Shoe polish is a familiar concrete product."
+  },
+  {
+    "entry_id": 3790,
+    "lemma": "구두창",
+    "difficulty": 0.95,
+    "estimated_intuitive": 0.45,
+    "delta": 0.5,
+    "reason": "Shoe sole is a concrete clothing/object part."
+  },
+  {
+    "entry_id": 7128,
+    "lemma": "놋숟가락",
+    "difficulty": 0.95,
+    "estimated_intuitive": 0.4,
+    "delta": 0.55,
+    "reason": "Brass spoon is a basic eating utensil."
+  },
+  {
+    "entry_id": 7365,
+    "lemma": "눈썹연필",
+    "difficulty": 0.9724999999999999,
+    "estimated_intuitive": 0.45,
+    "delta": 0.5225,
+    "reason": "Eyebrow pencil is a familiar cosmetic object."
+  },
+  {
+    "entry_id": 8492,
+    "lemma": "대청마루",
+    "difficulty": 1.0,
+    "estimated_intuitive": 0.5,
+    "delta": 0.5,
+    "reason": "Traditional house floor/maru is a concrete household place."
+  },
+  {
+    "entry_id": 8582,
+    "lemma": "대화방",
+    "difficulty": 1.0,
+    "estimated_intuitive": 0.45,
+    "delta": 0.55,
+    "reason": "Online chat room is a familiar digital place."
+  },
+  {
+    "entry_id": 9191,
+    "lemma": "돌쩌귀",
+    "difficulty": 1.0,
+    "estimated_intuitive": 0.5,
+    "delta": 0.5,
+    "reason": "Door hinge is a concrete household hardware object."
+  },
+  {
+    "entry_id": 9765,
+    "lemma": "뒷방",
+    "difficulty": 1.0,
+    "estimated_intuitive": 0.45,
+    "delta": 0.55,
+    "reason": "Back room is a concrete household place."
+  },
+  {
+    "entry_id": 10174,
+    "lemma": "땀띠",
+    "difficulty": 1.0,
+    "estimated_intuitive": 0.45,
+    "delta": 0.55,
+    "reason": "Heat rash is a familiar visible/itchy skin condition."
+  },
+  {
+    "entry_id": 10902,
+    "lemma": "만능열쇠",
+    "difficulty": 0.9724999999999999,
+    "estimated_intuitive": 0.45,
+    "delta": 0.5225,
+    "reason": "Master key is a concrete familiar tool/object."
+  },
+  {
+    "entry_id": 11684,
+    "lemma": "면양말",
+    "difficulty": 0.97,
+    "estimated_intuitive": 0.4,
+    "delta": 0.57,
+    "reason": "Cotton socks are familiar clothing objects."
+  },
+  {
+    "entry_id": 11688,
+    "lemma": "면장갑",
+    "difficulty": 0.97,
+    "estimated_intuitive": 0.4,
+    "delta": 0.57,
+    "reason": "Cotton gloves are familiar clothing objects."
+  },
+  {
+    "entry_id": 12075,
+    "lemma": "목장갑",
+    "difficulty": 0.97,
+    "estimated_intuitive": 0.4,
+    "delta": 0.57,
+    "reason": "Cotton work gloves are familiar clothing/tool objects."
+  },
+  {
+    "entry_id": 14165,
+    "lemma": "방한모자",
+    "difficulty": 0.97,
+    "estimated_intuitive": 0.4,
+    "delta": 0.57,
+    "reason": "Winter hat is a familiar clothing object."
+  },
+  {
+    "entry_id": 14383,
+    "lemma": "백묵",
+    "difficulty": 0.97,
+    "estimated_intuitive": 0.45,
+    "delta": 0.52,
+    "reason": "Chalk is a familiar classroom writing tool."
+  },
+  {
+    "entry_id": 14468,
+    "lemma": "뱃고동",
+    "difficulty": 0.95,
+    "estimated_intuitive": 0.45,
+    "delta": 0.5,
+    "reason": "Ship horn is a familiar sound-making transport object."
+  },
+  {
+    "entry_id": 14484,
+    "lemma": "뱅어포구이",
+    "difficulty": 0.9724999999999999,
+    "estimated_intuitive": 0.45,
+    "delta": 0.5225,
+    "reason": "Grilled dried-fish side dish is concrete food."
+  },
+  {
+    "entry_id": 14490,
+    "lemma": "버너",
+    "difficulty": 0.7625,
+    "estimated_intuitive": 0.35,
+    "delta": 0.4125,
+    "reason": "Burner is a familiar heating/cooking device."
+  },
+  {
+    "entry_id": 14513,
+    "lemma": "버석거리다",
+    "difficulty": 0.97,
+    "estimated_intuitive": 0.45,
+    "delta": 0.52,
+    "reason": "Rustling/crumbling sound is a familiar sensory sound word."
+  },
+  {
+    "entry_id": 14520,
+    "lemma": "버섯볶음",
+    "difficulty": 0.95,
+    "estimated_intuitive": 0.4,
+    "delta": 0.55,
+    "reason": "Mushroom stir-fry is concrete everyday food."
+  },
+  {
+    "entry_id": 14584,
+    "lemma": "번철",
+    "difficulty": 0.97,
+    "estimated_intuitive": 0.5,
+    "delta": 0.47,
+    "reason": "Flat iron pan/griddle is a concrete cooking vessel."
+  },
+  {
+    "entry_id": 14717,
+    "lemma": "벙어리장갑",
+    "difficulty": 0.9724999999999999,
+    "estimated_intuitive": 0.4,
+    "delta": 0.5725,
+    "reason": "Mitten is a familiar clothing object."
+  },
+  {
+    "entry_id": 14718,
+    "lemma": "벙어리저금통",
+    "difficulty": 0.9724999999999999,
+    "estimated_intuitive": 0.45,
+    "delta": 0.5225,
+    "reason": "Piggy bank is a familiar concrete container."
+  },
+  {
+    "entry_id": 14734,
+    "lemma": "베레모",
+    "difficulty": 0.9724999999999999,
+    "estimated_intuitive": 0.4,
+    "delta": 0.5725,
+    "reason": "Beret is a familiar hat/clothing object."
+  },
+  {
+    "entry_id": 14744,
+    "lemma": "베이컨",
+    "difficulty": 0.975,
+    "estimated_intuitive": 0.4,
+    "delta": 0.575,
+    "reason": "Bacon is a familiar concrete food."
+  },
+  {
+    "entry_id": 14924,
+    "lemma": "별실",
+    "difficulty": 0.97,
+    "estimated_intuitive": 0.5,
+    "delta": 0.47,
+    "reason": "Separate room is a concrete place; secondary sense increases burden slightly."
+  },
+  {
+    "entry_id": 15127,
+    "lemma": "보시기",
+    "difficulty": 0.97,
+    "estimated_intuitive": 0.5,
+    "delta": 0.47,
+    "reason": "Small side-dish bowl is a concrete tableware object."
+  },
+  {
+    "entry_id": 15186,
+    "lemma": "보청기",
+    "difficulty": 0.7625,
+    "estimated_intuitive": 0.35,
+    "delta": 0.4125,
+    "reason": "Hearing aid is a familiar assistive device."
+  },
+  {
+    "entry_id": 15391,
+    "lemma": "볼메다",
+    "difficulty": 0.95,
+    "estimated_intuitive": 0.45,
+    "delta": 0.5,
+    "reason": "Angry tone/facial expression is a familiar sensory-social description."
+  },
+  {
+    "entry_id": 15649,
+    "lemma": "부스럭",
+    "difficulty": 0.95,
+    "estimated_intuitive": 0.35,
+    "delta": 0.6,
+    "reason": "Rustling paper/leaves sound is a familiar sensory sound word."
+  },
+  {
+    "entry_id": 15675,
+    "lemma": "부엉부엉",
+    "difficulty": 0.95,
+    "estimated_intuitive": 0.4,
+    "delta": 0.55,
+    "reason": "Owl hooting sound is familiar and sensory."
+  },
+  {
+    "entry_id": 15890,
+    "lemma": "북어구이",
+    "difficulty": 0.9724999999999999,
+    "estimated_intuitive": 0.45,
+    "delta": 0.5225,
+    "reason": "Grilled dried pollack side dish is concrete food."
+  },
+  {
+    "entry_id": 15891,
+    "lemma": "북어무침",
+    "difficulty": 0.9724999999999999,
+    "estimated_intuitive": 0.45,
+    "delta": 0.5225,
+    "reason": "Seasoned dried pollack side dish is concrete food."
+  },
+  {
+    "entry_id": 15892,
+    "lemma": "북어찜",
+    "difficulty": 0.9724999999999999,
+    "estimated_intuitive": 0.45,
+    "delta": 0.5225,
+    "reason": "Steamed dried pollack side dish is concrete food."
+  },
+  {
+    "entry_id": 16053,
+    "lemma": "분필통",
+    "difficulty": 0.97,
+    "estimated_intuitive": 0.4,
+    "delta": 0.57,
+    "reason": "Chalk container is a simple classroom object."
+  },
+  {
+    "entry_id": 16385,
+    "lemma": "뷔페식당",
+    "difficulty": 0.9724999999999999,
+    "estimated_intuitive": 0.45,
+    "delta": 0.5225,
+    "reason": "Buffet restaurant is a familiar concrete place."
+  },
+  {
+    "entry_id": 17044,
+    "lemma": "사각봉투",
+    "difficulty": 0.97,
+    "estimated_intuitive": 0.35,
+    "delta": 0.62,
+    "reason": "Rectangular envelope is a simple stationery object."
+  },
+  {
+    "entry_id": 18421,
+    "lemma": "서걱거리다",
+    "difficulty": 0.97,
+    "estimated_intuitive": 0.5,
+    "delta": 0.47,
+    "reason": "Cutting/stepping/chewing rustle-crunch sound is familiar sensory sound."
+  },
+  {
+    "entry_id": 19665,
+    "lemma": "손맛",
+    "difficulty": 0.97,
+    "estimated_intuitive": 0.5,
+    "delta": 0.47,
+    "reason": "Touch feel and cooking taste are familiar sensory meanings."
+  },
+  {
+    "entry_id": 22896,
+    "lemma": "약숟가락",
+    "difficulty": 0.9724999999999999,
+    "estimated_intuitive": 0.45,
+    "delta": 0.5225,
+    "reason": "Medicine spoon is a concrete utensil."
+  },
+  {
+    "entry_id": 25731,
+    "lemma": "운동모자",
+    "difficulty": 0.97,
+    "estimated_intuitive": 0.4,
+    "delta": 0.57,
+    "reason": "Sports cap is a familiar clothing object."
+  },
+  {
+    "entry_id": 26043,
+    "lemma": "월급봉투",
+    "difficulty": 0.97,
+    "estimated_intuitive": 0.4,
+    "delta": 0.57,
+    "reason": "Pay envelope is a familiar concrete paper container."
+  },
+  {
+    "entry_id": 31175,
+    "lemma": "주점",
+    "difficulty": 0.97,
+    "estimated_intuitive": 0.45,
+    "delta": 0.52,
+    "reason": "Bar/pub is a familiar concrete place."
+  },
+  {
+    "entry_id": 32827,
+    "lemma": "찰카닥",
+    "difficulty": 0.97,
+    "estimated_intuitive": 0.45,
+    "delta": 0.52,
+    "reason": "Clicking/locking sound of small hard objects is familiar sensory sound."
+  },
+  {
+    "entry_id": 33330,
+    "lemma": "철거덕",
+    "difficulty": 0.97,
+    "estimated_intuitive": 0.45,
+    "delta": 0.52,
+    "reason": "Clanking/locking sound of hard objects is familiar sensory sound."
+  },
+  {
+    "entry_id": 34816,
+    "lemma": "컵케이크",
+    "difficulty": 0.975,
+    "estimated_intuitive": 0.35,
+    "delta": 0.625,
+    "reason": "Cupcake is a familiar concrete food."
+  },
+  {
+    "entry_id": 38950,
+    "lemma": "홍두깨",
+    "difficulty": 0.97,
+    "estimated_intuitive": 0.55,
+    "delta": 0.42,
+    "reason": "Wooden laundry mallet/food cut is concrete but less common, so kept higher."
+  }
+]
