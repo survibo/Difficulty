@@ -18,7 +18,7 @@ _CORE_INFORMATION_POS: set[str] = {"명사", "동사", "형용사", "어근"}
 _CONCEPT_REPETITION_EXCLUDED_LEMMAS: set[str] = {"것", "수", "때", "말", "점", "등", "바", "데"}
 _INFORMATION_DENSITY_PER_SENTENCE: int = 13
 _CONCEPT_REPETITION_FULL_SCORE_AT: float = 10.0
-_CONCEPT_REPETITION_MIN_DIFFICULTY: float = 0.05
+_CONCEPT_REPETITION_MIN_DIFFICULTY: float = 0.10
 _MIN_PARAGRAPH_SENTENCES: int = 4
 
 
@@ -137,9 +137,10 @@ class ParagraphScorer:
                 continue
             repeated_count += 1
             difficulty = max(difficulties[key]) if difficulties[key] else 0.30
+            adj = max(_CONCEPT_REPETITION_MIN_DIFFICULTY, min(0.5, difficulty / 1.5))
             spread = min(1.6, 1.0 + 0.2 * (len(sentence_ids[key]) - 1))
             pos_weight = ParagraphScorer._concept_pos_weight(key[1])
-            raw += (count - 1) * difficulty * spread * pos_weight
+            raw += (count - 1) * adj * spread * pos_weight
 
         score = min(1.0, raw / _CONCEPT_REPETITION_FULL_SCORE_AT)
         return {

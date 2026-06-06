@@ -70,7 +70,7 @@ concept_repetition_raw =
 | 항목 | 의미 |
 |------|------|
 | `count` | 같은 `(lemma, 핵심품사)`의 문단 내 등장 횟수 |
-| `effective_difficulty` | 해당 어휘의 lexical difficulty 최댓값을 사용하되, 반복 계산에서는 최소 0.05로 보정 |
+| `effective_difficulty` | 해당 어휘의 lexical difficulty 최댓값을 사용하되, 반복 계산에서는 `max(0.1, min(0.5, difficulty ÷ 1.5))`로 보정 |
 | `spread` | 여러 문장에 걸쳐 나오면 가산: `min(1.6, 1.0 + 0.2 × (등장 문장 수 - 1))` |
 | `pos_weight` | `NNG/NNP/XR=1.0`, `VV/VA=0.8` |
 
