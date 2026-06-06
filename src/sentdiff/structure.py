@@ -43,9 +43,9 @@ class StructureConfig:
 
     # 7개 지표 고정 가중치 (합 1.0)
     weight_length: float = 0.27
-    weight_predicate: float = 0.18
+    weight_predicate: float = 0.16
     weight_embedding: float = 0.18
-    weight_connective: float = 0.06
+    weight_connective: float = 0.08
     weight_logical: float = 0.08
     weight_modifier: float = 0.12
     weight_repetition: float = 0.11
