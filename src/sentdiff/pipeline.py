@@ -13,7 +13,7 @@ from __future__ import annotations
 from typing import Any
 
 from .lexical import LexiconConfig, LexiconScorer
-from .morph import KiwiMorphAnalyzer
+from .morph import KiwiMorphAnalyzer, base_sejong_tag, morph_tag_role
 from .negation import NegationAnalyzer
 from .normalize import normalize_text
 from .patterns import PatternMatcher
@@ -94,6 +94,20 @@ class SentenceScorer:
             "lexical_unit_count_capped": lexical_result.get("lexical_unit_count_capped", lexical_result["lexical_unit_count"]),
             "unknown_lexical_unit_count": lexical_result["unknown_lexical_unit_count"],
             "structure_content_token_count": structure_result["structure_parts"]["structure_content_token_count"],
+            "morph_tokens": [
+                {
+                    "surface": token.surface,
+                    "lemma": token.lemma,
+                    "tag": token.tag,
+                    "base_tag": base_sejong_tag(token.tag),
+                    "pos": token.pos,
+                    "start": token.start,
+                    "end": token.end,
+                    "is_content": token.is_content,
+                    "structure_role": morph_tag_role(token.tag),
+                }
+                for token in tokens
+            ],
             "scored_words_full": lexical_result["scored_words_full"],
             "scored_words": lexical_result["scored_words"],
             "score_parts": lexical_result["score_parts"],

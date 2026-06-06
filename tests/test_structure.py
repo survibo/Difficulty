@@ -87,13 +87,21 @@ class StructureScorerTest(unittest.TestCase):
         self.assertEqual(result["structure_parts"]["structure_content_token_count"], 29)
         self.assertEqual(result["structure_parts"]["length_score"], 1.0)
 
-    def test_length_score_uses_expanded_twenty_four_token_range(self) -> None:
+    def test_length_score_is_zero_through_eight_content_tokens(self) -> None:
+        tokens = [
+            _make_token(f"단어{i}", f"단어{i}", "NNG")
+            for i in range(8)
+        ]
+        result = self.scorer.score_tokens(tokens)
+        self.assertEqual(result["structure_parts"]["length_score"], 0.0)
+
+    def test_length_score_uses_minus_eight_adjustment_over_twenty_one(self) -> None:
         tokens = [
             _make_token(f"단어{i}", f"단어{i}", "NNG")
             for i in range(17)
         ]
         result = self.scorer.score_tokens(tokens)
-        self.assertEqual(result["structure_parts"]["length_score"], 0.5)
+        self.assertEqual(result["structure_parts"]["length_score"], round(9 / 21, 4))
 
     # -----------------------------------------------------------------
     # predicate_count: VV / VA / VX / XSV / XSA

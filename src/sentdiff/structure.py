@@ -27,8 +27,8 @@ REPETITION_EXCLUDE_LEMMAS: set[str] = {
 }
 REPETITION_MIN_DIFFICULTY: float = 0.10
 
-_LENGTH_MIN: float = 5.0
-_LENGTH_MAX: float = 24.0
+_LENGTH_ADJUSTMENT: int = 8
+_LENGTH_FULL_SCORE_AT: int = 21
 
 
 @dataclass(frozen=True)
@@ -79,10 +79,8 @@ class StructureScorer:
         return bool(getattr(token, "is_content", False))
 
     def _compute_length_score(self, content_count: int) -> float:
-        if content_count <= _LENGTH_MIN:
-            return 0.0
-        raw = (content_count - _LENGTH_MIN) / _LENGTH_MAX
-        return min(1.0, raw)
+        adjusted_count = max(0, content_count - _LENGTH_ADJUSTMENT)
+        return min(1.0, adjusted_count / _LENGTH_FULL_SCORE_AT)
 
     @staticmethod
     def _match_weighted(

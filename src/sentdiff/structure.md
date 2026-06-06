@@ -29,7 +29,7 @@ Kiwi의 원본 `MorphToken.tag`에 `-I`, `-R` 등의 접미 표지가 붙어도 
 
 | 지표 | 측정 대상 | 1.0이 되는 조건 | 가중치 |
 |------|----------|----------------|--------|
-| length | 내용어(명/동/형) token 수 | 29개 이상 | 0.27 |
+| length | 내용어(명/동/형) token 수 (-8 보정) | 29개 이상 | 0.27 |
 | embedding | 관형형(ETM)+명사형(ETN)+부사형EC(게·도록·듯이) 개수 | 7개 이상 | 0.20 |
 | predicate | 서술어(VV, VA, VX, XSV, XSA) 개수 (-1 보정) | 8개 이상 (7+1) | 0.16 |
 | modifier | 최장 명사 연쇄 길이 (-2 보정) | 5개 이상 (3+2) | 0.12 |
@@ -38,6 +38,7 @@ Kiwi의 원본 `MorphToken.tag`에 `-I`, `-R` 등의 접미 표지가 붙어도 
 | connective | EC 개수 | 4개 이상 | 0.06 |
 
 ### 보정 설명
+- **length**: 짧은 문장의 기본 내용어 8개를 제외하고 `max(0, content_count - 8) / 21`로 계산한다. 8개 이하는 0, 29개 이상은 1.0이다.
 - **predicate**: 모든 문장에 서술어가 최소 1개 필수이므로 `predicate_count - 1` 후 score 계산.
 - **modifier**: 모든 명사 연쇄는 최소 1개 명사를 포함하므로 `max_noun_chain - 2` 후 score 계산.
 - **modifier chain**: NNG/NNP/NNB/XR은 연쇄를 시작·연장한다. XSN은 연쇄 길이에 포함하지 않지만, 앞뒤 명사류를 이어 주는 bridge로 본다. 예: `방법/NNG+론/XSN+적/XSN`은 1, `비교/NNG+적/XSN+안정세/NNG`는 2.

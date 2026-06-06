@@ -76,6 +76,7 @@ score_0_1 = clamp(score_0_1, 0, 1)
     "unknown_lexical_unit_count": int,    # unknown 어휘 단위 개수
     "structure_content_token_count": int, # 구조 length용 MorphToken 내용어 수
 
+    "morph_tokens": [dict],               # HTML/CLI 진단용 정규화 형태소 trace
     "scored_words_full": [dict],         # 전체 LexicalUnit 리스트
     "scored_words": [dict],              # 반복 제거된 LexicalUnit 리스트
     "score_parts": dict,                 # lexical 세부 (mean_all, mean_top_n, max)
@@ -91,6 +92,10 @@ score_0_1 = clamp(score_0_1, 0, 1)
 
 `scored_words_full`의 각 항목은 대표 `tag`와 구성 태그 전체 `tags`, 원문 문자 span,
 토큰 span을 함께 제공한다. 기존 이름은 유지하지만 의미는 개별 형태소가 아니라 어휘 단위다.
+
+`morph_tokens`는 점수 계산에 사용한 동일한 형태소 분석 결과를 직렬화한다. 각 항목은
+`surface`, `lemma`, 원시 `tag`, 정규화된 `base_tag`, `pos`, 문자 span,
+`is_content`, `structure_role`을 포함하며 HTML Debug 토글과 진단 도구가 사용한다.
 
 `reliability`는 어휘 단위 기준으로 계산한다.
 

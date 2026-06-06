@@ -20,6 +20,7 @@ from sentdiff.lexical import LexiconConfig
 from sentdiff.pipeline import SentenceScorer
 
 from sentdiff.morph import KiwiMorphAnalyzer, morph_tag_role
+from sentdiff.structure import StructureConfig
 
 
 # ---------------------------------------------------------------------------
@@ -85,92 +86,43 @@ def _format_morph_trace(sentence: str) -> str:
     return "\n".join(lines)
 
 
-def _structure_reasons(sp: dict) -> list[str]:
-    reasons = []
-    bc = sp["structure_content_token_count"]
-    pc = sp["predicate_count"]
-    adj_pc = sp["predicate_count_adj"]
-    cc = sp["connective_ending_count"]
-    em = sp["adnominal_count"] + sp["nominalizer_count"]
-    ae = sp["adverbial_ending_count"]
-    lr = sp["logical_marker_weighted"] + sp["strong_logical_ending_weighted"]
-    cs = sp["connective_score"]
-    ls = sp["logical_score"]
-    mc = sp["max_noun_chain"]
-    adj_mc = sp["max_noun_chain_adj"]
-    dc = sp["derivational_suffix_count"]
-    rc = sp["repetition_count"]
-    rr = sp["repetition_raw"]
-
-    if pc == 0:
-        reasons.append("  no predicate tokens")
-    elif adj_pc == 0:
-        reasons.append(f"  predicate_count={pc} → -1보정 → adj=0")
-    else:
-        reasons.append(f"  predicate_count={pc} → adj={adj_pc}/7 → score={sp['predicate_score']}")
-
-    if bc <= 5:
-        reasons.append(f"  content_words={bc} ≤ 5 → length=0")
-    elif bc < 29:
-        reasons.append(f"  content_words={bc} → ({bc}-5)/24={sp['length_score']}")
-    else:
-        reasons.append(f"  content_words={bc} → length=1.0 (≥29)")
-
-    if em == 0 and ae == 0:
-        reasons.append("  no ETM/ETN/부사절 → embedding=0")
-    else:
-        parts = []
-        if em: parts.append(f"ETM+ETN={em}")
-        if ae: parts.append(f"부사절={ae}")
-        reasons.append(f"  {' + '.join(parts)}/7 → embedding={sp['embedding_score']}")
-
-    if cc == 0 and lr == 0:
-        reasons.append("  no EC/logical markers → connective=0, logical=0")
-    else:
-        reasons.append(f"  EC={cc}/4 → cs={cs:.3f} (×{sp['connective_score']})  +  logical_weighted={lr:.1f}/4 → ls={ls:.3f} (×{sp['logical_score']})")
-
-    if mc <= 1:
-        reasons.append(f"  max_noun_chain={mc} → adj=0 → modifier=0")
-    else:
-        reasons.append(f"  max_noun_chain={mc} → adj={adj_mc}/4 → modifier={sp['modifier_score']}")
-
-    if dc == 0:
-        reasons.append("  no derivational suffixes → derivational=0 (display-only)")
-    else:
-        reasons.append(f"  derivational_count={dc}/3 → derivational={sp['derivational_score']} (display-only)")
-
-    if rc == 0:
-        reasons.append("  no word repetition → repetition=0")
-    else:
-        details = sp.get("repetition_details", [])
-        parts = []
-        for d in details:
-            label = d.get("lemma") or d.get("surface") or "?"
-            parts.append(
-                f"{label}({d.get('count', 0)}회×{d.get('difficulty', 0)}d"
-                f"×{d.get('polysemy', 1)}pol)"
-            )
-        parts_str = ", ".join(parts)
-        reasons.append(f"  repetition_raw={rr}/6.0 → score={sp['repetition_score']}  ({parts_str})")
-
-    return reasons
+def _format_raw(value: float | int) -> str:
+    if isinstance(value, int) or float(value).is_integer():
+        return str(int(value))
+    return f"{value:.4f}".rstrip("0").rstrip(".")
 
 
-def _active_features(sp: dict) -> list[str]:
-    active = []
-    if sp["predicate_score"] > 0:
-        active.append("predicate")
-    if sp["embedding_score"] > 0:
-        active.append("embedding")
-    if sp["connective_score"] > 0:
-        active.append("connective")
-    if sp["logical_score"] > 0:
-        active.append("logical")
-    if sp["modifier_score"] > 0:
-        active.append("modifier")
-    if sp["repetition_score"] > 0:
-        active.append("repetition")
-    return active
+def _format_structure_table(sp: dict) -> list[str]:
+    config = StructureConfig()
+    logical_raw = (
+        sp["logical_marker_weighted"]
+        + sp["strong_logical_ending_weighted"]
+    )
+    rows = [
+        ("length", sp["structure_content_token_count"], sp["length_score"], config.weight_length),
+        ("predicate", sp["predicate_count"], sp["predicate_score"], config.weight_predicate),
+        (
+            "embedding",
+            sp["adnominal_count"] + sp["nominalizer_count"] + sp["adverbial_ending_count"],
+            sp["embedding_score"],
+            config.weight_embedding,
+        ),
+        ("modifier", sp["max_noun_chain"], sp["modifier_score"], config.weight_modifier),
+        ("repetition", sp["repetition_raw"], sp["repetition_score"], config.weight_repetition),
+        ("logical", logical_raw, sp["logical_score"], config.weight_logical),
+        ("connective", sp["connective_ending_count"], sp["connective_score"], config.weight_connective),
+    ]
+
+    lines = [
+        "  feature        raw       normalized  weight  contribution",
+    ]
+    for feature, raw, normalized, weight in rows:
+        contribution = normalized * weight
+        lines.append(
+            f"  {feature:<14}{_format_raw(raw):<10}"
+            f"{normalized:<12.2f}{weight:<8.2f}{contribution:.3f}"
+        )
+    return lines
 
 
 # ---------------------------------------------------------------------------
@@ -226,19 +178,8 @@ def format_result(result: dict, debug: bool = False) -> str:
 
         parts.append("")
         parts.append("[structure]")
-        parts.append(f"  score={struc:.4f}")
-        active = _active_features(sp)
-        if active:
-            parts.append(f"  active features: {', '.join(active)}")
-        else:
-            parts.append("  active features: none")
-        parts.append("  reason:")
-        parts.extend(_structure_reasons(sp))
-        parts.append("  logical spans:")
-        for match in sp.get("logical_matches", []) + sp.get("strong_ending_matches", []):
-            parts.append(f"    {match['label']}  weight={match['weight']}  chars={match['start']}:{match['end']}")
-        if not sp.get("logical_matches") and not sp.get("strong_ending_matches"):
-            parts.append("    none")
+        parts.append(f"  score = {struc:.4f}")
+        parts.extend(_format_structure_table(sp))
 
         parts.append("")
         parts.append("[negation]")

@@ -65,6 +65,40 @@
       .mode-row input {
         accent-color: #4a90d9;
       }
+      .debug-toggle {
+        margin-left: auto;
+      }
+      .debug-toggle input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+      }
+      .toggle-track {
+        position: relative;
+        width: 34px;
+        height: 18px;
+        border-radius: 9px;
+        background: #cfd6df;
+        transition: background 0.15s;
+      }
+      .toggle-track::after {
+        content: "";
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: #fff;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        transition: transform 0.15s;
+      }
+      .debug-toggle input:checked + .toggle-track {
+        background: #4a90d9;
+      }
+      .debug-toggle input:checked + .toggle-track::after {
+        transform: translateX(16px);
+      }
       textarea {
         width: 100%;
         height: 100px;
@@ -361,6 +395,62 @@
         font-size: 0.9rem;
         color: #555;
       }
+      .debug-block {
+        margin-top: 14px;
+      }
+      .debug-block:first-child {
+        margin-top: 0;
+      }
+      .debug-block h4 {
+        margin-bottom: 6px;
+        color: #555;
+        font-size: 0.82rem;
+      }
+      .debug-table-wrap {
+        width: 100%;
+        overflow-x: auto;
+        border: 1px solid #eee;
+      }
+      .section .debug-table {
+        min-width: 620px;
+        font-family: "Consolas", "Courier New", monospace;
+        font-size: 0.75rem;
+      }
+      .section .debug-table th,
+      .section .debug-table td {
+        padding: 5px 7px;
+        border-bottom: 1px solid #eee;
+        text-align: left;
+        white-space: nowrap;
+      }
+      .section .debug-table th {
+        background: #f7f8fa;
+        color: #555;
+        font-weight: 600;
+      }
+      .section .debug-table td:first-child {
+        width: auto;
+        color: #555;
+      }
+      .debug-empty {
+        color: #999;
+        font-size: 0.8rem;
+        padding: 7px 0;
+      }
+      .debug-sentence {
+        border-top: 1px solid #eee;
+        padding: 10px 0;
+      }
+      .debug-sentence:first-child {
+        border-top: 0;
+        padding-top: 0;
+      }
+      .debug-sentence summary {
+        cursor: pointer;
+        color: #555;
+        font-size: 0.82rem;
+        line-height: 1.45;
+      }
       .sentence-cell {
         line-height: 1.45;
         font-weight: 400 !important;
@@ -404,6 +494,10 @@
         }
         .mode-row label {
           justify-content: center;
+        }
+        .debug-toggle {
+          margin-left: 0;
+          grid-column: 1 / -1;
         }
         textarea {
           height: 120px;
@@ -461,6 +555,24 @@
         .section td:first-child {
           width: auto;
           font-weight: 600;
+        }
+        .section .debug-table {
+          display: table;
+        }
+        .section .debug-table tbody {
+          display: table-row-group;
+        }
+        .section .debug-table tr {
+          display: table-row;
+          padding: 0;
+          border: 0;
+        }
+        .section .debug-table th,
+        .section .debug-table td {
+          display: table-cell;
+          width: auto;
+          padding: 5px 7px;
+          font-weight: 400;
         }
         .histogram {
           width: 100%;
@@ -531,6 +643,11 @@
         <label
           ><input type="radio" name="mode" value="paragraph" /> 문단 분석</label
         >
+        <label class="debug-toggle">
+          <input id="debugToggle" type="checkbox" onchange="toggleDebug()" />
+          <span class="toggle-track" aria-hidden="true"></span>
+          Debug
+        </label>
       </div>
 
       <textarea
@@ -562,6 +679,10 @@
           <h3>부정 점수 (negation)</h3>
           <div id="negationFormula" class="formula"></div>
           <div id="negationBody"></div>
+        </div>
+        <div class="section" id="debugSection" style="display: none">
+          <h3>Debug</h3>
+          <div id="debugBody"></div>
         </div>
       </div>
     </div>
@@ -617,6 +738,8 @@
       const PARAGRAPH_MIN_SENTENCE_MESSAGE =
         "문단 분석은 문장이 4개 이상일 때만 가능합니다.";
       const SENTENCE_SPLIT_RE = /[^.!?。！？\n]+[.!?。！？]?/g;
+      let lastResult = null;
+      let lastMode = "sentence";
 
       function loadExample(el) {
         document.getElementById("input").value = el.textContent;
@@ -668,6 +791,8 @@
           }
           const data = await res.json();
           document.getElementById("banner").style.display = "none";
+          lastResult = data;
+          lastMode = mode;
           if (mode === "paragraph") renderParagraph(data);
           else render(data);
         } catch (e) {
@@ -752,6 +877,7 @@
         renderLexical(d);
         renderStructure(d);
         renderNegation(d);
+        renderDebug(d, "sentence");
 
         document.getElementById("result").classList.add("show");
       }
@@ -798,6 +924,7 @@
           card("핵심 내용어", p.unique_core_content_count, "blue");
 
         renderParagraphDetails(d);
+        renderDebug(d, "paragraph");
         document.getElementById("result").classList.add("show");
       }
 
@@ -1037,6 +1164,8 @@
       }
 
       document.addEventListener("DOMContentLoaded", function () {
+        const debugToggle = document.getElementById("debugToggle");
+        debugToggle.checked = localStorage.getItem("debug_mode") === "true";
         document
           .getElementById("lexicalBody")
           .addEventListener("click", function (e) {
@@ -1051,6 +1180,13 @@
             );
           });
       });
+
+      function toggleDebug() {
+        const enabled = document.getElementById("debugToggle").checked;
+        localStorage.setItem("debug_mode", String(enabled));
+        if (lastResult) renderDebug(lastResult, lastMode);
+        else document.getElementById("debugSection").style.display = "none";
+      }
 
       function renderStructure(d) {
         const sp = d.structure_parts;
@@ -1069,7 +1205,7 @@
           [
             "length_score",
             sp.length_score,
-            d.structure_content_token_count + "/29 tokens",
+            d.structure_content_token_count + "/29 tokens (-8 보정)",
           ],
           [
             "embedding_score",
@@ -1168,6 +1304,164 @@
         }
         html += "</table>";
         body.innerHTML = html;
+      }
+
+      function renderDebug(d, mode) {
+        const section = document.getElementById("debugSection");
+        if (!document.getElementById("debugToggle").checked) {
+          section.style.display = "none";
+          return;
+        }
+
+        const results = mode === "paragraph" ? d.sentences || [] : [d];
+        const body = document.getElementById("debugBody");
+        if (mode === "paragraph") {
+          body.innerHTML = results
+            .map(
+              (result, index) =>
+                `<details class="debug-sentence"><summary>${index + 1}. ${escapeHtml(
+                  result.sentence
+                )}</summary>${renderSentenceDebug(result)}</details>`
+            )
+            .join("");
+        } else {
+          body.innerHTML = renderSentenceDebug(d);
+        }
+        section.style.display = "block";
+      }
+
+      function renderSentenceDebug(d) {
+        const morphRows = (d.morph_tokens || []).map((token, index) => [
+          index,
+          token.surface,
+          token.lemma,
+          token.tag,
+          token.base_tag,
+          token.pos,
+          token.structure_role,
+          token.is_content ? "Y" : "",
+          `${token.start}:${token.end}`,
+        ]);
+        const lexicalRows = (d.scored_words_full || []).map((unit, index) => [
+          index,
+          unit.surface,
+          unit.lemma,
+          unit.tag || "",
+          (unit.tags || []).join("+"),
+          unit.pos,
+          unit.match_method,
+          fmt4(unit.difficulty),
+          `${unit.start}:${unit.end}`,
+          `${unit.token_start}:${unit.token_end}`,
+        ]);
+
+        const sp = d.structure_parts || {};
+        const features = [
+          ["length", d.structure_content_token_count || 0, sp.length_score || 0, 0.27],
+          ["predicate", sp.predicate_count || 0, sp.predicate_score || 0, 0.16],
+          [
+            "embedding",
+            (sp.adnominal_count || 0) +
+              (sp.nominalizer_count || 0) +
+              (sp.adverbial_ending_count || 0),
+            sp.embedding_score || 0,
+            0.2,
+          ],
+          ["modifier", sp.max_noun_chain || 0, sp.modifier_score || 0, 0.12],
+          ["repetition", sp.repetition_raw || 0, sp.repetition_score || 0, 0.11],
+          [
+            "logical",
+            (sp.logical_marker_weighted || 0) +
+              (sp.strong_logical_ending_weighted || 0),
+            sp.logical_score || 0,
+            0.08,
+          ],
+          ["connective", sp.connective_ending_count || 0, sp.connective_score || 0, 0.06],
+        ];
+        const structureRows = features.map(([name, raw, normalized, weight]) => [
+          name,
+          debugRaw(raw),
+          fmt4(normalized),
+          weight.toFixed(2),
+          fmt4(normalized * weight),
+        ]);
+
+        const patternRows = [
+          ...(sp.logical_matches || []).map((match) => [
+            "logical",
+            match.label,
+            fmt4(match.weight),
+            `${match.start}:${match.end}`,
+            `${match.token_start}:${match.token_end}`,
+          ]),
+          ...(sp.strong_ending_matches || []).map((match) => [
+            "strong ending",
+            match.label,
+            fmt4(match.weight),
+            `${match.start}:${match.end}`,
+            `${match.token_start}:${match.token_end}`,
+          ]),
+          ...((d.negation_detail || {}).boundary_matches || []).map((match) => [
+            `boundary:${match.kind}`,
+            match.label,
+            "",
+            `${match.start}:${match.end}`,
+            `${match.token_start}:${match.token_end}`,
+          ]),
+        ];
+
+        return (
+          debugBlock(
+            "morph trace",
+            debugTable(
+              ["#", "surface", "lemma", "tag", "base", "pos", "role", "content", "char span"],
+              morphRows
+            )
+          ) +
+          debugBlock(
+            "lexical units",
+            debugTable(
+              ["#", "surface", "lemma", "tag", "tags", "pos", "match", "difficulty", "char span", "token span"],
+              lexicalRows
+            )
+          ) +
+          debugBlock(
+            `structure · score ${fmt4(d.structure_score_0_1)}`,
+            debugTable(
+              ["feature", "raw", "normalized", "weight", "contribution"],
+              structureRows
+            )
+          ) +
+          debugBlock(
+            "logical spans · clause boundaries",
+            debugTable(["kind", "label", "weight", "char span", "token span"], patternRows)
+          )
+        );
+      }
+
+      function debugBlock(title, content) {
+        return `<div class="debug-block"><h4>${escapeHtml(
+          title
+        )}</h4>${content}</div>`;
+      }
+
+      function debugRaw(value) {
+        const num = Number(value || 0);
+        return Number.isInteger(num) ? String(num) : fmt4(num);
+      }
+
+      function debugTable(headers, rows) {
+        if (!rows.length) return '<div class="debug-empty">없음</div>';
+        let html =
+          '<div class="debug-table-wrap"><table class="debug-table"><thead><tr>';
+        for (const header of headers) html += `<th>${escapeHtml(header)}</th>`;
+        html += "</tr></thead><tbody>";
+        for (const row of rows) {
+          html += "<tr>";
+          for (const value of row) html += `<td>${escapeHtml(value ?? "")}</td>`;
+          html += "</tr>";
+        }
+        return html + "</tbody></table></div>";
       }
 
       function table(rows) {

@@ -94,6 +94,7 @@ class SentenceScorerTest(unittest.TestCase):
             "lexical_unit_count_capped",
             "unknown_lexical_unit_count",
             "structure_content_token_count",
+            "morph_tokens",
             "scored_words_full",
             "scored_words",
             "score_parts",
@@ -104,6 +105,25 @@ class SentenceScorerTest(unittest.TestCase):
             "reliability",
         }
         self.assertEqual(set(result.keys()), expected_keys)
+
+    def test_morph_tokens_expose_debug_trace(self) -> None:
+        result = self.scorer.score("문장을 분석한다.")
+        self.assertGreater(len(result["morph_tokens"]), 0)
+        token = result["morph_tokens"][0]
+        self.assertEqual(
+            set(token.keys()),
+            {
+                "surface",
+                "lemma",
+                "tag",
+                "base_tag",
+                "pos",
+                "start",
+                "end",
+                "is_content",
+                "structure_role",
+            },
+        )
 
     def test_score_10_consistency(self) -> None:
         result = self.scorer.score("문장을 분석한다.")
