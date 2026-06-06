@@ -291,6 +291,8 @@ class StructureScorerTest(unittest.TestCase):
         result = self.scorer.score_tokens(tokens)
         sp = result["structure_parts"]
         self.assertEqual(sp["max_noun_chain"], 4)
+        self.assertEqual(sp["noun_chain_lengths"], [4])
+        self.assertEqual(sp["noun_chain_raw"], 2.0)
 
     def test_noun_chain_xsn_does_not_count_itself(self) -> None:
         tokens = [
@@ -321,6 +323,39 @@ class StructureScorerTest(unittest.TestCase):
         result = self.scorer.score_tokens(tokens)
         sp = result["structure_parts"]
         self.assertEqual(sp["max_noun_chain"], 3)
+
+    def test_modifier_accumulates_separate_noun_chains_with_discount(self) -> None:
+        tokens = [
+            _make_token("사회", "사회", "NNG"),
+            _make_token("문화", "문화", "NNG"),
+            _make_token("연구", "연구", "NNG"),
+            _make_token(",", ",", "SP"),
+            _make_token("교육", "교육", "NNG"),
+            _make_token("기회", "기회", "NNG"),
+            _make_token("불균형", "불균형", "NNG"),
+        ]
+
+        sp = self.scorer.score_tokens(tokens)["structure_parts"]
+
+        self.assertEqual(sp["noun_chain_lengths"], [3, 3])
+        self.assertEqual(sp["max_noun_chain"], 3)
+        self.assertEqual(sp["noun_chain_raw"], 1.5)
+        self.assertEqual(sp["modifier_score"], 0.5)
+
+    def test_short_noun_chains_add_no_modifier_burden(self) -> None:
+        tokens = [
+            _make_token("사회", "사회", "NNG"),
+            _make_token("연구", "연구", "NNG"),
+            _make_token(",", ",", "SP"),
+            _make_token("교육", "교육", "NNG"),
+            _make_token("기회", "기회", "NNG"),
+        ]
+
+        sp = self.scorer.score_tokens(tokens)["structure_parts"]
+
+        self.assertEqual(sp["noun_chain_lengths"], [2, 2])
+        self.assertEqual(sp["noun_chain_raw"], 0.0)
+        self.assertEqual(sp["modifier_score"], 0.0)
 
     # -----------------------------------------------------------------
     # derivational suffixes: XSN / XSV / XSA + surface check
@@ -376,6 +411,7 @@ class StructureScorerTest(unittest.TestCase):
             "derivational_suffix_count",
             "max_noun_chain",
             "predicate_count_adj", "max_noun_chain_adj",
+            "noun_chain_lengths", "noun_chain_raw",
             "connective_score", "logical_score",
         }
         self.assertEqual(set(sp.keys()), sub_keys)

@@ -29,6 +29,7 @@ REPETITION_MIN_DIFFICULTY: float = 0.10
 
 _LENGTH_ADJUSTMENT: int = 8
 _LENGTH_FULL_SCORE_AT: int = 21
+_SECONDARY_NOUN_CHAIN_WEIGHT: float = 0.5
 
 
 @dataclass(frozen=True)
@@ -57,7 +58,7 @@ class StructureScorer:
         self._pattern_matcher = PatternMatcher()
 
     @staticmethod
-    def _safe_ratio(value: int, full_score_at: int) -> float:
+    def _safe_ratio(value: float, full_score_at: float) -> float:
         if full_score_at <= 0:
             return 0.0
         return max(0.0, min(1.0, value / full_score_at))
@@ -102,8 +103,8 @@ class StructureScorer:
             return i
         return None
 
-    def _max_noun_chain(self, tokens: list[Any]) -> int:
-        max_chain = 0
+    def _noun_chain_lengths(self, tokens: list[Any]) -> list[int]:
+        chains: list[int] = []
         current = 0
 
         for token in tokens:
@@ -111,13 +112,16 @@ class StructureScorer:
 
             if tag in {"NNG", "NNP", "NNB", "XR"}:
                 current = current + 1 if current > 0 else 1
-                max_chain = max(max_chain, current)
             elif tag == "XSN" and current > 0:
                 continue
             else:
+                if current > 0:
+                    chains.append(current)
                 current = 0
 
-        return max_chain
+        if current > 0:
+            chains.append(current)
+        return chains
 
     def _compute_repetition_score(
         self,
@@ -233,7 +237,8 @@ class StructureScorer:
             or self._surface(t) in DERIVATIONAL_SUFFIXES
         )
 
-        max_noun_chain = self._max_noun_chain(tokens)
+        noun_chain_lengths = self._noun_chain_lengths(tokens)
+        max_noun_chain = max(noun_chain_lengths, default=0)
         repetition = self._compute_repetition_score(
             scored_words_full or [],
             polysemy_map or {},
@@ -257,8 +262,18 @@ class StructureScorer:
         )
         logical_score = min(1.0, logical_raw / self.config.logical_full_score_at)
         adj_max_noun_chain = max(0, max_noun_chain - 2)
+        noun_chain_burdens = sorted(
+            (max(0, length - 2) for length in noun_chain_lengths),
+            reverse=True,
+        )
+        noun_chain_raw = (
+            noun_chain_burdens[0]
+            + _SECONDARY_NOUN_CHAIN_WEIGHT * sum(noun_chain_burdens[1:])
+            if noun_chain_burdens
+            else 0.0
+        )
         modifier_score = self._safe_ratio(
-            adj_max_noun_chain, self.config.modifier_full_score_at,
+            noun_chain_raw, self.config.modifier_full_score_at,
         )
         derivational_score = self._safe_ratio(
             derivational_suffix_count, self.config.derivational_full_score_at,
@@ -322,6 +337,8 @@ class StructureScorer:
                 "derivational_suffix_count": derivational_suffix_count,
                 "max_noun_chain": max_noun_chain,
                 "max_noun_chain_adj": adj_max_noun_chain,
+                "noun_chain_lengths": noun_chain_lengths,
+                "noun_chain_raw": round(noun_chain_raw, 4),
             },
         }
 

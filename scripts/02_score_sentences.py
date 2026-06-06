@@ -107,7 +107,7 @@ def _format_structure_table(sp: dict) -> list[str]:
             sp["embedding_score"],
             config.weight_embedding,
         ),
-        ("modifier", sp["max_noun_chain"], sp["modifier_score"], config.weight_modifier),
+        ("modifier", sp["noun_chain_raw"], sp["modifier_score"], config.weight_modifier),
         ("repetition", sp["repetition_raw"], sp["repetition_score"], config.weight_repetition),
         ("logical", logical_raw, sp["logical_score"], config.weight_logical),
         ("connective", sp["connective_ending_count"], sp["connective_score"], config.weight_connective),
@@ -173,6 +173,10 @@ def format_result(result: dict, debug: bool = False) -> str:
         lw = lp.get("lexical_weights", {"mean_all": 0.25, "mean_top_n": 0.50, "max": 0.25})
         parts.append(
             f"    {lw['mean_all']}×mean_all({lp['mean_all']}) + {lw['mean_top_n']}×mean_top5({lp['mean_top_n']}) + {lw['max']}×max({lp['max']})"
+        )
+        parts.append(
+            f"    mean_all denominator: {lp.get('mean_all_count', result['lexical_unit_count_capped'])}"
+            f" (excluded zero: {lp.get('mean_all_zero_excluded_count', 0)})"
         )
         parts.append(f"    = {lex:.4f}")
 

@@ -1079,6 +1079,13 @@
               d.lexical_unit_count_capped +
               ")",
           ],
+          [
+            "mean_all 분모",
+            (p.mean_all_count ?? d.lexical_unit_count_capped) +
+              " (0.0 제외 " +
+              (p.mean_all_zero_excluded_count || 0) +
+              ")",
+          ],
         ]);
 
         let html = '<div class="word-list">';
@@ -1194,7 +1201,7 @@
           "structure = 0.27×length + 0.20×embedding + 0.16×predicate + 0.12×modifier + 0.11×repetition + 0.08×logical + 0.06×connective";
         const structureWeight = {
           length_score: 0.27,
-          embedding_score: 0.20,
+          embedding_score: 0.2,
           predicate_score: 0.16,
           modifier_score: 0.12,
           repetition_score: 0.11,
@@ -1225,9 +1232,12 @@
           [
             "modifier_score",
             sp.modifier_score,
-            "max chain:" +
-              sp.max_noun_chain +
-              " (XSN은 세지 않고 앞뒤 명사를 연결)",
+            "chains:[" +
+              (sp.noun_chain_lengths || [sp.max_noun_chain])
+                .filter((length) => length > 1)
+                .join(", ") +
+              "] raw:" +
+              Number(sp.noun_chain_raw ?? sp.max_noun_chain_adj).toFixed(2),
           ],
           [
             "repetition_score",
@@ -1243,8 +1253,7 @@
             "marker:" +
               sp.logical_marker_weighted.toFixed(1) +
               " strong:" +
-              sp.strong_logical_ending_weighted.toFixed(1) +
-              " (첫 marker 제외)",
+              sp.strong_logical_ending_weighted.toFixed(1),
           ],
           [
             "connective_score",
@@ -1319,7 +1328,9 @@
           body.innerHTML = results
             .map(
               (result, index) =>
-                `<details class="debug-sentence"><summary>${index + 1}. ${escapeHtml(
+                `<details class="debug-sentence"><summary>${
+                  index + 1
+                }. ${escapeHtml(
                   result.sentence
                 )}</summary>${renderSentenceDebug(result)}</details>`
             )
@@ -1357,7 +1368,12 @@
 
         const sp = d.structure_parts || {};
         const features = [
-          ["length", d.structure_content_token_count || 0, sp.length_score || 0, 0.27],
+          [
+            "length",
+            d.structure_content_token_count || 0,
+            sp.length_score || 0,
+            0.27,
+          ],
           ["predicate", sp.predicate_count || 0, sp.predicate_score || 0, 0.16],
           [
             "embedding",
@@ -1367,8 +1383,13 @@
             sp.embedding_score || 0,
             0.2,
           ],
-          ["modifier", sp.max_noun_chain || 0, sp.modifier_score || 0, 0.12],
-          ["repetition", sp.repetition_raw || 0, sp.repetition_score || 0, 0.11],
+          ["modifier", sp.noun_chain_raw || 0, sp.modifier_score || 0, 0.12],
+          [
+            "repetition",
+            sp.repetition_raw || 0,
+            sp.repetition_score || 0,
+            0.11,
+          ],
           [
             "logical",
             (sp.logical_marker_weighted || 0) +
@@ -1376,15 +1397,22 @@
             sp.logical_score || 0,
             0.08,
           ],
-          ["connective", sp.connective_ending_count || 0, sp.connective_score || 0, 0.06],
+          [
+            "connective",
+            sp.connective_ending_count || 0,
+            sp.connective_score || 0,
+            0.06,
+          ],
         ];
-        const structureRows = features.map(([name, raw, normalized, weight]) => [
-          name,
-          debugRaw(raw),
-          fmt4(normalized),
-          weight.toFixed(2),
-          fmt4(normalized * weight),
-        ]);
+        const structureRows = features.map(
+          ([name, raw, normalized, weight]) => [
+            name,
+            debugRaw(raw),
+            fmt4(normalized),
+            weight.toFixed(2),
+            fmt4(normalized * weight),
+          ]
+        );
 
         const patternRows = [
           ...(sp.logical_matches || []).map((match) => [
@@ -1414,14 +1442,35 @@
           debugBlock(
             "morph trace",
             debugTable(
-              ["#", "surface", "lemma", "tag", "base", "pos", "role", "content", "char span"],
+              [
+                "#",
+                "surface",
+                "lemma",
+                "tag",
+                "base",
+                "pos",
+                "role",
+                "content",
+                "char span",
+              ],
               morphRows
             )
           ) +
           debugBlock(
             "lexical units",
             debugTable(
-              ["#", "surface", "lemma", "tag", "tags", "pos", "match", "difficulty", "char span", "token span"],
+              [
+                "#",
+                "surface",
+                "lemma",
+                "tag",
+                "tags",
+                "pos",
+                "match",
+                "difficulty",
+                "char span",
+                "token span",
+              ],
               lexicalRows
             )
           ) +
@@ -1434,7 +1483,10 @@
           ) +
           debugBlock(
             "logical spans · clause boundaries",
-            debugTable(["kind", "label", "weight", "char span", "token span"], patternRows)
+            debugTable(
+              ["kind", "label", "weight", "char span", "token span"],
+              patternRows
+            )
           )
         );
       }
@@ -1458,7 +1510,8 @@
         html += "</tr></thead><tbody>";
         for (const row of rows) {
           html += "<tr>";
-          for (const value of row) html += `<td>${escapeHtml(value ?? "")}</td>`;
+          for (const value of row)
+            html += `<td>${escapeHtml(value ?? "")}</td>`;
           html += "</tr>";
         }
         return html + "</tbody></table></div>";

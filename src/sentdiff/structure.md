@@ -32,7 +32,7 @@ Kiwi의 원본 `MorphToken.tag`에 `-I`, `-R` 등의 접미 표지가 붙어도 
 | length | 내용어(명/동/형) token 수 (-8 보정) | 29개 이상 | 0.27 |
 | embedding | 관형형(ETM)+명사형(ETN)+부사형EC(게·도록·듯이) 개수 | 7개 이상 | 0.20 |
 | predicate | 서술어(VV, VA, VX, XSV, XSA) 개수 (-1 보정) | 8개 이상 (7+1) | 0.16 |
-| modifier | 최장 명사 연쇄 길이 (-2 보정) | 5개 이상 (3+2) | 0.12 |
+| modifier | 명사 연쇄 누적 부담 | raw 3 이상 | 0.12 |
 | repetition | 단어 반복 부담 (반복 횟수×난도×다의성 계수 합계) | 6.0 이상 | 0.11 |
 | logical | 논리표지·강한어미 가중합 | 4 이상 | 0.08 |
 | connective | EC 개수 | 4개 이상 | 0.06 |
@@ -40,7 +40,7 @@ Kiwi의 원본 `MorphToken.tag`에 `-I`, `-R` 등의 접미 표지가 붙어도 
 ### 보정 설명
 - **length**: 짧은 문장의 기본 내용어 8개를 제외하고 `max(0, content_count - 8) / 21`로 계산한다. 8개 이하는 0, 29개 이상은 1.0이다.
 - **predicate**: 모든 문장에 서술어가 최소 1개 필수이므로 `predicate_count - 1` 후 score 계산.
-- **modifier**: 모든 명사 연쇄는 최소 1개 명사를 포함하므로 `max_noun_chain - 2` 후 score 계산.
+- **modifier**: 각 명사 연쇄에 `max(0, chain_length - 2)`를 적용한다. 가장 큰 부담은 100%, 나머지 부담은 50%로 합산하고 raw를 3으로 나눈다. `[3]`은 raw 1, `[3, 3]`은 raw 1.5, `[5]`는 raw 3이다.
 - **modifier chain**: NNG/NNP/NNB/XR은 연쇄를 시작·연장한다. XSN은 연쇄 길이에 포함하지 않지만, 앞뒤 명사류를 이어 주는 bridge로 본다. 예: `방법/NNG+론/XSN+적/XSN`은 1, `비교/NNG+적/XSN+안정세/NNG`는 2.
 
 (~~structural_span~~ — 제거됨)
@@ -118,6 +118,8 @@ cs = min(1.0, EC_개수 / 4)
 - `structure_parts.logical_matches`: 첫 유효 토큰 제외 후 실제 계산에 포함된 고정 논리 표현 span
 - `structure_parts.strong_ending_matches`: 실제 계산에 포함된 강한 논리 연결 span
 - `structure_parts.derivational_suffix_count`: XSN 기반 진단값. 구조 가중합에는 포함하지 않음
+- `structure_parts.noun_chain_lengths`: 문장 안에서 발견한 모든 명사 연쇄 길이
+- `structure_parts.noun_chain_raw`: 가장 큰 연쇄 부담 + 나머지 연쇄 부담의 50% 합계
 
 ## 의존성
 - **import:** `morph.base_sejong_tag`, `patterns.PatternMatcher`

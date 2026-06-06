@@ -79,7 +79,7 @@ score_0_1 = clamp(score_0_1, 0, 1)
     "morph_tokens": [dict],               # HTML/CLI 진단용 정규화 형태소 trace
     "scored_words_full": [dict],         # 전체 LexicalUnit 리스트
     "scored_words": [dict],              # 반복 제거된 LexicalUnit 리스트
-    "score_parts": dict,                 # lexical 세부 (mean_all, mean_top_n, max)
+    "score_parts": dict,                 # lexical 세부 + mean_all 실제 분모/0.0 제외 개수
     "structure_parts": dict,             # structure 7개 지표 + logical span + raw counts
     "negation_detail": dict,             # negation 4개 하위 점수 + boundary span
 
