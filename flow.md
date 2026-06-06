@@ -119,7 +119,7 @@ resolver는 합성 명사, `XR/NNG + XSA/XSV`, `XR + XSM`, `명사 + XSN` 등을
 | **length**     | 구조용 내용어 형태소 토큰 개수                                     | 29개 → 1.0 | **0.27** |
 | **embedding**  | 관형형/명사형 전성어미(ETM, ETN) + 부사형 EC(-게/-도록/-듯이) 개수 | 7개 → 1.0  | **0.20** |
 | **predicate**  | 서술어(VV, VA, VX, XSV, XSA) 개수**(-1 보정)**                     | 8개 → 1.0  | **0.16** |
-| **modifier**   | 최장 명사 연쇄 길이**(-1 보정)**                                   | 4개 → 1.0  | **0.12** |
+| **modifier**   | 최장 명사 연쇄 길이**(-2 보정)**                                   | 5개 → 1.0  | **0.12** |
 | **repetition** | 단어 반복 부담 (반복 횟수×난도×다의성 계수 합계)                 | 6.0 → 1.0  | **0.11** |
 | **logical**    | 논리부사·강한어미 가중합                                          | 4 → 1.0    | **0.08** |
 | **connective** | 연결어미(EC) 개수                                                  | 4개 → 1.0  | **0.06** |
@@ -243,18 +243,18 @@ ls = min(1.0, (첫유효토큰제외_논리표지_가중합 + 강한논리연결
 - 체인 태그: NNG, NNP, NNB, XR (연쇄 시작 가능)
 - XSN은 연쇄 길이에 포함하지 않지만, 앞뒤 명사류를 이어 주는 bridge로 본다.
 - 조정: 모든 연쇄는 최소 1개 명사 포함 → **-1 보정**
-- 예: `경제(NNG) 성장(NNG) 둔화(NNG)` → chain length = 3, 보정 후 2
-- 예: `방법(NNG) 론(XSN) 적(XSN)` → XSN은 세지 않으므로 chain length = 1
-- 예: `비교(NNG) 적(XSN) 안정세(NNG)` → XSN이 bridge 역할을 하므로 chain length = 2
+- 예: `경제(NNG) 성장(NNG) 둔화(NNG)` → chain length = 3, 보정 후 1
+- 예: `방법(NNG) 론(XSN) 적(XSN)` → XSN은 세지 않으므로 chain length = 1, 보정 후 0
+- 예: `비교(NNG) 적(XSN) 안정세(NNG)` → XSN이 bridge 역할을 하므로 chain length = 2, 보정 후 0
 
 ```
 
-raw = max(0, max_noun_chain - 1)
+raw = max(0, max_noun_chain - 2)
 score = min(1.0, raw / 3)
 
 ```
 
-명사 연쇄가 4개 이상(보정 후 3) → 1.0.
+명사 연쇄가 5개 이상(보정 후 3) → 1.0.
 
 ---
 
@@ -408,7 +408,7 @@ hard boundary → 새 hard segment 시작
 | length     | 0.27   | 내용어 29개 이상                              |
 | embedding  | 0.20   | 관형형/명사형/부사형(게·도록·듯이) 7개 이상 |
 | predicate  | 0.16   | 서술어 7개+1개(-1 보정)                       |
-| modifier   | 0.12   | 명사 연쇄 4개 이상 (보정 후 3, /3)            |
+| modifier   | 0.12   | 명사 연쇄 5개 이상 (보정 후 3, /3)            |
 | repetition | 0.11   | 반복 부담 합계 6.0 이상                       |
 | logical    | 0.08   | 논리표지·강한어미 가중합 4 이상              |
 | connective | 0.06   | EC 개수 4개 이상                              |

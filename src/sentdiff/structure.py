@@ -258,7 +258,7 @@ class StructureScorer:
             + strong_logical_ending_weighted
         )
         logical_score = min(1.0, logical_raw / self.config.logical_full_score_at)
-        adj_max_noun_chain = max(0, max_noun_chain - 1)
+        adj_max_noun_chain = max(0, max_noun_chain - 2)
         modifier_score = self._safe_ratio(
             adj_max_noun_chain, self.config.modifier_full_score_at,
         )
