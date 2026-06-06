@@ -70,14 +70,14 @@ class StructureConfig:
     structural_span_full_score_at: float = 20.0
     repetition_full_score_at: float = 3.5
 
-   # 8개 지표 고정 가중치 (합 1.0)
-    weight_length: float = 0.15
+    # 8개 지표 고정 가중치 (합 1.0)
+    weight_length: float = 0.17
     weight_predicate: float = 0.18
     weight_embedding: float = 0.15
     weight_connective: float = 0.05
     weight_logical: float = 0.08
     weight_modifier: float = 0.10
-    weight_structural_span: float = 0.22
+    weight_structural_span: float = 0.20
     weight_repetition: float = 0.07
 
 

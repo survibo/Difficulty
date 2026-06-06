@@ -87,10 +87,10 @@ score = min(1.0, 0.5 × lexical + 0.5 × structure + 0.2 × negation)
 
 | 지표                      | 측정 대상                                                | 임계값        | 가중치         |
 | ------------------------- | -------------------------------------------------------- | ------------- | -------------- |
-| **structural_span** | 직전 절 경계~ETM/ETN/EC까지 절 구간 내용어 합계          | 20.0개 → 1.0 | **0.22** |
+| **structural_span** | 직전 절 경계~ETM/ETN/EC까지 절 구간 내용어 합계          | 20.0개 → 1.0 | **0.20** |
 | **predicate**       | 서술어(VV, VA, VX, XSV, XSA) 개수**(-1 보정)**           | 8개 → 1.0    | **0.18** |
 | **embedding**       | 관형형/명사형 전성어미(ETM, ETN) + 부사형 EC(-게/-도록/-듯이) 개수 | 5개 → 1.0    | **0.15** |
-| **length**          | 내용어(명사/동사 등) 개수                                | 29개 → 1.0   | **0.15** |
+| **length**          | 내용어(명사/동사 등) 개수                                | 29개 → 1.0   | **0.17** |
 | **modifier**        | 최장 명사 연쇄 길이**(-1 보정)**                         | 4개 → 1.0    | **0.10** |
 | **logical**         | 논리부사·강한어미 가중합                                | 4 → 1.0      | **0.08** |
 | **repetition**      | 단어 반복 부담 (반복 횟수×난도×다의성 계수 합계)       | 3.5 → 1.0    | **0.07** |
@@ -100,9 +100,9 @@ score = min(1.0, 0.5 × lexical + 0.5 × structure + 0.2 × negation)
 
 ```
 
-structure = 0.18×predicate + 0.15×embedding
-          + 0.15×length + 0.22×structural_span
-          + 0.08×logical + 0.10×modifier
+structure = 0.20×structural_span + 0.18×predicate
+          + 0.17×length + 0.15×embedding
+          + 0.10×modifier + 0.08×logical
           + 0.07×repetition + 0.05×connective
 
 ```
@@ -390,10 +390,10 @@ hard boundary → 새 hard segment 시작
 
 | 지표            | 가중치 | 1.0 되는 조건                    |
 | --------------- | ------ | -------------------------------- |
-| structural_span | 0.22   | 절 구간 내용어 합계 20.0 이상    |
+| structural_span | 0.20   | 절 구간 내용어 합계 20.0 이상    |
 | predicate       | 0.18   | 서술어 7개+1개(-1 보정)          |
 | embedding       | 0.15   | 관형형/명사형/부사형(게·도록·듯이) 5개 이상 |
-| length          | 0.15   | 내용어 29개 이상                 |
+| length          | 0.17   | 내용어 29개 이상                 |
 | modifier        | 0.10   | 명사 연쇄 4개 이상 (보정 후 3, /3) |
 | logical         | 0.08   | 논리표지·강한어미 가중합 4 이상 |
 | repetition      | 0.07   | 반복 부담 합계 3.5 이상          |

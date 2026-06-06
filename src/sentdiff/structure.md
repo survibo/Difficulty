@@ -13,9 +13,9 @@ MorphToken의 POS 태그 패턴을 기반으로 8개 지표로 문장 구조 복
 ## 점수 공식
 
 ```
-structure = 0.18×predicate + 0.15×embedding
-          + 0.15×length + 0.22×structural_span
-          + 0.08×logical + 0.10×modifier
+structure = 0.20×structural_span + 0.18×predicate
+          + 0.17×length + 0.15×embedding
+          + 0.10×modifier + 0.08×logical
           + 0.07×repetition + 0.05×connective
 ```
 
@@ -23,10 +23,10 @@ structure = 0.18×predicate + 0.15×embedding
 
 | 지표 | 측정 대상 | 1.0이 되는 조건 | 가중치 |
 |------|----------|----------------|--------|
-| structural_span | 절 구간 내용어 합계 (모든 EC/ETM/ETN에서 기록된 구간 길이의 총합) | 20.0 이상 (내용어 20개) | 0.22 |
+| structural_span | 절 구간 내용어 합계 (모든 EC/ETM/ETN에서 기록된 구간 길이의 총합) | 20.0 이상 (내용어 20개) | 0.20 |
 | predicate | 서술어(VV, VA, VX, XSV, XSA) 개수 (-1 보정) | 8개 이상 (7+1) | 0.18 |
 | embedding | 관형형(ETM)+명사형(ETN)+부사형EC(게·도록·듯이) 개수 | 5개 이상 | 0.15 |
-| length | 내용어(명/동/형) token 수 | 29개 이상 | 0.15 |
+| length | 내용어(명/동/형) token 수 | 29개 이상 | 0.17 |
 | modifier | 최장 명사 연쇄 길이 (-1 보정) | 4개 이상 (3+1) | 0.10 |
 | logical | 논리표지·강한어미 가중합 | 4 이상 | 0.08 |
 | repetition | 단어 반복 부담 (반복 횟수×난도×다의성 계수 합계) | 3.5 이상 | 0.07 |
