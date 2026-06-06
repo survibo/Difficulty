@@ -488,9 +488,9 @@
         <code>http://localhost:8800</code>
       </div>
 
-      <h1>문장·문단 난도 측정</h1>
+      <h1>문장·문단 난이도 측정</h1>
       <p class="sub">
-        한국어 문장이나 문단을 입력하면 난도 점수를 계산합니다.
+        한국어 문장이나 문단을 입력하면 난이도 점수를 계산합니다.
         <a
           href="https://github.com/survibo/Difficulty"
           target="_blank"
@@ -500,8 +500,6 @@
       </p>
 
       <div class="criteria">
-        <strong>난이도:</strong> 문장을 암기하여 같은 의미를 다른 표현으로
-        자연스럽게 말할 수 있는 정도<br />
         점수가 높을수록 어휘·구조·부정 처리 부담이 커서 재표현하기 어렵습니다.
         <br />문단 분석은 4문장 이상에서만 작동합니다.
       </div>
@@ -938,11 +936,15 @@
           { label: "max", weight: lw.max, value: p.max },
         ];
         weightEntries.sort((a, b) => b.weight - a.weight);
-        document.getElementById("lexicalFormula").textContent =
-          weightEntries.map((e) => e.weight + " × " + e.label).join(" + ");
+        document.getElementById("lexicalFormula").textContent = weightEntries
+          .map((e) => e.weight + " × " + e.label)
+          .join(" + ");
         const body = document.getElementById("lexicalBody");
         body.innerHTML = table([
-          ...weightEntries.map((e) => [e.label + " (" + e.weight + ")", fmt4(e.value)]),
+          ...weightEntries.map((e) => [
+            e.label + " (" + e.weight + ")",
+            fmt4(e.value),
+          ]),
           [
             "어휘 단위",
             d.lexical_unit_count +
@@ -1064,7 +1066,11 @@
           connective_score: 0.06,
         };
         const items = [
-          ["length_score", sp.length_score, d.structure_content_token_count + "/29 tokens"],
+          [
+            "length_score",
+            sp.length_score,
+            d.structure_content_token_count + "/29 tokens",
+          ],
           [
             "embedding_score",
             sp.embedding_score,
@@ -1083,7 +1089,9 @@
           [
             "modifier_score",
             sp.modifier_score,
-            "max chain:" + sp.max_noun_chain + " (XSN은 세지 않고 앞뒤 명사를 연결)",
+            "max chain:" +
+              sp.max_noun_chain +
+              " (XSN은 세지 않고 앞뒤 명사를 연결)",
           ],
           [
             "repetition_score",
