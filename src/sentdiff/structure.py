@@ -25,7 +25,7 @@ ADVERBIAL_EC_FORMS: set[str] = {"게", "도록", "듯이"}
 REPETITION_EXCLUDE_LEMMAS: set[str] = {
     "것", "수", "때", "말", "점", "등", "바", "데",
 }
-REPETITION_MIN_DIFFICULTY: float = 0.05
+REPETITION_MIN_DIFFICULTY: float = 0.10
 
 _LENGTH_MIN: float = 5.0
 _LENGTH_MAX: float = 24.0
@@ -34,21 +34,21 @@ _LENGTH_MAX: float = 24.0
 @dataclass(frozen=True)
 class StructureConfig:
     predicate_full_score_at: int = 7
-    embedding_full_score_at: int = 5
+    embedding_full_score_at: int = 7
     connective_full_score_at: int = 4
     logical_full_score_at: int = 4
     modifier_full_score_at: int = 3
     derivational_full_score_at: int = 3
-    repetition_full_score_at: float = 3.5
+    repetition_full_score_at: float = 6.0
 
     # 7개 지표 고정 가중치 (합 1.0)
     weight_length: float = 0.27
     weight_predicate: float = 0.18
-    weight_embedding: float = 0.20
+    weight_embedding: float = 0.18
     weight_connective: float = 0.06
     weight_logical: float = 0.08
     weight_modifier: float = 0.12
-    weight_repetition: float = 0.09
+    weight_repetition: float = 0.11
 
 
 class StructureScorer:
@@ -126,30 +126,34 @@ class StructureScorer:
         scored_words_full: list[dict[str, Any]],
         polysemy_map: dict[str, int],
     ) -> dict[str, Any]:
-        surface_counts: Counter[str] = Counter()
-        surface_difficulty: dict[str, float] = {}
-        surface_lemma: dict[str, str] = {}
+        lemma_counts: Counter[str] = Counter()
+        lemma_difficulty: dict[str, float] = {}
+        lemma_surfaces: dict[str, set[str]] = {}
+        lemma_label: dict[str, str] = {}
 
         for sw in scored_words_full:
-            surface = sw.get("surface", "")
-            surface_counts[surface] += 1
-            surface_difficulty.setdefault(surface, sw.get("difficulty", 0.3))
-            surface_lemma.setdefault(surface, sw.get("lemma", ""))
+            sw_lemma = sw.get("lemma", "")
+            if not sw_lemma:
+                continue
+            lemma_counts[sw_lemma] += 1
+            lemma_difficulty.setdefault(sw_lemma, sw.get("difficulty", 0.3))
+            lemma_surfaces.setdefault(sw_lemma, set()).add(sw.get("surface", ""))
+            lemma_label.setdefault(sw_lemma, "")
 
         raw = 0.0
         details: list[dict[str, Any]] = []
-        for surface, count in surface_counts.items():
-            lemma = surface_lemma.get(surface, "")
+        for lemma, count in lemma_counts.items():
             if lemma in REPETITION_EXCLUDE_LEMMAS:
                 continue
             if count <= 1:
                 continue
-            difficulty = max(REPETITION_MIN_DIFFICULTY, surface_difficulty.get(surface, 0.3))
-            polysemy = polysemy_map.get(surface, 1)
+            surfaces = lemma_surfaces.get(lemma, set())
+            polysemy = max((polysemy_map.get(s, 1) for s in surfaces), default=1)
+            raw_diff = lemma_difficulty.get(lemma, 0.3)
+            difficulty = max(REPETITION_MIN_DIFFICULTY, min(0.5, raw_diff / 1.5))
             contribution = (count - 1) * difficulty * polysemy
             raw += contribution
             details.append({
-                "surface": surface,
                 "lemma": lemma,
                 "count": count,
                 "difficulty": round(difficulty, 4),

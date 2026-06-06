@@ -122,7 +122,7 @@ def _structure_reasons(sp: dict) -> list[str]:
         parts = []
         if em: parts.append(f"ETM+ETN={em}")
         if ae: parts.append(f"부사절={ae}")
-        reasons.append(f"  {' + '.join(parts)}/5 → embedding={sp['embedding_score']}")
+        reasons.append(f"  {' + '.join(parts)}/7 → embedding={sp['embedding_score']}")
 
     if cc == 0 and lr == 0:
         reasons.append("  no EC/logical markers → connective=0, logical=0")
@@ -147,7 +147,7 @@ def _structure_reasons(sp: dict) -> list[str]:
         for d in details:
             parts.append(f"{d['surface']}({d['count']}회×{d['difficulty']}d×{d['polysemy']}pol)")
         parts_str = ", ".join(parts)
-        reasons.append(f"  repetition_raw={rr}/3.5 → score={sp['repetition_score']}  ({parts_str})")
+        reasons.append(f"  repetition_raw={rr}/6.0 → score={sp['repetition_score']}  ({parts_str})")
 
     return reasons
 

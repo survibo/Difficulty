@@ -1,27 +1,38 @@
 # 문장 난이도 측정 파이프라인 — 계산식 중심 개요
 
+* 나는 밥을 먹고, 친구도 밥을 먹었다.
+* 그는 책을 읽는 것을 좋아하고, 책을 읽을 때 가장 행복하다고 말했다.
+* 시간이 지나면 지날수록 그 시간이 얼마나 소중했는지 깨닫게 된다.
+* 그 선택이 옳은 선택이었는지는 그 선택의 결과를 보고 나서야 알 수 있었다.
+* 변화를 두려워하는 사람은 변화 앞에서 멈추고, 변화를 받아들이는 사람은 앞으로 나아간다.
+* 기억은 기억하고 싶은 것만 기억하도록 설계되어 있어, 고통스러운 기억조차 시간이 흐르면 미화된 기억으로 재구성된다.
+* 언어는 세계를 규정하는 동시에 언어 자체가 세계에 의해 규정되므로, 언어와 세계는 서로를 전제하는 순환적 관계에 놓여 있다.
+* 진실을 말하는 자가 진실로 인해 고립될 때, 그 사회는 진실을 진실로 받아들일 준비가 되어 있지 않은 것이다.
+* 권력은 권력을 정당화하기 위한 서사를 생산하고, 그 서사는 다시 권력의 재생산을 위한 토대로 기능함으로써 권력 구조는 스스로를 영속화한다.
+* 인식이 존재를 규정한다는 명제는, 인식 그 자체가 이미 특정한 존재 조건 속에서 형성된다는 사실에 의해 끊임없이 전복되며, 이는 인식과 존재 사이의 선후 관계가 고정될 수 없음을 방증한다
+
 ## 0. sentdiff 모듈 실행 순서
 
-| 순서 | 모듈                   | 역할                                                      | 의존                                |
-| ---- | ---------------------- | --------------------------------------------------------- | ----------------------------------- |
-| 1    | `normalize.py`       | 텍스트 정규화, 등급→난도 변환, 유틸리티                  | —                                  |
-| 2    | `lexicon_builder.py` | vocab_40k →`lexicon_master.csv` 생성                   | normalize                           |
-| 3    | `morph.py`           | Kiwi 형태소 분석·공통 정규화 →`MorphToken` 리스트       | normalize                           |
-| 4    | `lexical_units.py` / `lexical.py` | 사전 기반 어휘 단위 분할·lookup → 어휘 점수(lexical) | normalize, morph                    |
-| 5    | `patterns.py` / `structure.py` | 논리 span 매칭 + 품사 태그 7개 지표 → 구조 점수(structure) | morph                               |
-| 6    | `patterns.py` / `negation.py` | 공통 절 경계 span + 부정 표지 분석 → 부정 처리 부담 점수 | morph                               |
-| 7    | `pipeline.py`        | `SentenceScorer` — lexical + structure + negation 통합 | morph, lexical, patterns, structure, negation |
+| 순서 | 모듈                                  | 역할                                                        | 의존                                          |
+| ---- | ------------------------------------- | ----------------------------------------------------------- | --------------------------------------------- |
+| 1    | `normalize.py`                      | 텍스트 정규화, 등급→난도 변환, 유틸리티                    | —                                            |
+| 2    | `lexicon_builder.py`                | vocab_40k →`lexicon_master.csv` 생성                     | normalize                                     |
+| 3    | `morph.py`                          | Kiwi 형태소 분석·공통 정규화 →`MorphToken` 리스트       | normalize                                     |
+| 4    | `lexical_units.py` / `lexical.py` | 사전 기반 어휘 단위 분할·lookup → 어휘 점수(lexical)      | normalize, morph                              |
+| 5    | `patterns.py` / `structure.py`    | 논리 span 매칭 + 품사 태그 7개 지표 → 구조 점수(structure) | morph                                         |
+| 6    | `patterns.py` / `negation.py`     | 공통 절 경계 span + 부정 표지 분석 → 부정 처리 부담 점수   | morph                                         |
+| 7    | `pipeline.py`                       | `SentenceScorer` — lexical + structure + negation 통합   | morph, lexical, patterns, structure, negation |
 
 > **실행 흐름:** `pipeline.score("문장")` → morph.analyze → lexical unit resolve +
 > logical/boundary span match → structure.score + negation.analyze → 가중합산
 
 분석 단위는 다음처럼 분리한다.
 
-| 단위 | 용도 |
-| ---- | ---- |
-| **형태소 토큰 (`MorphToken`)** | 구조 length·서술어·명사 연쇄, 부정 표지 판정 |
-| **어휘 단위 (`LexicalUnit`)** | 사전 난도, 반복 제한, unknown 비율과 reliability |
-| **논리·절 경계 span (`PatternMatch`)** | logical 가중합과 negation 절 경계 분류 |
+| 단위                                            | 용도                                             |
+| ----------------------------------------------- | ------------------------------------------------ |
+| **형태소 토큰 (`MorphToken`)**          | 구조 length·서술어·명사 연쇄, 부정 표지 판정   |
+| **어휘 단위 (`LexicalUnit`)**           | 사전 난도, 반복 제한, unknown 비율과 reliability |
+| **논리·절 경계 span (`PatternMatch`)** | logical 가중합과 negation 절 경계 분류           |
 
 ---
 
@@ -63,10 +74,10 @@ resolver는 합성 명사, `XR/NNG + XSA/XSV`, `XR + XSM`, `명사 + XSN` 등을
 반복 제한 후 어휘 단위 개수(`lexical_unit_count_capped`)에 따라 세 가지 가중치 집합을 선택한다.
 
 | 어휘 단위(capped) | `mean_top_5` |  `mean_all`  |    `max`    |
-| :------------: | :------------: | :------------: | :------------: |
-|      ≤4      | **0.25** | **0.50** | **0.25** |
-|      5–7      | **0.40** | **0.35** | **0.25** |
-|      ≥8      | **0.50** | **0.25** | **0.25** |
+| :---------------: | :------------: | :------------: | :------------: |
+|        ≤4        | **0.25** | **0.50** | **0.25** |
+|       5–7       | **0.40** | **0.35** | **0.25** |
+|        ≥8        | **0.50** | **0.25** | **0.25** |
 
 짧은 문장일수록 `mean_all`의 비중이 높아 단일 단어가 점수를 크게 좌우하지 않는다.
 긴 문장(8+)은 기존과 동일하게 상위 5개의 평균이 좌우한다.
@@ -106,10 +117,10 @@ resolver는 합성 명사, `XR/NNG + XSA/XSV`, `XR + XSM`, `명사 + XSN` 등을
 | 지표                 | 측정 대상                                                          | 임계값      | 가중치         |
 | -------------------- | ------------------------------------------------------------------ | ----------- | -------------- |
 | **length**     | 구조용 내용어 형태소 토큰 개수                                     | 29개 → 1.0 | **0.27** |
-| **embedding**  | 관형형/명사형 전성어미(ETM, ETN) + 부사형 EC(-게/-도록/-듯이) 개수 | 5개 → 1.0  | **0.20** |
+| **embedding**  | 관형형/명사형 전성어미(ETM, ETN) + 부사형 EC(-게/-도록/-듯이) 개수 | 7개 → 1.0  | **0.18** |
 | **predicate**  | 서술어(VV, VA, VX, XSV, XSA) 개수**(-1 보정)**                     | 8개 → 1.0  | **0.18** |
 | **modifier**   | 최장 명사 연쇄 길이**(-1 보정)**                                   | 4개 → 1.0  | **0.12** |
-| **repetition** | 단어 반복 부담 (반복 횟수×난도×다의성 계수 합계)                 | 3.5 → 1.0  | **0.09** |
+| **repetition** | 단어 반복 부담 (반복 횟수×난도×다의성 계수 합계)                 | 6.0 → 1.0  | **0.11** |
 | **logical**    | 논리부사·강한어미 가중합                                          | 4 → 1.0    | **0.08** |
 | **connective** | 연결어미(EC) 개수                                                  | 4개 → 1.0  | **0.06** |
 
@@ -117,8 +128,8 @@ resolver는 합성 명사, `XR/NNG + XSA/XSV`, `XR + XSM`, `명사 + XSN` 등을
 
 ```
 
-structure = 0.27×length + 0.20×embedding + 0.18×predicate
-          + 0.12×modifier + 0.09×repetition + 0.08×logical + 0.06×connective
+structure = 0.27×length + 0.18×embedding + 0.18×predicate
+          + 0.12×modifier + 0.11×repetition + 0.08×logical + 0.06×connective
 
 ```
 
@@ -256,7 +267,7 @@ score = min(1.0, raw / 3)
 effective_difficulty = max(difficulty, 0.05)
 raw = Σ (count - 1) × effective_difficulty × polysemy
       (반복된 각 단어 표면형에 대해, 제외 lemma 제외)
-score = min(1.0, raw / 3.5)
+score = min(1.0, raw / 6.0)
 
 ```
 
@@ -372,11 +383,11 @@ hard boundary → 새 hard segment 시작
 
 ### 문장 출력의 개수 필드
 
-| 필드 | 의미 |
-| ---- | ---- |
-| `lexical_unit_count` | resolver가 선택한 전체 어휘 단위 수 |
-| `lexical_unit_count_capped` | 반복 제한 후 lexical 점수에 사용한 어휘 단위 수 |
-| `unknown_lexical_unit_count` | 사전에 없는 어휘 단위 수 |
+| 필드                              | 의미                                              |
+| --------------------------------- | ------------------------------------------------- |
+| `lexical_unit_count`            | resolver가 선택한 전체 어휘 단위 수               |
+| `lexical_unit_count_capped`     | 반복 제한 후 lexical 점수에 사용한 어휘 단위 수   |
+| `unknown_lexical_unit_count`    | 사전에 없는 어휘 단위 수                          |
 | `structure_content_token_count` | structure length에 사용하는 내용어 형태소 토큰 수 |
 
 `scored_words_full`과 `scored_words`는 이름을 유지하지만, 각 항목은 개별 형태소가 아니라
@@ -385,20 +396,20 @@ hard boundary → 새 hard segment 시작
 ### 어휘 점수 내부 가중치
 
 | 어휘 단위(capped) | `mean_top_5` |  `mean_all`  |    `max`    |
-| :------------: | :------------: | :------------: | :------------: |
-|      ≤4      | **0.25** | **0.50** | **0.25** |
-|      5–7      | **0.40** | **0.35** | **0.25** |
-|      ≥8      | **0.50** | **0.25** | **0.25** |
+| :---------------: | :------------: | :------------: | :------------: |
+|        ≤4        | **0.25** | **0.50** | **0.25** |
+|       5–7       | **0.40** | **0.35** | **0.25** |
+|        ≥8        | **0.50** | **0.25** | **0.25** |
 
 ### 구조 점수 내부 가중치 및 임계값
 
 | 지표       | 가중치 | 1.0 되는 조건                                 |
 | ---------- | ------ | --------------------------------------------- |
 | length     | 0.27   | 내용어 29개 이상                              |
-| embedding  | 0.20   | 관형형/명사형/부사형(게·도록·듯이) 5개 이상 |
+| embedding  | 0.18   | 관형형/명사형/부사형(게·도록·듯이) 7개 이상 |
 | predicate  | 0.18   | 서술어 7개+1개(-1 보정)                       |
 | modifier   | 0.12   | 명사 연쇄 4개 이상 (보정 후 3, /3)            |
-| repetition | 0.09   | 반복 부담 합계 3.5 이상                       |
+| repetition | 0.11   | 반복 부담 합계 6.0 이상                       |
 | logical    | 0.08   | 논리표지·강한어미 가중합 4 이상              |
 | connective | 0.06   | EC 개수 4개 이상                              |
 

@@ -407,9 +407,10 @@ class StructureScorerTest(unittest.TestCase):
         result = self.scorer.score_tokens(tokens, scored_words_full=scored_words_full, polysemy_map=polysemy_map)
         sp = result["structure_parts"]
         self.assertEqual(sp["repetition_count"], 2)
-        expected_raw = (3 - 1) * 0.6 * 1  # (count-1) * difficulty * polysemy
+        adj_diff = max(0.1, min(0.5, 0.6 / 1.5))
+        expected_raw = (3 - 1) * adj_diff * 1
         self.assertAlmostEqual(sp["repetition_raw"], expected_raw, places=4)
-        expected_score = min(1.0, expected_raw / 3.5)
+        expected_score = min(1.0, expected_raw / 6.0)
         self.assertAlmostEqual(sp["repetition_score"], expected_score, places=4)
 
     def test_repetition_uses_minimum_difficulty_for_zero_difficulty_words(self) -> None:
@@ -424,8 +425,8 @@ class StructureScorerTest(unittest.TestCase):
         result = self.scorer.score_tokens(tokens, scored_words_full=scored_words_full, polysemy_map={"쉽다": 2})
         sp = result["structure_parts"]
         self.assertEqual(sp["repetition_count"], 1)
-        self.assertAlmostEqual(sp["repetition_raw"], 0.10, places=4)
-        self.assertAlmostEqual(sp["repetition_details"][0]["difficulty"], 0.05, places=4)
+        self.assertAlmostEqual(sp["repetition_raw"], 0.20, places=4)
+        self.assertAlmostEqual(sp["repetition_details"][0]["difficulty"], 0.10, places=4)
 
     def test_repetition_excluded_lemma(self) -> None:
         tokens = [
@@ -459,8 +460,10 @@ class StructureScorerTest(unittest.TestCase):
         polysemy_map = {"연구": 1, "분석": 2}
         result = self.scorer.score_tokens(tokens, scored_words_full=scored_words_full, polysemy_map=polysemy_map)
         sp = result["structure_parts"]
-        self.assertEqual(sp["repetition_count"], 3)  # (2-1) + (3-1) = 3
-        expected_raw = (2 - 1) * 0.6 * 1 + (3 - 1) * 0.7 * 2
+        self.assertEqual(sp["repetition_count"], 3)
+        adj_diff_1 = max(0.1, min(0.5, 0.6 / 1.5))
+        adj_diff_2 = max(0.1, min(0.5, 0.7 / 1.5))
+        expected_raw = (2 - 1) * adj_diff_1 * 1 + (3 - 1) * adj_diff_2 * 2
         self.assertAlmostEqual(sp["repetition_raw"], expected_raw, places=4)
 
     def test_repetition_details_structure(self) -> None:
@@ -476,7 +479,7 @@ class StructureScorerTest(unittest.TestCase):
         sp = result["structure_parts"]
         self.assertEqual(len(sp["repetition_details"]), 1)
         detail = sp["repetition_details"][0]
-        self.assertEqual(detail["surface"], "연구")
+        self.assertEqual(detail["lemma"], "연구")
         self.assertEqual(detail["count"], 2)
         self.assertEqual(detail["polysemy"], 2)
 
