@@ -27,7 +27,7 @@ def sejong_tag_to_pos(tag: Any) -> str:
     """
     Kiwi/Sejong 계열 형태소 태그를 사전 품사명으로 변환한다.
     """
-    t = normalize_text(tag)
+    t = base_sejong_tag(tag)
 
     if not t:
         return ""
@@ -81,7 +81,7 @@ def token_to_lemma_candidate(surface: Any, tag: Any) -> str:
     형태소 분석 결과를 사전 lookup용 lemma 후보로 변환한다.
     """
     form = normalize_text(surface)
-    t = normalize_text(tag)
+    t = base_sejong_tag(tag)
 
     if not form:
         return ""
@@ -92,9 +92,10 @@ def token_to_lemma_candidate(surface: Any, tag: Any) -> str:
     return form
 
 
-def _base_tag(tag: str) -> str:
-    """Kiwi 접미사(-I 등) 제거한 기본 품사 태그를 반환한다."""
-    return tag.split("-")[0] if "-" in tag else tag
+def base_sejong_tag(tag: Any) -> str:
+    """Kiwi 접미사(-I, -R 등)를 제거한 기본 품사 태그를 반환한다."""
+    normalized = normalize_text(tag)
+    return normalized.split("-", 1)[0]
 
 
 def is_excluded_lexical_tag(tag: Any) -> bool:
@@ -106,7 +107,7 @@ def is_excluded_lexical_tag(tag: Any) -> bool:
     if not t:
         return True
 
-    base = _base_tag(t)
+    base = base_sejong_tag(t)
 
     if base in {"SL", "SH"}:
         return False
@@ -129,7 +130,7 @@ def is_content_tag(tag: Any) -> bool:
     if not t or is_excluded_lexical_tag(t):
         return False
 
-    base = _base_tag(t)
+    base = base_sejong_tag(t)
 
     if base == "NNB":
         return False
@@ -220,13 +221,14 @@ class KiwiMorphAnalyzer:
         tags: set[str] = set()
         for tokens, _ in results:
             if tokens:
-                tags.add(tokens[0].tag)
+                tags.add(base_sejong_tag(tokens[0].tag))
         return max(1, len(tags))
 
 
 __all__ = [
     "MorphToken",
     "KiwiMorphAnalyzer",
+    "base_sejong_tag",
     "sejong_tag_to_pos",
     "token_to_lemma_candidate",
     "is_excluded_lexical_tag",

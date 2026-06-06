@@ -40,15 +40,19 @@ etc.
 ```
 
 규칙 기반 매핑. 불명 태그는 원래 문자열 반환.
+Kiwi가 붙이는 `-I`, `-R` 등의 접미 표지는 원본 `MorphToken.tag`에는 보존하되,
+품사 판정에서는 `base_sejong_tag()`로 제거한다. 따라서 `VA-I`, `VA-R`은 모두 형용사로 처리된다.
 
 ### 2. Lemma 후보 생성 (`token_to_lemma_candidate`)
 
 ```
 "먹", "VV" → "먹다"   (VV/VA에 "다" 추가)
+"그렇", "VA-I" → "그렇다"
 "세계", "NNG" → "세계" (그대로)
 ```
 
 사전 lookup용. VV/VA는 어간 형태이므로 "다"를 붙여 기본형 생성.
+`-I`, `-R` 등의 접미 표지가 붙은 VV/VA도 같은 방식으로 처리한다.
 
 ### 3. 기능 표지 판정 (`is_excluded_lexical_tag`)
 

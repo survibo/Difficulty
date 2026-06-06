@@ -4,7 +4,7 @@
 
 ## 역할
 
-MorphToken의 POS 태그 패턴을 기반으로 8개 지표로 문장 구조 복잡도를 측정한다.
+MorphToken의 POS 태그 패턴을 기반으로 7개 지표로 문장 구조 복잡도를 측정한다.
 
 ## flow 단계
 
@@ -13,58 +13,32 @@ MorphToken의 POS 태그 패턴을 기반으로 8개 지표로 문장 구조 복
 ## 점수 공식
 
 ```
-structure = 0.20×structural_span + 0.18×predicate
-          + 0.17×length + 0.15×embedding
-          + 0.10×modifier + 0.08×logical
-          + 0.07×repetition + 0.05×connective
+structure = 0.27×length + 0.20×embedding + 0.18×predicate
+          + 0.12×modifier + 0.09×repetition + 0.08×logical + 0.06×connective
 ```
 
-## 8개 지표
+## 7개 지표
+
+Kiwi의 원본 `MorphToken.tag`에 `-I`, `-R` 등의 접미 표지가 붙어도 구조 판정은
+기본 태그를 사용한다. 따라서 `VA-I`/`VA-R`은 `VA`, `EC-I`/`EC-R`은 `EC`와
+동일하게 각 구조 지표에 포함된다.
 
 | 지표 | 측정 대상 | 1.0이 되는 조건 | 가중치 |
 |------|----------|----------------|--------|
-| structural_span | 절 구간 내용어 합계 (모든 EC/ETM/ETN에서 기록된 구간 길이의 총합) | 20.0 이상 (내용어 20개) | 0.20 |
+| length | 내용어(명/동/형) token 수 | 29개 이상 | 0.27 |
+| embedding | 관형형(ETM)+명사형(ETN)+부사형EC(게·도록·듯이) 개수 | 5개 이상 | 0.20 |
 | predicate | 서술어(VV, VA, VX, XSV, XSA) 개수 (-1 보정) | 8개 이상 (7+1) | 0.18 |
-| embedding | 관형형(ETM)+명사형(ETN)+부사형EC(게·도록·듯이) 개수 | 5개 이상 | 0.15 |
-| length | 내용어(명/동/형) token 수 | 29개 이상 | 0.17 |
-| modifier | 최장 명사 연쇄 길이 (-1 보정) | 4개 이상 (3+1) | 0.10 |
+| modifier | 최장 명사 연쇄 길이 (-1 보정) | 4개 이상 (3+1) | 0.12 |
+| repetition | 단어 반복 부담 (반복 횟수×난도×다의성 계수 합계) | 3.5 이상 | 0.09 |
 | logical | 논리표지·강한어미 가중합 | 4 이상 | 0.08 |
-| repetition | 단어 반복 부담 (반복 횟수×난도×다의성 계수 합계) | 3.5 이상 | 0.07 |
-| connective | EC 개수 | 4개 이상 | 0.05 |
+| connective | EC 개수 | 4개 이상 | 0.06 |
 
 ### 보정 설명
 - **predicate**: 모든 문장에 서술어가 최소 1개 필수이므로 `predicate_count - 1` 후 score 계산.
 - **modifier**: 모든 명사 연쇄는 최소 1개 명사를 포함하므로 `max_noun_chain - 1` 후 score 계산.
 - **modifier chain**: NNG/NNP/NNB/XR은 연쇄를 시작·연장한다. XSN은 연쇄 길이에 포함하지 않지만, 앞뒤 명사류를 이어 주는 bridge로 본다. 예: `방법/NNG+론/XSN+적/XSN`은 1, `비교/NNG+적/XSN+안정세/NNG`는 2.
 
-### structural_span 계산
-
-ETM(관형형전성어미), ETN(명사형전성어미), EC(연결어미)가 나타날 때,
-직전 절 경계(EC/ETM/ETN/EF/SF/SP/SE) 이후부터 해당 marker까지 누적된 내용어 개수의 **합계**를 측정한다.
-
-```
-segment_content_count = 0
-
-for token in tokens:
-    if token.is_content:
-        segment_content_count += 1
-    if token.tag in {ETM, ETN, EC} and segment_content_count > 0:
-        spans.append(segment_content_count)
-    if token.tag in {EC, ETM, ETN, EF, SF, SP, SE}:
-        if not (token.tag == "EC" and 뒤에 VX가 3토큰 이내):
-            segment_content_count = 0
-
-raw = sum(spans)
-normalized = raw / 20.0
-score = min(1.0, normalized)
-```
-
-- EC/ETM/ETN은 marker이면서 boundary이므로, span 기록 후 segment를 초기화한다.
-- 단, **aux EC** (EC + 3토큰 이내 VX)는 boundary로 보지 않는다. `먹고 싶다`, `유지하고 있다` 식의 보조용언 연결은 절 경계가 아니다.
-- ETM/ETN도 boundary이므로 span 기록 후 segment를 초기화한다. (중복 누적 방지)
-- marker 직전 내용어가 없으면(segment_content_count == 0) 해당 marker는 제외한다.
-- spans가 비어 있으면 0.0 반환.
-- **full_score_at = 20.0** (모든 구간 내용어 합계가 20개 이상이면 1.0)
+(~~structural_span~~ — 제거됨)
 
 ### logical 계산
 
@@ -116,7 +90,7 @@ cs = min(1.0, EC_개수 / 4)
 
 | 이름 | 설명 |
 |------|------|
-| `@dataclass StructureConfig` | 8개 지표별 임계값 + 가중치 설정 |
+| `@dataclass StructureConfig` | 7개 지표별 임계값 + 가중치 설정 |
 | `StructureScorer` | 구조 점수 계산 |
 
 ## 의존성

@@ -119,7 +119,6 @@ def _structure_reasons(sp: dict) -> list[str]:
     mc = sp["max_noun_chain"]
     adj_mc = sp["max_noun_chain_adj"]
     dc = sp["derivational_suffix_count"]
-    sr = sp["structural_span_raw"]
     rc = sp["repetition_count"]
     rr = sp["repetition_raw"]
 
@@ -148,12 +147,7 @@ def _structure_reasons(sp: dict) -> list[str]:
     if cc == 0 and lr == 0:
         reasons.append("  no EC/logical markers → connective=0, logical=0")
     else:
-        reasons.append(f"  EC={cc}/4 → cs={cs:.3f} (×0.05)  +  logical_weighted={lr:.1f}/4 → ls={ls:.3f} (×0.08)")
-
-    if sr == 0:
-        reasons.append("  no structural spans → span=0")
-    else:
-        reasons.append(f"  span_sum={sr}/20 → span={sp['structural_span_score']}  (n={sp['structural_span_count']})")
+        reasons.append(f"  EC={cc}/4 → cs={cs:.3f} (×{sp['connective_score']})  +  logical_weighted={lr:.1f}/4 → ls={ls:.3f} (×{sp['logical_score']})")
 
     if mc <= 1:
         reasons.append(f"  max_noun_chain={mc} → adj=0 → modifier=0")
@@ -188,8 +182,6 @@ def _active_features(sp: dict) -> list[str]:
         active.append("connective")
     if sp["logical_score"] > 0:
         active.append("logical")
-    if sp["structural_span_score"] > 0:
-        active.append("structural_span")
     if sp["modifier_score"] > 0:
         active.append("modifier")
     if sp["repetition_score"] > 0:

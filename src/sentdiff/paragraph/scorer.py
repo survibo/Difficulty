@@ -7,6 +7,7 @@ import re
 from statistics import mean
 from typing import Any
 
+from sentdiff.morph import base_sejong_tag
 from sentdiff.pipeline import SentenceScorer
 
 
@@ -59,7 +60,7 @@ class ParagraphScorer:
     @staticmethod
     def _is_core_information_word(word: dict[str, Any]) -> bool:
         tag = str(word.get("tag", "") or "").strip()
-        base_tag = tag.split("-")[0]
+        base_tag = base_sejong_tag(tag)
         if base_tag in _CORE_INFORMATION_TAGS:
             return True
         if base_tag.isascii() and base_tag.isalnum():
@@ -72,7 +73,7 @@ class ParagraphScorer:
     def _core_item_type(word: dict[str, Any]) -> str:
         tag = str(word.get("tag", "") or "").strip()
         if tag:
-            return tag.split("-")[0]
+            return base_sejong_tag(tag)
         return str(word.get("pos", "") or "").strip()
 
     @staticmethod

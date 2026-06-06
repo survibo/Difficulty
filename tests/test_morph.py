@@ -11,6 +11,7 @@ sys.path.insert(0, str(SRC))
 from sentdiff.morph import (  # noqa: E402
     KiwiMorphAnalyzer,
     MorphToken,
+    base_sejong_tag,
     is_content_tag,
     is_excluded_lexical_tag,
     sejong_tag_to_pos,
@@ -19,6 +20,11 @@ from sentdiff.morph import (  # noqa: E402
 
 
 class MorphHelperTests(unittest.TestCase):
+    def test_base_sejong_tag_removes_kiwi_suffixes(self) -> None:
+        self.assertEqual(base_sejong_tag("VA-I"), "VA")
+        self.assertEqual(base_sejong_tag("VV-R"), "VV")
+        self.assertEqual(base_sejong_tag("NNG"), "NNG")
+
     def test_sejong_tag_to_pos_maps_major_tags(self) -> None:
         cases = {
             "NNG": "명사",
@@ -48,6 +54,13 @@ class MorphHelperTests(unittest.TestCase):
         self.assertEqual(token_to_lemma_candidate("좋", "VA"), "좋다")
         self.assertEqual(token_to_lemma_candidate("가다", "VV"), "가다")
         self.assertEqual(token_to_lemma_candidate("문장", "NNG"), "문장")
+        self.assertEqual(token_to_lemma_candidate("그렇", "VA-I"), "그렇다")
+        self.assertEqual(token_to_lemma_candidate("짓", "VV-R"), "짓다")
+
+    def test_sejong_tag_to_pos_handles_kiwi_suffixes(self) -> None:
+        self.assertEqual(sejong_tag_to_pos("VA-I"), "형용사")
+        self.assertEqual(sejong_tag_to_pos("VV-R"), "동사")
+        self.assertEqual(sejong_tag_to_pos("EC-R"), "어미")
 
     def test_excluded_lexical_tags(self) -> None:
         for tag in ["VX", "XSV", "XSA", "XPN", "XSN", "JKO", "ETM", "SF"]:
@@ -71,16 +84,18 @@ class MorphHelperTests(unittest.TestCase):
                 self.assertFalse(is_content_tag(tag))
 
     def test_content_tag_handles_irregular_suffix(self) -> None:
-        for base in ["VV", "VA"]:
-            with self.subTest(tag=f"{base}-I"):
-                self.assertTrue(is_content_tag(f"{base}-I"))
-        self.assertFalse(is_content_tag("VX-I"))
+        for suffix in ["I", "R"]:
+            for base in ["VV", "VA"]:
+                with self.subTest(tag=f"{base}-{suffix}"):
+                    self.assertTrue(is_content_tag(f"{base}-{suffix}"))
+            self.assertFalse(is_content_tag(f"VX-{suffix}"))
 
     def test_excluded_lexical_tag_handles_irregular_suffix(self) -> None:
-        self.assertTrue(is_excluded_lexical_tag("VX-I"))
-        for base in ["VV", "VA"]:
-            with self.subTest(tag=f"{base}-I"):
-                self.assertFalse(is_excluded_lexical_tag(f"{base}-I"))
+        for suffix in ["I", "R"]:
+            self.assertTrue(is_excluded_lexical_tag(f"VX-{suffix}"))
+            for base in ["VV", "VA"]:
+                with self.subTest(tag=f"{base}-{suffix}"):
+                    self.assertFalse(is_excluded_lexical_tag(f"{base}-{suffix}"))
 
 
 class KiwiMorphAnalyzerTests(unittest.TestCase):
@@ -111,6 +126,22 @@ class KiwiMorphAnalyzerTests(unittest.TestCase):
         self.assertIn("가공", [token.surface for token in tokens])
         self.assertIn("문장", [token.surface for token in tokens])
         self.assertIn("분석", [token.surface for token in tokens])
+
+    def test_polysemy_ignores_kiwi_tag_suffix_variants(self) -> None:
+        class Token:
+            def __init__(self, tag: str) -> None:
+                self.tag = tag
+
+        class FakeKiwi:
+            def analyze(self, surface: str, top_n: int = 5):
+                return [
+                    ([Token("VA")], 0.0),
+                    ([Token("VA-I")], -1.0),
+                    ([Token("VA-R")], -2.0),
+                ]
+
+        analyzer = KiwiMorphAnalyzer(kiwi=FakeKiwi())
+        self.assertEqual(analyzer.get_polysemy("그렇다"), 1)
 
 
 if __name__ == "__main__":

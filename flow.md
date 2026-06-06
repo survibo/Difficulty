@@ -8,7 +8,7 @@
 | 2    | `lexicon_builder.py` | vocab_40k →`lexicon_master.csv` 생성                   | normalize                           |
 | 3    | `morph.py`           | Kiwi 형태소 분석 →`MorphToken` 리스트                  | normalize                           |
 | 4    | `lexical.py`         | 사전 lookup → 내용어 난도 → 어휘 점수(lexical)          | normalize, morph                    |
-| 5    | `structure.py`       | 품사 태그 8개 지표 → 구조 점수(structure)                | morph                               |
+| 5    | `structure.py`       | 품사 태그 7개 지표 → 구조 점수(structure)                | morph                               |
 | 6    | `negation.py`        | 부정 표지 분석 → 부정 처리 부담 점수(negation)           | morph                               |
 | 7    | `pipeline.py`        | `SentenceScorer` — lexical + structure + negation 통합 | morph, lexical, structure, negation |
 
@@ -18,10 +18,10 @@
 
 ## 1. 최종 점수
 
-
 ```
 score = min(1.0, 0.5 × lexical + 0.5 × structure + 0.2 × negation)
 ```
+
 - `negation`: 부정 처리 부담 — **보너스** (최대 +0.2). 이중/삼중 부정이 없는 보통 문장은 `0.5×lexical + 0.5×structure`로 1.0까지 도달 가능.
 
 ---
@@ -45,11 +45,11 @@ score = min(1.0, 0.5 × lexical + 0.5 × structure + 0.2 × negation)
 
 내용어 개수(`capped`)에 따라 세 가지 가중치 집합을 선택한다.
 
-| 내용어(capped) | `mean_all` | `mean_top_3` | `max` |
-|:---:|:---:|:---:|:---:|
-| ≤4  | **0.50** | **0.25** | **0.25** |
-| 5–7 | **0.35** | **0.40** | **0.25** |
-| ≥8  | **0.25** | **0.50** | **0.25** |
+| 내용어(capped) |  `mean_all`  | `mean_top_3` |    `max`    |
+| :------------: | :------------: | :------------: | :------------: |
+|      ≤4      | **0.50** | **0.25** | **0.25** |
+|      5–7      | **0.35** | **0.40** | **0.25** |
+|      ≥8      | **0.25** | **0.50** | **0.25** |
 
 짧은 문장일수록 `mean_all`의 비중이 높아 단일 단어가 점수를 크게 좌우하지 않는다.
 긴 문장(8+)은 기존과 동일하게 상위 3개의 평균이 좌우한다.
@@ -80,36 +80,33 @@ score = min(1.0, 0.5 × lexical + 0.5 × structure + 0.2 × negation)
 ### 3.1 기본 원리
 
 형태소 분석 결과의 품사 태그(Sejong 품사 체계 기준)를 바탕으로
-문장 구조의 복잡도를 8개 지표로 측정한다.
+문장 구조의 복잡도를 7개 지표로 측정한다.
 각 지표는 일정 임계값을 넘으면 1.0이 된다.
 
-### 3.2 8개 지표
+### 3.2 7개 지표
 
-| 지표                      | 측정 대상                                                | 임계값        | 가중치         |
-| ------------------------- | -------------------------------------------------------- | ------------- | -------------- |
-| **structural_span** | 직전 절 경계~ETM/ETN/EC까지 절 구간 내용어 합계          | 20.0개 → 1.0 | **0.20** |
-| **predicate**       | 서술어(VV, VA, VX, XSV, XSA) 개수**(-1 보정)**           | 8개 → 1.0    | **0.18** |
-| **embedding**       | 관형형/명사형 전성어미(ETM, ETN) + 부사형 EC(-게/-도록/-듯이) 개수 | 5개 → 1.0    | **0.15** |
-| **length**          | 내용어(명사/동사 등) 개수                                | 29개 → 1.0   | **0.17** |
-| **modifier**        | 최장 명사 연쇄 길이**(-1 보정)**                         | 4개 → 1.0    | **0.10** |
-| **logical**         | 논리부사·강한어미 가중합                                | 4 → 1.0      | **0.08** |
-| **repetition**      | 단어 반복 부담 (반복 횟수×난도×다의성 계수 합계)       | 3.5 → 1.0    | **0.07** |
-| **connective**      | 연결어미(EC) 개수                                        | 4개 → 1.0    | **0.05** |
+| 지표                 | 측정 대상                                                          | 임계값      | 가중치         |
+| -------------------- | ------------------------------------------------------------------ | ----------- | -------------- |
+| **length**     | 내용어(명사/동사 등) 개수                                          | 29개 → 1.0 | **0.27** |
+| **embedding**  | 관형형/명사형 전성어미(ETM, ETN) + 부사형 EC(-게/-도록/-듯이) 개수 | 5개 → 1.0  | **0.20** |
+| **predicate**  | 서술어(VV, VA, VX, XSV, XSA) 개수**(-1 보정)**                     | 8개 → 1.0  | **0.18** |
+| **modifier**   | 최장 명사 연쇄 길이**(-1 보정)**                                   | 4개 → 1.0  | **0.12** |
+| **repetition** | 단어 반복 부담 (반복 횟수×난도×다의성 계수 합계)                 | 3.5 → 1.0  | **0.09** |
+| **logical**    | 논리부사·강한어미 가중합                                          | 4 → 1.0    | **0.08** |
+| **connective** | 연결어미(EC) 개수                                                  | 4개 → 1.0  | **0.06** |
 
 ### 3.3 점수 공식
 
 ```
 
-structure = 0.20×structural_span + 0.18×predicate
-          + 0.17×length + 0.15×embedding
-          + 0.10×modifier + 0.08×logical
-          + 0.07×repetition + 0.05×connective
+structure = 0.27×length + 0.20×embedding + 0.18×predicate
+          + 0.12×modifier + 0.09×repetition + 0.08×logical + 0.06×connective
 
 ```
 
 ### 3.4 각 지표 계산 방식
 
-8개 지표 모두 같은 구조로 계산된다:
+7개 지표 모두 같은 구조로 계산된다:
 
 ```
 
@@ -165,42 +162,7 @@ score = min(1.0, raw / 5)
 
 ---
 
-**structural_span** — 절 구간 내용어 합계
-
-ETM/ETN/EC가 나타날 때, 직전 절 경계(EC/ETM/ETN/EF/SF/SP/SE) 이후부터 해당 marker까지 누적된 내용어 개수들의 **합계**.
-
-```
-
-segment_content_count = 0
-spans = []
-
-for token in tokens:
-    if token.is_content:
-        segment_content_count += 1
-    if token.tag in {ETM, ETN, EC} and segment_content_count > 0:
-        spans.append(segment_content_count)
-    if token.tag in {EC, ETM, ETN, EF, SF, SP, SE}:
-        if not (token.tag == "EC" and 뒤에 VX가 3토큰 이내):
-            segment_content_count = 0
-
-raw = sum(spans)
-score = min(1.0, raw / 20.0)
-
-```
-
-- EC/ETM/ETN은 marker이면서 boundary → span 기록 후 segment 초기화. 중복 누적 방지
-- 단, **aux EC** (EC + 3토큰 이내 VX)는 boundary로 보지 않음. `먹고 싶다`, `유지하고 있다` 식의 보조용언 연결은 절 경계가 아니므로 segment를 유지한다.
-- `고(EC)` + `싶(VX)` 또는 `고(EC)` + `있(VX)` 형태가 aux EC에 해당한다.
-- marker 직전 내용어가 없으면(`segment_content_count == 0`) 해당 marker 제외
-- 측정 대상 marker가 없으면 score = 0.0
-
-**full_score_at = 20.0** (모든 절 구간 내용어 합계가 20개 이상이면 1.0)
-
-예시:
-
-- **"경제 성장의 둔화 때문에 유지하고 있다"** → `고(EC)`는 aux EC (뒤에 `있(VX)`) → boundary 아님 → 내용어 5개 단일 구간 → spans=[5], raw=5, **score=0.25**
-- **"뛰고 점프하며"** → 두 EC 모두 일반 EC → spans=[1,1], raw=2, **score=0.10**
-- **"그가 어렸을 때 살던 마을에서"** → ETM 2개 → spans=[2,2], raw=4, **score=0.20**
+(no structural_span — 제거됨)
 
 ---
 
@@ -297,8 +259,6 @@ cs = min(1.0, EC_개수 / 4)
 
 ---
 
-
-
 ## 4. 부정 점수 (negation)
 
 ### 4.1 기본 원리
@@ -309,27 +269,27 @@ cs = min(1.0, EC_개수 / 4)
 
 ### 4.2 4개 하위 점수
 
-| 점수                   | 측정 대상                    | 공식                                                       |
-| ---------------------- | ---------------------------- | ---------------------------------------------------------- |
-| **local**        | 동일 국소 단위 내 부정 중복  | `0.0 if local_max <= 1 else min(1.0, (local_max - 1)^2 / 2.5)` |
+| 점수                   | 측정 대상                                     | 공식                                                                    |
+| ---------------------- | --------------------------------------------- | ----------------------------------------------------------------------- |
+| **local**        | 동일 국소 단위 내 부정 중복                   | `0.0 if local_max <= 1 else min(1.0, (local_max - 1)^2 / 2.5)`        |
 | **construction** | 조건절 분할 부정 (조건절 앞 긍정 + 이후 부정) | `1.0` if conditional link + 직전 unit 부정 없음 + 이후 unit 부정 있음 |
-| **embedded**     | 인용절/명사절 내 부정        | `min(1.0, embedded_links / 2)`                           |
-| **density**      | hard segment 내 부정 밀집    | `0.5 × min(1.0, max(0, seg_neg - 1) / 3)`               |
+| **embedded**     | 인용절/명사절 내 부정                         | `min(1.0, embedded_links / 2)`                                        |
+| **density**      | hard segment 내 부정 밀집                     | `0.5 × min(1.0, max(0, seg_neg - 1) / 3)`                            |
 
 ### 4.3 절 경계 (boundary_kind)
 
 `EC`(연결어미)의 절 경계 판단:
 
-| 경계 종류       | 판단 기준                                    | hard/soft                                |
-| --------------- | -------------------------------------------- | ---------------------------------------- |
-| `none`        | 일반 EC으로서 경계 없음                      | —                                       |
-| `aux`         | EC 바로 뒤, 또는 JX/JKO/JKC 뒤에 VX (보조용언 연결) | —                                |
-| `quote`       | `라고/이라고/다고/ㄴ다고/는다고/냐고/자고` | **soft** (same segment, link 기록) |
-| `conditional` | `면/으면/다면/라면`                        | **soft** (same segment, link 기록) |
-| `nominal`     | ETM/ETN + NNB/NNG + JX/JKS/JKO/JKC           | **soft** (same segment, link 기록) |
-| `coordinate`  | `고/며/으며/거나/든지`                     | **hard** (new segment)             |
-| `subordinate` | 나머지 EC (서/니까/므로/지만/으나/는데 등)   | **hard** (new segment)             |
-| `punct`       | SP, SF, SE, SS*                              | **hard** (new segment)             |
+| 경계 종류       | 판단 기준                                           | hard/soft                                |
+| --------------- | --------------------------------------------------- | ---------------------------------------- |
+| `none`        | 일반 EC으로서 경계 없음                             | —                                       |
+| `aux`         | EC 바로 뒤, 또는 JX/JKO/JKC 뒤에 VX (보조용언 연결) | —                                       |
+| `quote`       | `라고/이라고/다고/ㄴ다고/는다고/냐고/자고`        | **soft** (same segment, link 기록) |
+| `conditional` | `면/으면/다면/라면`                               | **soft** (same segment, link 기록) |
+| `nominal`     | ETM/ETN + NNB/NNG + JX/JKS/JKO/JKC                  | **soft** (same segment, link 기록) |
+| `coordinate`  | `고/며/으며/거나/든지`                            | **hard** (new segment)             |
+| `subordinate` | 나머지 EC (서/니까/므로/지만/으나/는데 등)          | **hard** (new segment)             |
+| `punct`       | SP, SF, SE, SS*                                     | **hard** (new segment)             |
 
 soft boundary → 같은 hard segment로 유지, `prev_link` 기록
 hard boundary → 새 hard segment 시작
@@ -339,16 +299,16 @@ hard boundary → 새 hard segment 시작
 
 ### 4.4 감지 대상 부정 표지
 
-| 패턴     | 태그  | Lemma 조건               |
-| -------- | ----- | ------------------------ |
-| `안`   | MAG   | "안"                     |
-| `못`   | MAG   | "못"                     |
-| `않`   | VX/VV | lemma starts with "않"   |
-| `아니하` | VX/VV | lemma starts with "아니하" |
-| `못하` | VX/VV | lemma starts with "못하" |
-| `말`   | VX/VV | lemma starts with "말"   |
-| `없다` | VA    | lemma stem "없" (단, `없는 한` 관용구 제외) |
-| `아니` | VCN   | lemma stem "아니"        |
+| 패턴       | 태그  | Lemma 조건                                   |
+| ---------- | ----- | -------------------------------------------- |
+| `안`     | MAG   | "안"                                         |
+| `못`     | MAG   | "못"                                         |
+| `않`     | VX/VV | lemma starts with "않"                       |
+| `아니하` | VX/VV | lemma starts with "아니하"                   |
+| `못하`   | VX/VV | lemma starts with "못하"                     |
+| `말`     | VX/VV | lemma starts with "말"                       |
+| `없다`   | VA    | lemma stem "없" (단,`없는 한` 관용구 제외) |
+| `아니`   | VCN   | lemma stem "아니"                            |
 
 ### 4.5 link 추적 (construction / embedded)
 
@@ -360,11 +320,11 @@ hard boundary → 새 hard segment 시작
 
 **construction 예시:**
 
-| 문장 | 조건절 앞 부정 | 조건절 이후 부정 | 결과 |
-|------|:---:|:---:|:---:|
-| `가면 모르지 않는다` | 없음 | 있음 | **1.0** |
-| `가지 않으면 모른다` | 있음 | 없음 | 0.0 |
-| `안 하면 안 된다` | 있음 | 있음 | 0.0 |
+| 문장                   | 조건절 앞 부정 | 조건절 이후 부정 |     결과     |
+| ---------------------- | :------------: | :--------------: | :-----------: |
+| `가면 모르지 않는다` |      없음      |       있음       | **1.0** |
+| `가지 않으면 모른다` |      있음      |       없음       |      0.0      |
+| `안 하면 안 된다`    |      있음      |       있음       |      0.0      |
 
 ---
 
@@ -380,24 +340,23 @@ hard boundary → 새 hard segment 시작
 
 ### 어휘 점수 내부 가중치
 
-| 내용어(capped) | `mean_all` | `mean_top_3` | `max` |
-|:---:|:---:|:---:|:---:|
-| ≤4  | **0.50** | **0.25** | **0.25** |
-| 5–7 | **0.35** | **0.40** | **0.25** |
-| ≥8  | **0.25** | **0.50** | **0.25** |
+| 내용어(capped) |  `mean_all`  | `mean_top_3` |    `max`    |
+| :------------: | :------------: | :------------: | :------------: |
+|      ≤4      | **0.50** | **0.25** | **0.25** |
+|      5–7      | **0.35** | **0.40** | **0.25** |
+|      ≥8      | **0.25** | **0.50** | **0.25** |
 
 ### 구조 점수 내부 가중치 및 임계값
 
-| 지표            | 가중치 | 1.0 되는 조건                    |
-| --------------- | ------ | -------------------------------- |
-| structural_span | 0.20   | 절 구간 내용어 합계 20.0 이상    |
-| predicate       | 0.18   | 서술어 7개+1개(-1 보정)          |
-| embedding       | 0.15   | 관형형/명사형/부사형(게·도록·듯이) 5개 이상 |
-| length          | 0.17   | 내용어 29개 이상                 |
-| modifier        | 0.10   | 명사 연쇄 4개 이상 (보정 후 3, /3) |
-| logical         | 0.08   | 논리표지·강한어미 가중합 4 이상 |
-| repetition      | 0.07   | 반복 부담 합계 3.5 이상          |
-| connective      | 0.05   | EC 개수 4개 이상                 |
+| 지표       | 가중치 | 1.0 되는 조건                                 |
+| ---------- | ------ | --------------------------------------------- |
+| length     | 0.27   | 내용어 29개 이상                              |
+| embedding  | 0.20   | 관형형/명사형/부사형(게·도록·듯이) 5개 이상 |
+| predicate  | 0.18   | 서술어 7개+1개(-1 보정)                       |
+| modifier   | 0.12   | 명사 연쇄 4개 이상 (보정 후 3, /3)            |
+| repetition | 0.09   | 반복 부담 합계 3.5 이상                       |
+| logical    | 0.08   | 논리표지·강한어미 가중합 4 이상              |
+| connective | 0.06   | EC 개수 4개 이상                              |
 
 ---
 
@@ -439,13 +398,17 @@ information_density = min(1.0, unique_core_content_count / (sentence_count × 13
 
 핵심 내용어로 세는 태그:
 
-| 태그 | 의미 |
-| ---- | ---- |
+| 태그 | 의미     |
+| ---- | -------- |
 | NNG  | 일반명사 |
 | NNP  | 고유명사 |
-| VV   | 동사 |
-| VA   | 형용사 |
-| XR   | 어근 |
+| VV   | 동사     |
+| VA   | 형용사   |
+| XR   | 어근     |
+
+Kiwi의 `-I`, `-R` 등 접미 표지가 붙은 태그는 원본 토큰에는 보존하지만,
+점수 계산에서는 기본 태그로 판정한다. 예를 들어 `VA-I`, `VA-R`은 `VA`,
+`VV-I`, `VV-R`은 `VV`, `EC-I`, `EC-R`은 `EC`와 동일하게 처리한다.
 
 제외 예시:
 

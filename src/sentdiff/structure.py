@@ -2,7 +2,7 @@
 structure.py
 
 MorphToken 리스트의 POS 태그 패턴을 기반으로 문장 구조 복잡도를 계산한다.
-8개 지표(length / predicate / embedding / connective / logical / modifier / repetition / structural_span)를
+7개 지표(length / predicate / embedding / connective / logical / modifier / repetition)를
 weighted sum한 structure_score를 반환한다.
 negation 점수는 별도 negation.py의 NegationAnalyzer가 처리한다.
 """
@@ -12,6 +12,8 @@ from __future__ import annotations
 from collections import Counter
 from dataclasses import dataclass
 from typing import Any
+
+from .morph import base_sejong_tag
 
 LOGICAL_MARKERS: dict[str, float] = {
     "즉": 1.0, "곧": 0.8,
@@ -53,8 +55,6 @@ REPETITION_EXCLUDE_LEMMAS: set[str] = {
 }
 REPETITION_MIN_DIFFICULTY: float = 0.05
 
-_STRUCTURAL_SPAN_MARKER_TAGS: set[str] = {"ETM", "ETN", "EC"}
-_BOUNDARY_TAGS: set[str] = {"EC", "ETM", "ETN", "EF", "SF", "SP", "SE"}
 _LENGTH_MIN: float = 5.0
 _LENGTH_MAX: float = 24.0
 
@@ -67,18 +67,16 @@ class StructureConfig:
     logical_full_score_at: int = 4
     modifier_full_score_at: int = 3
     derivational_full_score_at: int = 3
-    structural_span_full_score_at: float = 20.0
     repetition_full_score_at: float = 3.5
 
-    # 8개 지표 고정 가중치 (합 1.0)
-    weight_length: float = 0.17
+    # 7개 지표 고정 가중치 (합 1.0)
+    weight_length: float = 0.27
     weight_predicate: float = 0.18
-    weight_embedding: float = 0.15
-    weight_connective: float = 0.05
+    weight_embedding: float = 0.20
+    weight_connective: float = 0.06
     weight_logical: float = 0.08
-    weight_modifier: float = 0.10
-    weight_structural_span: float = 0.20
-    weight_repetition: float = 0.07
+    weight_modifier: float = 0.12
+    weight_repetition: float = 0.09
 
 
 class StructureScorer:
@@ -93,7 +91,7 @@ class StructureScorer:
 
     @staticmethod
     def _tag(token: Any) -> str:
-        return str(getattr(token, "tag", "") or "")
+        return base_sejong_tag(getattr(token, "tag", ""))
 
     @staticmethod
     def _surface(token: Any) -> str:
@@ -133,16 +131,6 @@ class StructureScorer:
             return i
         return None
 
-    @staticmethod
-    def _is_aux_ec(tokens: list[Any], i: int) -> bool:
-        tag = str(getattr(tokens[i], "tag", "") or "")
-        if tag != "EC":
-            return False
-        for j in range(i + 1, min(i + 4, len(tokens))):
-            if str(getattr(tokens[j], "tag", "") or "") == "VX":
-                return True
-        return False
-
     def _max_noun_chain(self, tokens: list[Any]) -> int:
         max_chain = 0
         current = 0
@@ -159,36 +147,6 @@ class StructureScorer:
                 current = 0
 
         return max_chain
-
-    def _compute_structural_span(self, tokens: list[Any]) -> dict[str, float | int]:
-        segment_content_count = 0
-        spans: list[int] = []
-
-        for i, token in enumerate(tokens):
-            tag = self._tag(token)
-
-            if self._is_content(token):
-                segment_content_count += 1
-
-            if tag in _STRUCTURAL_SPAN_MARKER_TAGS and segment_content_count > 0:
-                spans.append(segment_content_count)
-
-            if tag in _BOUNDARY_TAGS and not self._is_aux_ec(tokens, i):
-                segment_content_count = 0
-
-        if not spans:
-            return {"score": 0.0, "raw": 0.0, "normalized": 0.0, "count": 0}
-
-        raw_span = sum(spans)
-        normalized = raw_span / self.config.structural_span_full_score_at
-        score = min(1.0, normalized)
-
-        return {
-            "score": round(score, 4),
-            "raw": round(raw_span, 4),
-            "normalized": round(normalized, 4),
-            "count": len(spans),
-        }
 
     def _compute_repetition_score(
         self,
@@ -301,7 +259,6 @@ class StructureScorer:
         )
 
         max_noun_chain = self._max_noun_chain(tokens)
-        structural_span = self._compute_structural_span(tokens)
         repetition = self._compute_repetition_score(
             scored_words_full or [],
             polysemy_map or {},
@@ -339,7 +296,6 @@ class StructureScorer:
             + self.config.weight_connective * connective_score
             + self.config.weight_logical * logical_score
             + self.config.weight_modifier * modifier_score
-            + self.config.weight_structural_span * structural_span["score"]
             + self.config.weight_repetition * repetition["score"]
         )
         structure_score = max(0.0, min(1.0, structure_score))
@@ -354,10 +310,6 @@ class StructureScorer:
                 "embedding_score": round(embedding_score, 4),
                 "modifier_score": round(modifier_score, 4),
                 "derivational_score": round(derivational_score, 4),
-                "structural_span_score": structural_span["score"],
-                "structural_span_raw": structural_span["raw"],
-                "structural_span_normalized": structural_span["normalized"],
-                "structural_span_count": structural_span["count"],
                 "repetition_score": repetition["score"],
                 "repetition_raw": repetition["raw"],
                 "repetition_count": repetition["repetition_count"],

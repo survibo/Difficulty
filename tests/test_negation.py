@@ -90,6 +90,27 @@ class NegationAnalyzerTest(unittest.TestCase):
         ]
         self._assert_negation(tokens, count=1, local_max=1, score=0.0)
 
+    def test_kiwi_suffix_tags_use_base_tag_for_negation(self):
+        for tag in ["VA-I", "VA-R"]:
+            with self.subTest(tag=tag):
+                tokens = [
+                    _make_token("시간", "시간", "NNG"),
+                    _make_token("이", "이", "JKS"),
+                    _make_token("없", "없다", tag),
+                    _make_token("다", "다", "EF-R"),
+                ]
+                self._assert_negation(tokens, count=1, local_max=1, score=0.0)
+
+    def test_kiwi_suffix_ec_still_splits_negation_units(self):
+        tokens = [
+            _make_token("안", "안", "MAG"),
+            _make_token("가", "가다", "VV-I"),
+            _make_token("지만", "지만", "EC-R", is_content=False),
+            _make_token("못", "못", "MAG"),
+            _make_token("온", "오다", "VV-R"),
+        ]
+        self._assert_negation(tokens, count=2, local_max=1, score=0.0)
+
     def test_simple_vcn_ani(self):
         tokens = [
             _make_token("그것", "그것", "NP"),

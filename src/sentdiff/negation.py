@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from .morph import base_sejong_tag
+
 QUOTE_EC = {
     "라고", "이라고",
     "다고", "ㄴ다고", "는다고",
@@ -36,7 +38,7 @@ class NegationAnalyzer:
 
     @staticmethod
     def _tag(token: Any) -> str:
-        return str(getattr(token, "tag", "") or "")
+        return base_sejong_tag(getattr(token, "tag", ""))
 
     @staticmethod
     def _surface(token: Any) -> str:
