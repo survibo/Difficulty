@@ -11,6 +11,16 @@ from typing import Any
 
 from .normalize import normalize_text
 
+_JAMO_CANONICAL_MAP = str.maketrans({
+    "ᆨ": "ㄱ", "ᆫ": "ㄴ", "ᆮ": "ㄷ", "ᆯ": "ㄹ", "ᆷ": "ㅁ",
+    "ᆸ": "ㅂ", "ᆺ": "ㅅ", "ᆼ": "ㅇ", "ᆽ": "ㅈ", "ᆾ": "ㅊ",
+    "ᆿ": "ㅋ", "ᇀ": "ㅌ", "ᇁ": "ㅍ", "ᇂ": "ㅎ",
+})
+
+_PREDICATE_TAGS = {"VV", "VA", "VCP", "VCN", "VX", "XSV", "XSA"}
+_LEXICAL_AUXILIARY_TAGS = {"XPN", "XSN", "XSV", "XSA", "XSM"}
+_SPECIAL_EXCLUDED_PREFIXES = ("W_", "Z_")
+
 
 @dataclass(frozen=True)
 class MorphToken:
@@ -64,8 +74,12 @@ def sejong_tag_to_pos(tag: Any) -> str:
         return "조사"
     if t.startswith("E"):
         return "어미"
-    if t in {"XPN", "XSN", "XSV", "XSA"}:
+    if t in _LEXICAL_AUXILIARY_TAGS:
         return "접사"
+    if t.startswith("W_"):
+        return "웹표현"
+    if t.startswith("Z_"):
+        return "분석보조"
     if t == "IC":
         return "감탄사"
     if t.startswith("S"):
@@ -98,6 +112,37 @@ def base_sejong_tag(tag: Any) -> str:
     return normalized.split("-", 1)[0]
 
 
+def normalize_morph_form(value: Any) -> str:
+    """Kiwi 형태소 표면형을 규칙 비교용 표준형으로 변환한다."""
+    return normalize_text(value).translate(_JAMO_CANONICAL_MAP)
+
+
+def morph_tag_role(tag: Any) -> str:
+    """구조 분석과 디버그가 공유하는 형태소 역할을 반환한다."""
+    base = base_sejong_tag(tag)
+    if base in _PREDICATE_TAGS:
+        return "predicate"
+    if base == "EC":
+        return "connective"
+    if base in {"ETM", "ETN"}:
+        return "embedding"
+    if base.startswith("E"):
+        return "ending"
+    if base == "XSN":
+        return "derivational"
+    if base == "XSM":
+        return "lexical_component"
+    if base.startswith(_SPECIAL_EXCLUDED_PREFIXES):
+        return "excluded"
+    if base.startswith("N") or base in {"XR", "SN", "SL", "SH", "MAG", "MAJ", "NP", "NR"}:
+        return "content"
+    if base.startswith("S"):
+        return "punct"
+    if base.startswith("J"):
+        return "marker"
+    return "-"
+
+
 def is_excluded_lexical_tag(tag: Any) -> bool:
     """
     lexical difficulty 계산에서 제외할 기능 표지를 판정한다.
@@ -114,7 +159,8 @@ def is_excluded_lexical_tag(tag: Any) -> bool:
 
     return (
         base == "VX"
-        or base in {"XSV", "XSA", "XPN", "XSN"}
+        or base in _LEXICAL_AUXILIARY_TAGS
+        or base.startswith(_SPECIAL_EXCLUDED_PREFIXES)
         or base.startswith("J")
         or base.startswith("E")
         or base.startswith("S")
@@ -229,6 +275,8 @@ __all__ = [
     "MorphToken",
     "KiwiMorphAnalyzer",
     "base_sejong_tag",
+    "normalize_morph_form",
+    "morph_tag_role",
     "sejong_tag_to_pos",
     "token_to_lemma_candidate",
     "is_excluded_lexical_tag",

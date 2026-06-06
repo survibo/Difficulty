@@ -22,6 +22,7 @@ from typing import Any, Optional
 
 import pandas as pd
 
+from .lexical_units import LexicalUnit, LexicalUnitResolver
 from .normalize import split_light_predicate_suffix
 
 
@@ -32,7 +33,7 @@ from .normalize import split_light_predicate_suffix
 _WEIGHT_MEAN_ALL: float = 0.25
 _WEIGHT_MEAN_TOP_N: float = 0.50
 _WEIGHT_MAX: float = 0.25
-_TOP_N: int = 3
+_TOP_N: int = 5
 
 
 def _lexical_weights(content_count: int) -> tuple[float, float, float]:
@@ -109,6 +110,7 @@ class LexiconScorer:
         self._lemma_map: dict[str, list[LexiconEntry]] = {}
 
         self._load_lexicon()
+        self._unit_resolver = LexicalUnitResolver(self.lookup)
 
     # -----------------------------------------------------------------
     # Lexicon loading
@@ -300,31 +302,28 @@ class LexiconScorer:
     def get_difficulty(self, lemma: str, pos: str) -> float:
         return self.lookup(lemma, pos).difficulty
 
-    def score_tokens(self, tokens: list[Any]) -> list[dict[str, Any]]:
-        result: list[dict[str, Any]] = []
+    def resolve_units(self, sentence: str, tokens: list[Any]) -> list[LexicalUnit]:
+        return self._unit_resolver.resolve(sentence, tokens)
 
-        for token in tokens:
-            is_content = getattr(token, "is_content", True)
-            if not is_content:
-                continue
+    @staticmethod
+    def _unit_to_dict(unit: LexicalUnit) -> dict[str, Any]:
+        return {
+            "surface": unit.surface,
+            "lemma": unit.lemma,
+            "tag": unit.head_tag,
+            "tags": list(unit.tags),
+            "pos": unit.pos,
+            "difficulty": unit.difficulty,
+            "match_method": unit.match_method,
+            "matched_entry_id": unit.matched_entry_id,
+            "start": unit.start,
+            "end": unit.end,
+            "token_start": unit.token_start,
+            "token_end": unit.token_end,
+        }
 
-            surface = getattr(token, "surface", "")
-            lemma = getattr(token, "lemma", "")
-            tag = getattr(token, "tag", "")
-            pos = getattr(token, "pos", "")
-
-            match = self.lookup(lemma, pos, surface)
-            result.append({
-                "surface": match.surface,
-                "lemma": match.lemma,
-                "tag": tag,
-                "pos": match.pos,
-                "difficulty": match.difficulty,
-                "match_method": match.match_method,
-                "matched_entry_id": match.matched_entry_id,
-            })
-
-        return result
+    def score_tokens(self, tokens: list[Any], sentence: str = "") -> list[dict[str, Any]]:
+        return [self._unit_to_dict(unit) for unit in self.resolve_units(sentence, tokens)]
 
     @staticmethod
     def _cap_repeats(
@@ -340,17 +339,17 @@ class LexiconScorer:
                 capped.append(item)
         return capped
 
-    def compute_sentence_score(self, tokens: list[Any]) -> dict[str, Any]:
-        scored = self.score_tokens(tokens)
+    def compute_sentence_score(self, tokens: list[Any], sentence: str = "") -> dict[str, Any]:
+        scored = self.score_tokens(tokens, sentence)
         capped = self._cap_repeats(scored)
         diffs = [item["difficulty"] for item in capped]
 
         if not diffs:
             return {
                 "lexical_score_0_1": 0.0,
-                "content_token_count": len(scored),
-                "content_token_count_capped": 0,
-                "unknown_token_count": 0,
+                "lexical_unit_count": len(scored),
+                "lexical_unit_count_capped": 0,
+                "unknown_lexical_unit_count": 0,
                 "scored_words_full": scored,
                 "scored_words": capped,
                 "score_parts": {
@@ -376,9 +375,9 @@ class LexiconScorer:
 
         return {
             "lexical_score_0_1": lexical_score,
-            "content_token_count": len(scored),
-            "content_token_count_capped": len(capped),
-            "unknown_token_count": unknown_count,
+            "lexical_unit_count": len(scored),
+            "lexical_unit_count_capped": len(capped),
+            "unknown_lexical_unit_count": unknown_count,
             "scored_words_full": scored,
             "scored_words": capped,
             "score_parts": {
@@ -411,7 +410,7 @@ def score_sentence(
     else:
         tokens = analyzer.analyze(sentence)
 
-    return scorer.compute_sentence_score(tokens)
+    return scorer.compute_sentence_score(tokens, sentence)
 
 
 __all__ = [

@@ -10,17 +10,9 @@ from __future__ import annotations
 from typing import Any
 
 from .morph import base_sejong_tag
-
-QUOTE_EC = {
-    "라고", "이라고",
-    "다고", "ㄴ다고", "는다고",
-    "냐고", "느냐고",
-    "자고",
-}
-
-CONDITIONAL_EC = {"면", "으면", "다면", "라면"}
-
-COORDINATE_EC = {"고", "며", "으며", "거나", "든지"}
+from .patterns import (
+    CONDITIONAL_EC, COORDINATE_EC, QUOTE_EC, PatternMatch, PatternMatcher,
+)
 
 SUBORDINATE_EC = {
     "서", "어서", "아서",
@@ -35,6 +27,9 @@ NOMINAL_BOUND_TAGS = {"ETM", "ETN"}
 
 class NegationAnalyzer:
     """형태소 토큰 리스트를 분석하여 부정 처리 부담 점수를 산출한다."""
+
+    def __init__(self) -> None:
+        self._pattern_matcher = PatternMatcher()
 
     @staticmethod
     def _tag(token: Any) -> str:
@@ -83,48 +78,14 @@ class NegationAnalyzer:
         return False
 
     def _boundary_kind(self, tokens: list[Any], i: int) -> str:
-        token = tokens[i]
-        tag = self._tag(token)
+        for match in self._pattern_matcher.match_boundaries(tokens):
+            if match.token_start == i:
+                return match.kind.removeprefix("boundary_")
+        return "none"
 
-        # punctuation
-        if tag in {"SP", "SF", "SE"} or tag.startswith("SS"):
-            return "punct"
-
-        # ETM/ETN — only nominal boundary when followed by NNB + JX
-        # ("할 수 없다" vs "간 것은 아니다")
-        if tag in NOMINAL_BOUND_TAGS:
-            if i + 2 < len(tokens):
-                next1_tag = self._tag(tokens[i + 1])
-                next2_tag = self._tag(tokens[i + 2])
-                if next1_tag in {"NNB", "NNG"} and next2_tag in {"JX", "JKS", "JKO", "JKC"}:
-                    return "nominal"
-            return "none"
-
-        # non-EC → no boundary
-        if tag != "EC":
-            return "none"
-
-        # EC → aux: VX that is immediate, or after inserted particles (JX, JKO, JKC)
-        j = i + 1
-        while j < len(tokens):
-            ntag = self._tag(tokens[j])
-            if ntag == "VX":
-                return "aux"
-            if ntag in {"JX", "JKO", "JKC"}:
-                j += 1
-                continue
-            break
-
-        ec_form = self._surface(token) or self._lemma(token)
-        if ec_form in QUOTE_EC:
-            return "quote"
-        if ec_form in CONDITIONAL_EC:
-            return "conditional"
-        if ec_form in COORDINATE_EC:
-            return "coordinate"
-        return "subordinate"
-
-    def _build_negation_units(self, tokens: list[Any]) -> list[dict[str, Any]]:
+    def _build_negation_units(
+        self, tokens: list[Any], boundary_matches: list[PatternMatch] | None = None,
+    ) -> list[dict[str, Any]]:
         units: list[dict[str, Any]] = []
         current_tokens: list[Any] = []
         current_neg: int = 0
@@ -132,8 +93,15 @@ class NegationAnalyzer:
         hard_seg_id = 0
         neg_before_boundary: bool = False
 
+        if boundary_matches is None:
+            boundary_matches = self._pattern_matcher.match_boundaries(tokens)
+        boundary_kinds = {
+            match.token_start: match.kind.removeprefix("boundary_")
+            for match in boundary_matches
+        }
+
         for i, token in enumerate(tokens):
-            kind = self._boundary_kind(tokens, i)
+            kind = boundary_kinds.get(i, "none")
 
             if kind in ("none", "aux"):
                 current_tokens.append(token)
@@ -181,8 +149,12 @@ class NegationAnalyzer:
 
         return units
 
-    def analyze(self, tokens: list[Any]) -> dict[str, Any]:
-        units = self._build_negation_units(tokens)
+    def analyze(
+        self, tokens: list[Any], boundary_matches: list[PatternMatch] | None = None,
+    ) -> dict[str, Any]:
+        if boundary_matches is None:
+            boundary_matches = self._pattern_matcher.match_boundaries(tokens)
+        units = self._build_negation_units(tokens, boundary_matches)
 
         total_neg = sum(u["neg_count"] for u in units)
         max_local = max((u["neg_count"] for u in units), default=0)
@@ -248,6 +220,17 @@ class NegationAnalyzer:
             "embedded_negation_score": embedded_score,
             "negation_density_score": density_score,
             "negation_score": final,
+            "boundary_matches": [
+                {
+                    "kind": match.kind.removeprefix("boundary_"),
+                    "label": match.label,
+                    "start": match.start,
+                    "end": match.end,
+                    "token_start": match.token_start,
+                    "token_end": match.token_end,
+                }
+                for match in boundary_matches
+            ],
         }
 
 

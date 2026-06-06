@@ -417,6 +417,21 @@ class NegationAnalyzerTest(unittest.TestCase):
         ]
         self._assert_negation(tokens, count=2, local_max=1, score=0.5)
 
+    def test_final_consonant_quote_and_conditional_boundaries_are_reported(self):
+        tokens = [
+            _make_token("말하", "말하다", "VV"),
+            _make_token("ᆫ다고", "ᆫ다고", "EC"),
+            _make_token("가", "가다", "VV"),
+            _make_token("ᆫ다면", "ᆫ다면", "EC"),
+        ]
+
+        result = self.analyzer.analyze(tokens)
+
+        self.assertEqual(
+            [(item["kind"], item["label"]) for item in result["boundary_matches"]],
+            [("quote", "ㄴ다고"), ("conditional", "ㄴ다면")],
+        )
+
     # =====================================================================
     # nominal / partial negation → score >= 0.5
     # =====================================================================
@@ -459,7 +474,7 @@ class NegationAnalyzerTest(unittest.TestCase):
             "negation_embedded_links", "negation_construction_hits",
             "local_negation_score", "construction_negation_score",
             "embedded_negation_score", "negation_density_score",
-            "negation_score",
+            "negation_score", "boundary_matches",
         }
         self.assertEqual(set(result.keys()), sub_keys)
 

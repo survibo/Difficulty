@@ -238,7 +238,7 @@
       .word-item.unknown {
         background: #ffe0e0;
       }
-      .word-item.top3 {
+      .word-item.top5 {
         background: #fff0e0;
         border: 1px solid #e67e22;
       }
@@ -734,11 +734,11 @@
             "0 ~ 10",
             `${GH}/src/sentdiff/negation.md`
           ) +
-          card("내용어", d.content_token_count, "blue") +
+          card("어휘 단위", d.lexical_unit_count, "blue") +
           card(
-            "미등록어",
-            d.unknown_token_count,
-            d.unknown_token_count > 0 ? "red" : "green"
+            "미등록 단위",
+            d.unknown_lexical_unit_count,
+            d.unknown_lexical_unit_count > 0 ? "red" : "green"
           ) +
           card(
             "신뢰도",
@@ -881,7 +881,7 @@
 
         html += '<h3 class="mini-heading">문장별 점수</h3><table>';
         html +=
-          "<tr><td>#</td><td>문장</td><td>score</td><td>lexical</td><td>structure</td><td>negation</td><td>content</td></tr>";
+          "<tr><td>#</td><td>문장</td><td>score</td><td>lexical</td><td>structure</td><td>negation</td><td>lexical units</td></tr>";
         for (const [i, s] of d.sentences.entries()) {
           html += `<tr><td>${i + 1}</td><td class="sentence-cell">${escapeHtml(
             s.sentence
@@ -890,7 +890,7 @@
           }/10</span></td><td>${fmt10(s.lexical_score_0_1)}</td><td>${fmt10(
             s.structure_score_0_1
           )}</td><td>${fmt10(s.negation_score_0_1)}</td><td>${
-            s.content_token_count
+            s.lexical_unit_count
           }</td></tr>`;
         }
         html += "</table>";
@@ -932,40 +932,39 @@
         const customWords = JSON.parse(
           localStorage.getItem("custom_words") || "{}"
         );
+        const weightEntries = [
+          { label: "mean_all", weight: lw.mean_all, value: p.mean_all },
+          { label: "mean_top_5", weight: lw.mean_top_n, value: p.mean_top_n },
+          { label: "max", weight: lw.max, value: p.max },
+        ];
+        weightEntries.sort((a, b) => b.weight - a.weight);
         document.getElementById("lexicalFormula").textContent =
-          lw.mean_all +
-          " × mean_all + " +
-          lw.mean_top_n +
-          " × mean_top_3 + " +
-          lw.max +
-          " × max";
+          weightEntries.map((e) => e.weight + " × " + e.label).join(" + ");
         const body = document.getElementById("lexicalBody");
         body.innerHTML = table([
-          ["mean_all (" + lw.mean_all + ")", fmt4(p.mean_all)],
-          ["mean_top_n (" + lw.mean_top_n + ")", fmt4(p.mean_top_n)],
-          ["max (" + lw.max + ")", fmt4(p.max)],
+          ...weightEntries.map((e) => [e.label + " (" + e.weight + ")", fmt4(e.value)]),
           [
-            "내용어",
-            d.content_token_count +
+            "어휘 단위",
+            d.lexical_unit_count +
               " (중복보정 " +
-              d.content_token_count_capped +
+              d.lexical_unit_count_capped +
               ")",
           ],
         ]);
 
         let html = '<div class="word-list">';
         const sorted = [...words].sort((a, b) => b.difficulty - a.difficulty);
-        const top3 = new Set(
-          sorted.slice(0, 3).map((w) => w.surface + w.lemma + w.pos)
+        const top5 = new Set(
+          sorted.slice(0, 5).map((w) => w.surface + w.lemma + w.pos)
         );
         for (const w of words) {
           const key = w.surface + w.lemma + w.pos;
-          const isTop = top3.has(key);
+          const isTop = top5.has(key);
           const cls =
             w.match_method === "unknown"
               ? "word-item unknown"
               : isTop
-              ? "word-item top3"
+              ? "word-item top5"
               : "word-item";
           const saved = customWords[w.lemma];
           const effectiveDiff = saved !== undefined ? saved : w.difficulty;
@@ -1055,12 +1054,17 @@
         const sp = d.structure_parts;
         document.getElementById("structureFormula").textContent =
           "structure = 0.27×length + 0.20×embedding + 0.18×predicate + 0.12×modifier + 0.09×repetition + 0.08×logical + 0.06×connective";
+        const structureWeight = {
+          length_score: 0.27,
+          embedding_score: 0.20,
+          predicate_score: 0.18,
+          modifier_score: 0.12,
+          repetition_score: 0.09,
+          logical_score: 0.08,
+          connective_score: 0.06,
+        };
         const items = [
-          [
-            "predicate_score",
-            sp.predicate_score,
-            sp.predicate_count + " VV/VA/VX/XSV/XSA",
-          ],
+          ["length_score", sp.length_score, d.structure_content_token_count + "/29 tokens"],
           [
             "embedding_score",
             sp.embedding_score,
@@ -1071,11 +1075,23 @@
               " 부사절:" +
               (sp.adverbial_ending_count || 0),
           ],
-          ["length_score", sp.length_score, d.content_token_count + "/29 tokens"],
+          [
+            "predicate_score",
+            sp.predicate_score,
+            sp.predicate_count + " VV/VA/VX/XSV/XSA",
+          ],
           [
             "modifier_score",
             sp.modifier_score,
             "max chain:" + sp.max_noun_chain + " (XSN은 세지 않고 앞뒤 명사를 연결)",
+          ],
+          [
+            "repetition_score",
+            sp.repetition_score,
+            "raw:" +
+              sp.repetition_raw.toFixed(2) +
+              " count:" +
+              sp.repetition_count,
           ],
           [
             "logical_score",
@@ -1087,19 +1103,12 @@
               " (첫 marker 제외)",
           ],
           [
-            "repetition_score",
-            sp.repetition_score,
-            "raw:" +
-              sp.repetition_raw.toFixed(2) +
-              " count:" +
-              sp.repetition_count,
-          ],
-          [
             "connective_score",
             sp.connective_score,
             "EC:" + sp.connective_ending_count,
           ],
         ];
+        items.sort((a, b) => structureWeight[b[0]] - structureWeight[a[0]]);
 
         const body = document.getElementById("structureBody");
         let html = "<table>";

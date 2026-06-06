@@ -65,7 +65,7 @@ class StructureScorerTest(unittest.TestCase):
         result = self.scorer.score_tokens([])
         self.assertEqual(result["structure_score_0_1"], 0.0)
         sp = result["structure_parts"]
-        self.assertEqual(sp["content_token_count"], 0)
+        self.assertEqual(sp["structure_content_token_count"], 0)
         self.assertEqual(sp["length_score"], 0.0)
         self.assertEqual(sp["predicate_count"], 0)
 
@@ -76,7 +76,7 @@ class StructureScorerTest(unittest.TestCase):
         ]
         result = self.scorer.score_tokens(tokens)
         self.assertEqual(result["structure_score_0_1"], 0.0)
-        self.assertEqual(result["structure_parts"]["content_token_count"], 0)
+        self.assertEqual(result["structure_parts"]["structure_content_token_count"], 0)
 
     def test_length_score_reaches_full_at_twenty_nine_content_tokens(self) -> None:
         tokens = [
@@ -84,7 +84,7 @@ class StructureScorerTest(unittest.TestCase):
             for i in range(29)
         ]
         result = self.scorer.score_tokens(tokens)
-        self.assertEqual(result["structure_parts"]["content_token_count"], 29)
+        self.assertEqual(result["structure_parts"]["structure_content_token_count"], 29)
         self.assertEqual(result["structure_parts"]["length_score"], 1.0)
 
     def test_length_score_uses_expanded_twenty_four_token_range(self) -> None:
@@ -359,11 +359,12 @@ class StructureScorerTest(unittest.TestCase):
             "derivational_score",
             "repetition_score", "repetition_raw",
             "repetition_count", "repetition_details",
-            "content_token_count", "predicate_count", "ending_count",
+            "structure_content_token_count", "predicate_count", "ending_count",
             "connective_ending_count", "adnominal_count",
             "nominalizer_count", "adverbial_ending_count", "logical_marker_count",
             "logical_marker_weighted",
             "strong_logical_ending_count", "strong_logical_ending_weighted",
+            "logical_matches", "strong_ending_matches",
             "derivational_suffix_count",
             "max_noun_chain",
             "predicate_count_adj", "max_noun_chain_adj",

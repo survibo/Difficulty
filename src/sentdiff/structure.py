@@ -14,35 +14,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from .morph import base_sejong_tag
-
-LOGICAL_MARKERS: dict[str, float] = {
-    "즉": 1.0, "곧": 0.8,
-    "다시 말해": 1.0, "다시 말하면": 1.0, "말하자면": 0.8,
-    "예컨대": 0.8, "예를 들어": 0.8,
-    "따라서": 1.0, "그러므로": 1.0,
-    "그렇기 때문에": 1.0, "그 때문에": 0.9, "그 결과": 0.9,
-    "결과적으로": 0.9, "이로 인해": 0.9, "이 때문에": 0.9,
-    "왜냐하면": 1.0,
-    "그러나": 1.0, "하지만": 1.0, "그렇지만": 1.0,
-    "반면": 0.9, "반대로": 0.9, "오히려": 0.8,
-    "그럼에도": 0.9, "그럼에도 불구하고": 1.0, "비록": 0.8, "물론": 0.7,
-    "만약": 1.0, "만일": 1.0, "가령": 0.8,
-    "또한": 0.7, "더불어": 0.7, "아울러": 0.7,
-    "나아가": 0.8, "게다가": 0.7, "한편": 0.8, "동시에": 0.7,
-    "결국": 0.9, "요컨대": 1.0, "종합하면": 1.0,
-    "정리하면": 0.9, "결론적으로": 1.0, "뿐 아니라": 0.8,
-"뿐만 아니라": 0.9,
-"아니라": 0.5,
-}
-
-STRONG_LOGICAL_ENDINGS: dict[str, float] = {
-    "므로": 1.0, "으므로": 1.0, "기에": 0.9, "때문에": 1.0,
-    "면": 0.8, "으면": 0.8, "다면": 1.0, "라면": 1.0, "거든": 0.8,
-    "지만": 1.0, "으나": 0.9, "더라도": 1.0,
-    "아도": 0.9, "어도": 0.9, "을지라도": 1.0,
-    "려고": 0.7, "으려고": 0.7, "도록": 0.8,
-    "는데": 0.6, "은데": 0.6, "ㄴ데": 0.6,
-}
+from .patterns import LOGICAL_MARKERS, STRONG_LOGICAL_ENDINGS, PatternMatch, PatternMatcher
 
 DERIVATIONAL_SUFFIXES: set[str] = {
     "적", "성", "화", "론", "주의",
@@ -82,6 +54,7 @@ class StructureConfig:
 class StructureScorer:
     def __init__(self, config: StructureConfig | None = None) -> None:
         self.config = config or StructureConfig()
+        self._pattern_matcher = PatternMatcher()
 
     @staticmethod
     def _safe_ratio(value: int, full_score_at: int) -> float:
@@ -194,7 +167,9 @@ class StructureScorer:
 
     def score_tokens(self, tokens: list[Any], sentence: str = "",
                      scored_words_full: list[dict[str, Any]] | None = None,
-                     polysemy_map: dict[str, int] | None = None) -> dict[str, Any]:
+                     polysemy_map: dict[str, int] | None = None,
+                     logical_matches: list[PatternMatch] | None = None,
+                     strong_ending_matches: list[PatternMatch] | None = None) -> dict[str, Any]:
         content_token_count = sum(1 for t in tokens if self._is_content(t))
 
         predicate_count = sum(
@@ -230,27 +205,25 @@ class StructureScorer:
         )
 
         first_token_index = self._first_non_punctuation_index(tokens)
-        logical_marker_weighted = sum(
-            self._match_weighted(t, LOGICAL_MARKERS)
-            for i, t in enumerate(tokens)
-            if i != first_token_index
-        )
-        logical_marker_count = sum(
-            1 for i, t in enumerate(tokens)
-            if i != first_token_index
-            and self._match_weighted(t, LOGICAL_MARKERS) > 0.0
-        )
+        if logical_matches is None:
+            logical_matches = self._pattern_matcher.match_logical_markers(sentence, tokens)
+            if not sentence:
+                logical_matches = [
+                    PatternMatch("logical_marker", self._surface(token) or self._lemma(token), weight,
+                                 int(getattr(token, "start", 0)), int(getattr(token, "end", 0)), i, i + 1)
+                    for i, token in enumerate(tokens)
+                    if (weight := self._match_weighted(token, LOGICAL_MARKERS)) > 0.0
+                ]
+        counted_logical_matches = [
+            match for match in logical_matches if match.token_start != first_token_index
+        ]
+        logical_marker_weighted = sum(match.weight for match in counted_logical_matches)
+        logical_marker_count = len(counted_logical_matches)
 
-        strong_logical_ending_weighted = sum(
-            self._match_weighted(t, STRONG_LOGICAL_ENDINGS)
-            for t in tokens
-            if self._tag(t) == "EC"
-        )
-        strong_logical_ending_count = sum(
-            1 for t in tokens
-            if self._tag(t) == "EC"
-            and self._match_weighted(t, STRONG_LOGICAL_ENDINGS) > 0.0
-        )
+        if strong_ending_matches is None:
+            strong_ending_matches = self._pattern_matcher.match_strong_endings(tokens)
+        strong_logical_ending_weighted = sum(match.weight for match in strong_ending_matches)
+        strong_logical_ending_count = len(strong_ending_matches)
 
         derivational_suffix_count = sum(
             1 for t in tokens
@@ -314,7 +287,7 @@ class StructureScorer:
                 "repetition_raw": repetition["raw"],
                 "repetition_count": repetition["repetition_count"],
                 "repetition_details": repetition["details"],
-                "content_token_count": content_token_count,
+                "structure_content_token_count": content_token_count,
                 "predicate_count": predicate_count,
                 "predicate_count_adj": adj_predicate_count,
                 "ending_count": ending_count,
@@ -328,6 +301,22 @@ class StructureScorer:
                 "logical_marker_count": logical_marker_count,
                 "strong_logical_ending_weighted": round(strong_logical_ending_weighted, 4),
                 "strong_logical_ending_count": strong_logical_ending_count,
+                "logical_matches": [
+                    {
+                        "label": match.label, "weight": match.weight,
+                        "start": match.start, "end": match.end,
+                        "token_start": match.token_start, "token_end": match.token_end,
+                    }
+                    for match in counted_logical_matches
+                ],
+                "strong_ending_matches": [
+                    {
+                        "label": match.label, "weight": match.weight,
+                        "start": match.start, "end": match.end,
+                        "token_start": match.token_start, "token_end": match.token_end,
+                    }
+                    for match in strong_ending_matches
+                ],
                 "derivational_suffix_count": derivational_suffix_count,
                 "max_noun_chain": max_noun_chain,
                 "max_noun_chain_adj": adj_max_noun_chain,

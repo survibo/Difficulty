@@ -19,8 +19,7 @@ sys.path.insert(0, str(SRC_DIR))
 from sentdiff.lexical import LexiconConfig
 from sentdiff.pipeline import SentenceScorer
 
-from sentdiff.morph import KiwiMorphAnalyzer
-from sentdiff.normalize import normalize_text
+from sentdiff.morph import KiwiMorphAnalyzer, morph_tag_role
 
 
 # ---------------------------------------------------------------------------
@@ -29,26 +28,7 @@ from sentdiff.normalize import normalize_text
 
 
 def _structure_role(tag: str, surface: str) -> str:
-    tag = normalize_text(tag)
-    if tag in {"VV", "VA", "VCP", "VCN", "VX", "XSV", "XSA"}:
-        return "predicate"
-    if tag == "EC":
-        return "connective"
-    if tag in {"ETM", "ETN"}:
-        return "embedding"
-    if tag.startswith("E"):
-        return "ending"
-    if tag.startswith("N") or tag in {"XR", "SN"}:
-        return "content"
-    if tag in {"SL", "SH", "MAG", "NP", "NR"}:
-        return "content"
-    if tag == "XSN":
-        return "derivational"
-    if tag.startswith("S"):
-        return "punct"
-    if tag.startswith("J"):
-        return "marker"
-    return "-"
+    return morph_tag_role(tag)
 
 
 def _is_lexical_token(tag: str) -> bool:
@@ -107,7 +87,7 @@ def _format_morph_trace(sentence: str) -> str:
 
 def _structure_reasons(sp: dict) -> list[str]:
     reasons = []
-    bc = sp["content_token_count"]
+    bc = sp["structure_content_token_count"]
     pc = sp["predicate_count"]
     adj_pc = sp["predicate_count_adj"]
     cc = sp["connective_ending_count"]
@@ -209,8 +189,8 @@ def format_result(result: dict, debug: bool = False) -> str:
         neg = result["negation_score_0_1"]
         final = result["score_0_1"]
 
-        content = result["content_token_count"]
-        unknown = result["unknown_token_count"]
+        content = result["lexical_unit_count"]
+        unknown = result["unknown_lexical_unit_count"]
         known = content - unknown
         covered = f"{known}/{content}" if content > 0 else "0/0"
 
@@ -228,7 +208,7 @@ def format_result(result: dict, debug: bool = False) -> str:
 
         parts.append("")
         parts.append("[lexical]")
-        parts.append(f"  content words: {content} → capped: {result['content_token_count_capped']}")
+        parts.append(f"  lexical units: {content} → capped: {result['lexical_unit_count_capped']}")
         sorted_words = sorted(result["scored_words"], key=lambda w: w["difficulty"], reverse=True)
         parts.append("  top words:")
         for w in sorted_words:
@@ -236,7 +216,7 @@ def format_result(result: dict, debug: bool = False) -> str:
         parts.append("  formula:")
         lw = lp.get("lexical_weights", {"mean_all": 0.25, "mean_top_n": 0.50, "max": 0.25})
         parts.append(
-            f"    {lw['mean_all']}×mean_all({lp['mean_all']}) + {lw['mean_top_n']}×mean_top3({lp['mean_top_n']}) + {lw['max']}×max({lp['max']})"
+            f"    {lw['mean_all']}×mean_all({lp['mean_all']}) + {lw['mean_top_n']}×mean_top5({lp['mean_top_n']}) + {lw['max']}×max({lp['max']})"
         )
         parts.append(f"    = {lex:.4f}")
 
@@ -250,6 +230,11 @@ def format_result(result: dict, debug: bool = False) -> str:
             parts.append("  active features: none")
         parts.append("  reason:")
         parts.extend(_structure_reasons(sp))
+        parts.append("  logical spans:")
+        for match in sp.get("logical_matches", []) + sp.get("strong_ending_matches", []):
+            parts.append(f"    {match['label']}  weight={match['weight']}  chars={match['start']}:{match['end']}")
+        if not sp.get("logical_matches") and not sp.get("strong_ending_matches"):
+            parts.append("    none")
 
         parts.append("")
         parts.append("[negation]")
@@ -266,6 +251,11 @@ def format_result(result: dict, debug: bool = False) -> str:
             parts.append(f"  {nd['negation_count_total']} negation markers: {', '.join(hits)} → max={nd['negation_score']}")
         else:
             parts.append("  no negation markers detected")
+        parts.append("  clause boundaries:")
+        for match in nd.get("boundary_matches", []):
+            parts.append(f"    {match['kind']}:{match['label']}  chars={match['start']}:{match['end']}")
+        if not nd.get("boundary_matches"):
+            parts.append("    none")
 
         parts.append("")
         parts.append("[warnings]")
@@ -282,8 +272,9 @@ def format_result(result: dict, debug: bool = False) -> str:
         parts.append(f"  lexical_score:   {result['lexical_score_10']}")
         parts.append(f"  structure_score: {result['structure_score_10']}")
         parts.append(f"  negation_score:  {result['negation_score_10']}")
-        parts.append(f"  content_words:   {result['content_token_count']}")
-        parts.append(f"  unknown_words:   {result['unknown_token_count']}")
+        parts.append(f"  lexical_units:   {result['lexical_unit_count']}")
+        parts.append(f"  structure_words: {result['structure_content_token_count']}")
+        parts.append(f"  unknown_units:   {result['unknown_lexical_unit_count']}")
 
     return "\n".join(parts)
 

@@ -6,13 +6,22 @@
 | ---- | ---------------------- | --------------------------------------------------------- | ----------------------------------- |
 | 1    | `normalize.py`       | 텍스트 정규화, 등급→난도 변환, 유틸리티                  | —                                  |
 | 2    | `lexicon_builder.py` | vocab_40k →`lexicon_master.csv` 생성                   | normalize                           |
-| 3    | `morph.py`           | Kiwi 형태소 분석 →`MorphToken` 리스트                  | normalize                           |
-| 4    | `lexical.py`         | 사전 lookup → 내용어 난도 → 어휘 점수(lexical)          | normalize, morph                    |
-| 5    | `structure.py`       | 품사 태그 7개 지표 → 구조 점수(structure)                | morph                               |
-| 6    | `negation.py`        | 부정 표지 분석 → 부정 처리 부담 점수(negation)           | morph                               |
-| 7    | `pipeline.py`        | `SentenceScorer` — lexical + structure + negation 통합 | morph, lexical, structure, negation |
+| 3    | `morph.py`           | Kiwi 형태소 분석·공통 정규화 →`MorphToken` 리스트       | normalize                           |
+| 4    | `lexical_units.py` / `lexical.py` | 사전 기반 어휘 단위 분할·lookup → 어휘 점수(lexical) | normalize, morph                    |
+| 5    | `patterns.py` / `structure.py` | 논리 span 매칭 + 품사 태그 7개 지표 → 구조 점수(structure) | morph                               |
+| 6    | `patterns.py` / `negation.py` | 공통 절 경계 span + 부정 표지 분석 → 부정 처리 부담 점수 | morph                               |
+| 7    | `pipeline.py`        | `SentenceScorer` — lexical + structure + negation 통합 | morph, lexical, patterns, structure, negation |
 
-> **실행 흐름:** `pipeline.score("문장")` → morph.analyze → lexical.compute + structure.score + negation.analyze → 가중합산
+> **실행 흐름:** `pipeline.score("문장")` → morph.analyze → lexical unit resolve +
+> logical/boundary span match → structure.score + negation.analyze → 가중합산
+
+분석 단위는 다음처럼 분리한다.
+
+| 단위 | 용도 |
+| ---- | ---- |
+| **형태소 토큰 (`MorphToken`)** | 구조 length·서술어·명사 연쇄, 부정 표지 판정 |
+| **어휘 단위 (`LexicalUnit`)** | 사전 난도, 반복 제한, unknown 비율과 reliability |
+| **논리·절 경계 span (`PatternMatch`)** | logical 가중합과 negation 절 경계 분류 |
 
 ---
 
@@ -30,8 +39,16 @@ score = min(1.0, 0.5 × lexical + 0.5 × structure + 0.2 × negation)
 
 ### 2.1 기본 원리
 
-각 내용어(명사, 동사, 형용사, 부사 등)를 사전(lexicon)에서 찾아 **0.0~1.0** 사이의 난도 값을 가져온다.
-사전에 없는 낱말은 **0.30**의 난도를 부여한다.
+형태소 토큰에서 사전에 등록된 전체 표제어 span을 복원하여 `LexicalUnit` 목록을 만든 뒤,
+각 어휘 단위를 사전(lexicon)에서 찾아 **0.0~1.0** 사이의 난도 값을 가져온다.
+사전에 없는 어휘 단위는 **0.30**의 난도를 부여한다.
+
+전체 표제어 span이 발견되면 구성 형태소를 별도로 중복 채점하지 않는다. 예를 들어
+`가련/XR + 하/XSA + 다/EF`가 `가련하다`로 조회되면 하나의 어휘 단위로 채점한다.
+전체 표제어를 찾지 못한 경우에만 개별 내용어 토큰으로 fallback한다.
+
+resolver는 합성 명사, `XR/NNG + XSA/XSV`, `XR + XSM`, `명사 + XSN` 등을 후보로 만들고,
+겹치는 후보 중 사전에 등록된 내용어를 가장 많이 포괄하는 비중첩 분할을 선택한다.
 
 ### 2.2 낱말 lookup 순서
 
@@ -43,18 +60,19 @@ score = min(1.0, 0.5 × lexical + 0.5 × structure + 0.2 × negation)
 
 ### 2.3 점수 공식
 
-내용어 개수(`capped`)에 따라 세 가지 가중치 집합을 선택한다.
+반복 제한 후 어휘 단위 개수(`lexical_unit_count_capped`)에 따라 세 가지 가중치 집합을 선택한다.
 
-| 내용어(capped) |  `mean_all`  | `mean_top_3` |    `max`    |
+| 어휘 단위(capped) | `mean_top_5` |  `mean_all`  |    `max`    |
 | :------------: | :------------: | :------------: | :------------: |
-|      ≤4      | **0.50** | **0.25** | **0.25** |
-|      5–7      | **0.35** | **0.40** | **0.25** |
-|      ≥8      | **0.25** | **0.50** | **0.25** |
+|      ≤4      | **0.25** | **0.50** | **0.25** |
+|      5–7      | **0.40** | **0.35** | **0.25** |
+|      ≥8      | **0.50** | **0.25** | **0.25** |
 
 짧은 문장일수록 `mean_all`의 비중이 높아 단일 단어가 점수를 크게 좌우하지 않는다.
-긴 문장(8+)은 기존과 동일하게 상위 3개의 평균이 좌우한다.
+긴 문장(8+)은 기존과 동일하게 상위 5개의 평균이 좌우한다.
 
-동일 (lemma, POS) 쌍이 반복될 때마다 교차로 유지/제외한다 (1, 3, 5...번째만 capped list에 포함).
+동일 어휘 단위의 (lemma, POS) 쌍이 반복될 때마다 교차로 유지/제외한다
+(1, 3, 5...번째만 capped list에 포함).
 
 ### 2.4 예시
 
@@ -68,7 +86,7 @@ score = min(1.0, 0.5 × lexical + 0.5 × structure + 0.2 × negation)
 | 어렵다 | 0.00 | 사전에 0.0으로 등록됨 |
 
 - mean_all = (0.20 + 0.25 + 0.22 + 0.00) / 4 = **0.1675**
-- mean_top_3 = (0.25 + 0.22 + 0.20) / 3 = **0.2233**
+- mean_top_5 = (0.25 + 0.22 + 0.20) / 3 = **0.2233** (어휘 단위가 4개이므로 전체 평균과 동일)
 - max = **0.25**
 - capped=4 → 가중치 (0.50, 0.25, 0.25)
 - lexical = 0.50×0.1675 + 0.25×0.2233 + 0.25×0.25 = **0.2021**
@@ -79,7 +97,7 @@ score = min(1.0, 0.5 × lexical + 0.5 × structure + 0.2 × negation)
 
 ### 3.1 기본 원리
 
-형태소 분석 결과의 품사 태그(Sejong 품사 체계 기준)를 바탕으로
+어휘 단위와 별개인 형태소 분석 결과의 품사 태그(Sejong 품사 체계 기준)를 바탕으로
 문장 구조의 복잡도를 7개 지표로 측정한다.
 각 지표는 일정 임계값을 넘으면 1.0이 된다.
 
@@ -87,7 +105,7 @@ score = min(1.0, 0.5 × lexical + 0.5 × structure + 0.2 × negation)
 
 | 지표                 | 측정 대상                                                          | 임계값      | 가중치         |
 | -------------------- | ------------------------------------------------------------------ | ----------- | -------------- |
-| **length**     | 내용어(명사/동사 등) 개수                                          | 29개 → 1.0 | **0.27** |
+| **length**     | 구조용 내용어 형태소 토큰 개수                                     | 29개 → 1.0 | **0.27** |
 | **embedding**  | 관형형/명사형 전성어미(ETM, ETN) + 부사형 EC(-게/-도록/-듯이) 개수 | 5개 → 1.0  | **0.20** |
 | **predicate**  | 서술어(VV, VA, VX, XSV, XSA) 개수**(-1 보정)**                     | 8개 → 1.0  | **0.18** |
 | **modifier**   | 최장 명사 연쇄 길이**(-1 보정)**                                   | 4개 → 1.0  | **0.12** |
@@ -117,7 +135,10 @@ score = min(1.0, raw / <full_score_at>)
 
 ---
 
-**length** — 내용어 개수 (태그: NNG, NNP, VV, VA, MAG, XR, NP, NR, SL, SH 등 `is_content=True`인 토큰. `NNB` 의존명사는 lexical/content 후보에서 제외)
+**length** — 구조용 내용어 형태소 토큰 개수 (`structure_content_token_count`).
+태그: NNG, NNP, VV, VA, MAG, XR, NP, NR, SL, SH 등 `is_content=True`인 토큰.
+`NNB` 의존명사는 content 후보에서 제외한다. 이 값은 어휘 단위 수인
+`lexical_unit_count`와 다를 수 있다.
 
 ```
 
@@ -166,9 +187,14 @@ score = min(1.0, raw / 5)
 
 ---
 
-**logical** — 논리 관계 표지(접속부사 + 강한의미 EC) 가중합
+**logical** — 공통 하이브리드 matcher가 찾은 논리 관계 표지와 강한 연결 표현 span의 가중합
 
-- `logical_score` = (첫 유효 토큰 제외 논리표지 가중합 + 강한논리연결어미 가중합) / 4
+- 고정 논리 표현은 원문 문자 span에서 찾아 `다시 말해`, `예를 들어`,
+  `그럼에도 불구하고` 같은 공백 포함 표현도 하나로 인식한다.
+- 겹친 표현은 가장 긴 비중첩 span만 선택한다.
+- 강한 연결 표현은 정규화된 형태소 패턴으로 찾아 `기/ETN + 에/JKB`,
+  `때문/NNB + 에/JKB`, `ᆫ다면`, `ᆫ데` 등의 형태도 인식한다.
+- `logical_score` = (첫 유효 토큰에서 시작하는 span 제외 논리표지 가중합 + 강한논리연결 span 가중합) / 4
 - 문장 단위 분석에서는 앞 문맥 연결 표지가 과대평가될 수 있으므로, 문장 첫 유효 토큰의 논리표지는 제외한다.
 
 ```
@@ -263,7 +289,8 @@ cs = min(1.0, EC_개수 / 4)
 
 ### 4.1 기본 원리
 
-형태소 분석 결과에서 부정 표지(안/못/않/아니하/못하/말/없다/아니다)를 찾아
+형태소 분석 결과에서 부정 표지(안/못/않/아니하/못하/말/없다/아니다)를 찾고,
+공통 `PatternMatcher`가 만든 절 경계 span을 사용하여
 **부정 처리 부담(negation processing burden)** 을 4개 하위 점수로 계산하고
 그 중 최댓값을 최종 점수로 사용한다.
 
@@ -293,6 +320,11 @@ cs = min(1.0, EC_개수 / 4)
 
 soft boundary → 같은 hard segment로 유지, `prev_link` 기록
 hard boundary → 새 hard segment 시작
+
+태그 비교에서는 Kiwi의 `-I`, `-R` 접미 표지를 제거하고, 연결어미 형태 비교에서는
+종성 자모를 표준화한다. 따라서 `ᆫ다고`, `ᆫ다면`, `ᆫ데`도 각각 인용·조건·종속
+경계로 인식한다. `기/ETN + 에/JKB`와 `때문/NNB + 에/JKB`는 두 토큰 전체를
+하나의 subordinate 경계 span으로 처리한다.
 
 **ETM 예외**: `할 수 없다` → ETM(ᆯ) + NNB(수) + VA(없) → JX가 아니므로 `none` (같은 unit 유지).
 `간 것은 아니다` → ETM(ᆫ) + NNB(것) + JX(은) → `nominal`.
@@ -338,13 +370,25 @@ hard boundary → 새 hard segment 시작
 | structure | **0.5**          |
 | negation  | **0.2** (보너스) |
 
+### 문장 출력의 개수 필드
+
+| 필드 | 의미 |
+| ---- | ---- |
+| `lexical_unit_count` | resolver가 선택한 전체 어휘 단위 수 |
+| `lexical_unit_count_capped` | 반복 제한 후 lexical 점수에 사용한 어휘 단위 수 |
+| `unknown_lexical_unit_count` | 사전에 없는 어휘 단위 수 |
+| `structure_content_token_count` | structure length에 사용하는 내용어 형태소 토큰 수 |
+
+`scored_words_full`과 `scored_words`는 이름을 유지하지만, 각 항목은 개별 형태소가 아니라
+선택된 어휘 단위다. 대표 `tag`와 구성 태그 전체 `tags`, 문자 span, 토큰 span을 제공한다.
+
 ### 어휘 점수 내부 가중치
 
-| 내용어(capped) |  `mean_all`  | `mean_top_3` |    `max`    |
+| 어휘 단위(capped) | `mean_top_5` |  `mean_all`  |    `max`    |
 | :------------: | :------------: | :------------: | :------------: |
-|      ≤4      | **0.50** | **0.25** | **0.25** |
-|      5–7      | **0.35** | **0.40** | **0.25** |
-|      ≥8      | **0.25** | **0.50** | **0.25** |
+|      ≤4      | **0.25** | **0.50** | **0.25** |
+|      5–7      | **0.40** | **0.35** | **0.25** |
+|      ≥8      | **0.50** | **0.25** | **0.25** |
 
 ### 구조 점수 내부 가중치 및 임계값
 
@@ -409,6 +453,10 @@ information_density = min(1.0, unique_core_content_count / (sentence_count × 13
 Kiwi의 `-I`, `-R` 등 접미 표지가 붙은 태그는 원본 토큰에는 보존하지만,
 점수 계산에서는 기본 태그로 판정한다. 예를 들어 `VA-I`, `VA-R`은 `VA`,
 `VV-I`, `VV-R`은 `VV`, `EC-I`, `EC-R`은 `EC`와 동일하게 처리한다.
+
+`XSM`은 독립 내용어로 세지 않고 파생 부사 어휘 단위의 구성 요소로 사용한다.
+`W_*` 웹 표현과 `Z_*` 분석 보조 태그는 어휘·구조 점수에서 제외하되 원시 토큰과
+디버그 정보에는 보존한다.
 
 제외 예시:
 

@@ -15,6 +15,8 @@ from typing import Any
 from .lexical import LexiconConfig, LexiconScorer
 from .morph import KiwiMorphAnalyzer
 from .negation import NegationAnalyzer
+from .normalize import normalize_text
+from .patterns import PatternMatcher
 from .structure import StructureConfig, StructureScorer
 
 _LEXICAL_WEIGHT: float = 5.0
@@ -32,13 +34,18 @@ class SentenceScorer:
         self._lexical_scorer = LexiconScorer(lexicon_config)
         self._structure_scorer = StructureScorer(structure_config)
         self._negation_analyzer = NegationAnalyzer()
+        self._pattern_matcher = PatternMatcher()
 
     def score(self, sentence: str | None) -> dict[str, Any]:
         if sentence is None:
             sentence = ""
 
-        tokens = self._analyzer.analyze(sentence)
-        lexical_result = self._lexical_scorer.compute_sentence_score(tokens)
+        analysis_text = normalize_text(sentence)
+        tokens = self._analyzer.analyze(analysis_text)
+        lexical_result = self._lexical_scorer.compute_sentence_score(tokens, analysis_text)
+        logical_matches = self._pattern_matcher.match_logical_markers(analysis_text, tokens)
+        strong_ending_matches = self._pattern_matcher.match_strong_endings(tokens)
+        boundary_matches = self._pattern_matcher.match_boundaries(tokens)
 
         scored_full = lexical_result["scored_words_full"]
         unique_surfaces = {s["surface"] for s in scored_full if s["surface"]}
@@ -47,11 +54,13 @@ class SentenceScorer:
             polysemy_map[surface] = self._analyzer.get_polysemy(surface)
 
         structure_result = self._structure_scorer.score_tokens(
-            tokens, sentence,
+            tokens, analysis_text,
             scored_words_full=scored_full,
             polysemy_map=polysemy_map,
+            logical_matches=logical_matches,
+            strong_ending_matches=strong_ending_matches,
         )
-        negation_result = self._negation_analyzer.analyze(tokens)
+        negation_result = self._negation_analyzer.analyze(tokens, boundary_matches)
 
         lexical_score = lexical_result["lexical_score_0_1"]
         structure_score = structure_result["structure_score_0_1"]
@@ -63,8 +72,8 @@ class SentenceScorer:
         )
         score_0_1 = max(0.0, min(1.0, score_0_1))
 
-        content_count = lexical_result["content_token_count"]
-        unknown_count = lexical_result["unknown_token_count"]
+        content_count = lexical_result["lexical_unit_count"]
+        unknown_count = lexical_result["unknown_lexical_unit_count"]
         reliability = (
             1.0 - (unknown_count / content_count)
             if content_count > 0
@@ -81,9 +90,10 @@ class SentenceScorer:
             "structure_score_10": structure_result["structure_score_10"],
             "negation_score_0_1": round(negation_score, 4),
             "negation_score_10": round(negation_score * 10, 2),
-            "content_token_count": lexical_result["content_token_count"],
-            "content_token_count_capped": lexical_result.get("content_token_count_capped", lexical_result["content_token_count"]),
-            "unknown_token_count": lexical_result["unknown_token_count"],
+            "lexical_unit_count": lexical_result["lexical_unit_count"],
+            "lexical_unit_count_capped": lexical_result.get("lexical_unit_count_capped", lexical_result["lexical_unit_count"]),
+            "unknown_lexical_unit_count": lexical_result["unknown_lexical_unit_count"],
+            "structure_content_token_count": structure_result["structure_parts"]["structure_content_token_count"],
             "scored_words_full": lexical_result["scored_words_full"],
             "scored_words": lexical_result["scored_words"],
             "score_parts": lexical_result["score_parts"],

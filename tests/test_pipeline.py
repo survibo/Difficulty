@@ -60,8 +60,10 @@ class SentenceScorerTest(unittest.TestCase):
         result = self.scorer.score("")
         self.assertEqual(result["sentence"], "")
         self.assertEqual(result["score_0_1"], 0.0)
-        self.assertEqual(result["content_token_count"], 0)
-        self.assertEqual(result["unknown_token_count"], 0)
+        self.assertEqual(result["lexical_unit_count"], 0)
+        self.assertEqual(result["lexical_unit_count_capped"], 0)
+        self.assertEqual(result["unknown_lexical_unit_count"], 0)
+        self.assertEqual(result["structure_content_token_count"], 0)
 
     def test_none_sentence(self) -> None:
         result = self.scorer.score(None)
@@ -72,7 +74,8 @@ class SentenceScorerTest(unittest.TestCase):
         result = self.scorer.score("  ")
         self.assertEqual(result["sentence"], "  ")
         self.assertEqual(result["score_0_1"], 0.0)
-        self.assertEqual(result["content_token_count"], 0)
+        self.assertEqual(result["lexical_unit_count"], 0)
+        self.assertEqual(result["structure_content_token_count"], 0)
 
     def test_output_keys(self) -> None:
         result = self.scorer.score("문장을 분석한다.")
@@ -87,9 +90,10 @@ class SentenceScorerTest(unittest.TestCase):
             "negation_score_0_1",
             "negation_score_10",
             "negation_detail",
-            "content_token_count",
-            "content_token_count_capped",
-            "unknown_token_count",
+            "lexical_unit_count",
+            "lexical_unit_count_capped",
+            "unknown_lexical_unit_count",
+            "structure_content_token_count",
             "scored_words_full",
             "scored_words",
             "score_parts",
@@ -121,10 +125,14 @@ class SentenceScorerTest(unittest.TestCase):
 
     def test_content_and_unknown_counts_are_integers(self) -> None:
         result = self.scorer.score("문장을 분석한다.")
-        self.assertIsInstance(result["content_token_count"], int)
-        self.assertIsInstance(result["unknown_token_count"], int)
-        self.assertGreaterEqual(result["content_token_count"], 0)
-        self.assertGreaterEqual(result["unknown_token_count"], 0)
+        self.assertIsInstance(result["lexical_unit_count"], int)
+        self.assertIsInstance(result["lexical_unit_count_capped"], int)
+        self.assertIsInstance(result["unknown_lexical_unit_count"], int)
+        self.assertIsInstance(result["structure_content_token_count"], int)
+        self.assertGreaterEqual(result["lexical_unit_count"], 0)
+        self.assertGreaterEqual(result["lexical_unit_count_capped"], 0)
+        self.assertGreaterEqual(result["unknown_lexical_unit_count"], 0)
+        self.assertGreaterEqual(result["structure_content_token_count"], 0)
 
     def test_scored_words_structure(self) -> None:
         result = self.scorer.score("문장을 분석한다.")
@@ -138,7 +146,7 @@ class SentenceScorerTest(unittest.TestCase):
 
     def test_known_words_get_exact_match(self) -> None:
         result = self.scorer.score("문장")
-        self.assertGreater(result["content_token_count"], 0)
+        self.assertGreater(result["lexical_unit_count"], 0)
         for word in result["scored_words"]:
             if word["lemma"] == "문장":
                 self.assertEqual(word["match_method"], "exact")

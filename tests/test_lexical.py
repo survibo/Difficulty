@@ -72,6 +72,7 @@ class LexiconScorerTest(unittest.TestCase):
             (13, "가까이", 0.219, "부사"),
             (14, "가까이", 0.243, "명사"),
             (15, "XR어근", 0.500, "어근"),
+            (16, "가련하다", 0.650, "형용사"),
         ]
         csv_content = _make_lexicon_csv(rows)
         Path(path).write_text(csv_content, encoding="utf-8")
@@ -219,6 +220,44 @@ class LexiconScorerTest(unittest.TestCase):
         self.assertIn("difficulty", item)
         self.assertIn("match_method", item)
         self.assertIn("matched_entry_id", item)
+        self.assertIn("tags", item)
+        self.assertIn("token_start", item)
+        self.assertIn("token_end", item)
+
+    def test_whole_headword_is_scored_once_instead_of_internal_morphemes(self) -> None:
+        sentence = "가련하다"
+        tokens = [
+            _make_token("가련", "가련", "어근", "XR", True, 0, 2),
+            _make_token("하", "하", "접사", "XSA", False, 2, 3),
+            _make_token("다", "다", "어미", "EF", False, 3, 4),
+        ]
+
+        result = self.scorer.compute_sentence_score(tokens, sentence)
+
+        self.assertEqual(result["lexical_unit_count"], 1)
+        self.assertEqual(result["unknown_lexical_unit_count"], 0)
+        self.assertEqual(len(result["scored_words_full"]), 1)
+        unit = result["scored_words_full"][0]
+        self.assertEqual(unit["lemma"], "가련하다")
+        self.assertEqual(unit["tags"], ["XR", "XSA", "EF"])
+        self.assertEqual(unit["token_start"], 0)
+        self.assertEqual(unit["token_end"], 3)
+        self.assertTrue(unit["match_method"].startswith("span_"))
+
+    def test_unknown_derived_span_falls_back_to_known_content_token(self) -> None:
+        sentence = "문장상"
+        tokens = [
+            _make_token("문장", "문장", "명사", "NNG", True, 0, 2),
+            _make_token("상", "상", "접사", "XSN", False, 2, 3),
+        ]
+
+        result = self.scorer.compute_sentence_score(tokens, sentence)
+
+        self.assertEqual(result["lexical_unit_count"], 1)
+        unit = result["scored_words_full"][0]
+        self.assertEqual(unit["surface"], "문장")
+        self.assertEqual(unit["tags"], ["NNG"])
+        self.assertEqual(unit["match_method"], "exact")
 
     # -----------------------------------------------------------------
     # compute_sentence_score
@@ -227,8 +266,9 @@ class LexiconScorerTest(unittest.TestCase):
     def test_compute_score_empty(self) -> None:
         result = self.scorer.compute_sentence_score([])
         self.assertEqual(result["lexical_score_0_1"], 0.0)
-        self.assertEqual(result["content_token_count"], 0)
-        self.assertEqual(result["unknown_token_count"], 0)
+        self.assertEqual(result["lexical_unit_count"], 0)
+        self.assertEqual(result["lexical_unit_count_capped"], 0)
+        self.assertEqual(result["unknown_lexical_unit_count"], 0)
         self.assertEqual(result["score_parts"]["mean_all"], 0.0)
         self.assertEqual(result["score_parts"]["mean_top_n"], 0.0)
         self.assertEqual(result["score_parts"]["max"], 0.0)
@@ -238,12 +278,15 @@ class LexiconScorerTest(unittest.TestCase):
             _make_token("문장", "문장", "명사"),
             _make_token("분석", "분석", "명사"),
             _make_token("쉽다", "쉽다", "형용사"),
+            _make_token("매우", "매우", "부사"),
+            _make_token("빠르다", "빠르다", "형용사"),
         ]
         result = self.scorer.compute_sentence_score(tokens)
-        self.assertEqual(result["content_token_count"], 3)
-        self.assertEqual(result["unknown_token_count"], 0)
-        diffs = [0.200, 0.400, 0.000]
-        mean_all = sum(diffs) / 3
+        self.assertEqual(result["lexical_unit_count"], 5)
+        self.assertEqual(result["lexical_unit_count_capped"], 5)
+        self.assertEqual(result["unknown_lexical_unit_count"], 0)
+        diffs = [0.200, 0.400, 0.000, 0.100, 0.250]
+        mean_all = sum(diffs) / 5
         top_n = sorted(diffs, reverse=True)[:_TOP_N]
         mean_top_n = sum(top_n) / _TOP_N
         max_val = max(diffs)
@@ -265,8 +308,8 @@ class LexiconScorerTest(unittest.TestCase):
             _make_token("모르는단어", "모르는단어", "명사"),
         ]
         result = self.scorer.compute_sentence_score(tokens)
-        self.assertEqual(result["content_token_count"], 2)
-        self.assertEqual(result["unknown_token_count"], 1)
+        self.assertEqual(result["lexical_unit_count"], 2)
+        self.assertEqual(result["unknown_lexical_unit_count"], 1)
 
     def test_compute_score_output_shape(self) -> None:
         tokens = [
@@ -277,8 +320,9 @@ class LexiconScorerTest(unittest.TestCase):
         self.assertIn("lexical_score_0_1", result)
         self.assertNotIn("score_0_1", result)
         self.assertNotIn("score_10", result)
-        self.assertIn("content_token_count", result)
-        self.assertIn("unknown_token_count", result)
+        self.assertIn("lexical_unit_count", result)
+        self.assertIn("lexical_unit_count_capped", result)
+        self.assertIn("unknown_lexical_unit_count", result)
         self.assertIn("scored_words", result)
         self.assertIn("score_parts", result)
         self.assertIn("mean_all", result["score_parts"])
@@ -297,7 +341,7 @@ class LexiconScorerTest(unittest.TestCase):
     def test_compute_score_single_token(self) -> None:
         tokens = [_make_token("어렵다", "어렵다", "형용사")]
         result = self.scorer.compute_sentence_score(tokens)
-        self.assertEqual(result["content_token_count"], 1)
+        self.assertEqual(result["lexical_unit_count"], 1)
         self.assertAlmostEqual(result["lexical_score_0_1"], 0.800, places=4)
 
     # -----------------------------------------------------------------

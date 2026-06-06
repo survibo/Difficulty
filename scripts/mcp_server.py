@@ -188,8 +188,9 @@ def _format_score(data: dict[str, Any]) -> str:
         f"  - 구조: {data['structure_score_10']:.1f}/10\n"
         f"  - 부정 보너스: {data['negation_score_10']:.1f}/10\n"
         f"신뢰도: {data['reliability']:.2f}\n"
-        f"내용어 수: {data.get('content_token_count', 0)}\n"
-        f"미등록어 수: {data.get('unknown_token_count', 0)}"
+        f"어휘 단위 수: {data.get('lexical_unit_count', 0)}\n"
+        f"구조 내용어 수: {data.get('structure_content_token_count', 0)}\n"
+        f"미등록 어휘 단위 수: {data.get('unknown_lexical_unit_count', 0)}"
     )
 
 

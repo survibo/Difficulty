@@ -14,6 +14,8 @@ from sentdiff.morph import (  # noqa: E402
     base_sejong_tag,
     is_content_tag,
     is_excluded_lexical_tag,
+    morph_tag_role,
+    normalize_morph_form,
     sejong_tag_to_pos,
     token_to_lemma_candidate,
 )
@@ -24,6 +26,11 @@ class MorphHelperTests(unittest.TestCase):
         self.assertEqual(base_sejong_tag("VA-I"), "VA")
         self.assertEqual(base_sejong_tag("VV-R"), "VV")
         self.assertEqual(base_sejong_tag("NNG"), "NNG")
+
+    def test_normalize_morph_form_canonicalizes_final_consonant_jamo(self) -> None:
+        self.assertEqual(normalize_morph_form("ᆫ다고"), "ㄴ다고")
+        self.assertEqual(normalize_morph_form("ᆫ다면"), "ㄴ다면")
+        self.assertEqual(normalize_morph_form("ᆯ지라도"), "ㄹ지라도")
 
     def test_sejong_tag_to_pos_maps_major_tags(self) -> None:
         cases = {
@@ -96,6 +103,24 @@ class MorphHelperTests(unittest.TestCase):
             for base in ["VV", "VA"]:
                 with self.subTest(tag=f"{base}-{suffix}"):
                     self.assertFalse(is_excluded_lexical_tag(f"{base}-{suffix}"))
+
+    def test_xsm_web_and_analysis_tags_have_explicit_policy(self) -> None:
+        cases = {
+            "XSM": ("접사", "lexical_component"),
+            "W_URL": ("웹표현", "excluded"),
+            "W_EMAIL": ("웹표현", "excluded"),
+            "W_HASHTAG": ("웹표현", "excluded"),
+            "W_MENTION": ("웹표현", "excluded"),
+            "W_SERIAL": ("웹표현", "excluded"),
+            "Z_CODA": ("분석보조", "excluded"),
+        }
+
+        for tag, (expected_pos, expected_role) in cases.items():
+            with self.subTest(tag=tag):
+                self.assertEqual(sejong_tag_to_pos(tag), expected_pos)
+                self.assertEqual(morph_tag_role(tag), expected_role)
+                self.assertTrue(is_excluded_lexical_tag(tag))
+                self.assertFalse(is_content_tag(tag))
 
 
 class KiwiMorphAnalyzerTests(unittest.TestCase):
