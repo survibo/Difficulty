@@ -73,6 +73,8 @@ class LexiconBuildConfig:
     derivational_max_drop: float = 0.35
     derivational_adjust_only_downward: bool = True
 
+    # 수동 난도 override 파일 (lexicon_fix_list.csv).
+    fix_list_path: str | Path | None = "raw/lexicon_fix_list.csv"
 
 # ---------------------------------------------------------------------
 # Column handling
@@ -434,6 +436,54 @@ def finalize_lexicon(df: pd.DataFrame) -> pd.DataFrame:
 
 
 # ---------------------------------------------------------------------
+# Fix list override
+# ---------------------------------------------------------------------
+
+
+def load_fix_list(fix_list_path: str | Path) -> pd.DataFrame:
+    path = Path(fix_list_path)
+    if not path.exists():
+        return pd.DataFrame()
+    df = pd.read_csv(path, encoding="utf-8-sig")
+    needed = {"entry_id", "lemma", "suggested_difficulty"}
+    if not needed.issubset(df.columns):
+        return pd.DataFrame()
+    return df
+
+
+def apply_fix_list(df: pd.DataFrame, fix_list_path: str | Path | None) -> pd.DataFrame:
+    """
+    finalize_lexicon 이후의 DataFrame에 fix_list의 suggested_difficulty를 적용한다.
+    entry_id + lemma로 매칭하여 difficulty를 덮어쓴다.
+    """
+    if fix_list_path is None:
+        return df
+
+    fix_df = load_fix_list(fix_list_path)
+    if fix_df.empty:
+        return df
+
+    out = df.copy()
+    fix_map: dict[int, tuple[str, float]] = {}
+    for _, row in fix_df.iterrows():
+        fix_map[int(row["entry_id"])] = (str(row["lemma"]), float(row["suggested_difficulty"]))
+
+    applied = 0
+    for idx, row in out.iterrows():
+        eid = int(row["entry_id"])
+        if eid in fix_map:
+            expected_lemma, new_diff = fix_map[eid]
+            if str(row.get("lemma", "")) == expected_lemma:
+                out.at[idx, "difficulty"] = new_diff
+                applied += 1
+
+    if applied:
+        print(f"[lexicon_builder] fix_list override applied: {applied} entries")
+
+    return out
+
+
+# ---------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------
 
@@ -450,6 +500,8 @@ def build_lexicon(
     main_df = load_vocab_40k(config)
     combined = add_difficulty_columns(main_df, config)
     final = finalize_lexicon(combined)
+
+    final = apply_fix_list(final, config.fix_list_path)
 
     output_path = Path(config.output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)

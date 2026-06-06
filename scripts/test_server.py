@@ -84,23 +84,37 @@ class Handler(BaseHTTPRequestHandler):
         saved_lemma: dict[str, list[LexiconEntry]] = {}
         for lemma, difficulty in custom_words.items():
             entry = LexiconEntry(entry_id=-1, lemma=lemma, pos="NNG", difficulty=float(difficulty))
-            key = (lemma, "NNG")
-            if key in ls._exact_map:
-                saved_exact[key] = ls._exact_map[key]
+
+            # Save and remove ALL exact-map entries for this lemma
+            # (exact match by (lemma, pos) takes priority over lemma-only fallback,
+            #  so we must clear all POS variants to let the override take effect.)
+            exact_keys = [k for k in ls._exact_map if k[0] == lemma]
+            for k in exact_keys:
+                saved_exact[k] = ls._exact_map.pop(k)
+
+            # Add override entry for generic NNG key — covers any POS lookup
+            ls._exact_map[(lemma, "NNG")] = [entry]
+
+            # Save and override lemma_map
             if lemma in ls._lemma_map:
                 saved_lemma[lemma] = ls._lemma_map[lemma]
-            ls._exact_map[key] = [entry]
             ls._lemma_map[lemma] = [entry]
 
         try:
             return score_fn()
         finally:
             for lemma in custom_words:
-                key = (lemma, "NNG")
-                if key in saved_exact:
-                    ls._exact_map[key] = saved_exact[key]
-                else:
-                    ls._exact_map.pop(key, None)
+                # Remove all override exact entries for this lemma
+                override_keys = [k for k in ls._exact_map if k[0] == lemma]
+                for k in override_keys:
+                    ls._exact_map.pop(k, None)
+
+                # Restore saved exact entries for this lemma
+                for k, v in saved_exact.items():
+                    if k[0] == lemma:
+                        ls._exact_map[k] = v
+
+                # Restore lemma_map
                 if lemma in saved_lemma:
                     ls._lemma_map[lemma] = saved_lemma[lemma]
                 else:
