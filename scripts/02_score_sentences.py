@@ -145,7 +145,11 @@ def _structure_reasons(sp: dict) -> list[str]:
         details = sp.get("repetition_details", [])
         parts = []
         for d in details:
-            parts.append(f"{d['surface']}({d['count']}회×{d['difficulty']}d×{d['polysemy']}pol)")
+            label = d.get("lemma") or d.get("surface") or "?"
+            parts.append(
+                f"{label}({d.get('count', 0)}회×{d.get('difficulty', 0)}d"
+                f"×{d.get('polysemy', 1)}pol)"
+            )
         parts_str = ", ".join(parts)
         reasons.append(f"  repetition_raw={rr}/6.0 → score={sp['repetition_score']}  ({parts_str})")
 
