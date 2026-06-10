@@ -6,3 +6,4 @@ outputs/
 *.pyc
 venv/
 .pytest_cache/
+server.*.log
