@@ -23,6 +23,7 @@ SUBORDINATE_EC = {
 }
 
 NOMINAL_BOUND_TAGS = {"ETM", "ETN"}
+CONSTRUCTION_SCORE = 0.4
 
 
 class NegationAnalyzer:
@@ -191,8 +192,10 @@ class NegationAnalyzer:
             if link in {"quote", "nominal", "conditional"}:
                 links_since_last_neg.add(link)
 
-            # conditional boundary with negation-free antecedent → pending
-            if link == "conditional" and not u.get("neg_before_boundary", False):
+            # A single negation in a conditional consequence is ordinary
+            # negation. Count construction burden only when negation appears
+            # on both sides of the conditional boundary.
+            if link == "conditional" and u.get("neg_before_boundary", False):
                 pending_construction = True
 
             if u["neg_count"] > 0:
@@ -205,7 +208,7 @@ class NegationAnalyzer:
                 last_neg_seen = True
                 links_since_last_neg = set()
 
-        construction_score = 1.0 if construction_hits > 0 else 0.0
+        construction_score = CONSTRUCTION_SCORE if construction_hits > 0 else 0.0
         embedded_score = min(1.0, embedded_links / 2)
 
         final = max(local_score, construction_score, embedded_score, density_score)

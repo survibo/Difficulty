@@ -311,7 +311,7 @@ cs = min(1.0, EC_개수 / 4)
 | 점수                   | 측정 대상                                     | 공식                                                                    |
 | ---------------------- | --------------------------------------------- | ----------------------------------------------------------------------- |
 | **local**        | 동일 국소 단위 내 부정 중복                   | `0.0 if local_max <= 1 else min(1.0, (local_max - 1)^2 / 2.5)`        |
-| **construction** | 조건절 분할 부정 (조건절 앞 긍정 + 이후 부정) | `1.0` if conditional link + 직전 unit 부정 없음 + 이후 unit 부정 있음 |
+| **construction** | 조건절 분할 부정 (조건절 앞뒤 모두 부정)       | `0.4` if conditional link + 직전 unit 부정 있음 + 이후 unit 부정 있음 |
 | **embedded**     | 인용절/명사절 내 부정                         | `min(1.0, embedded_links / 2)`                                        |
 | **density**      | hard segment 내 부정 밀집                     | `0.5 × min(1.0, max(0, seg_neg - 1) / 3)`                            |
 
@@ -359,16 +359,16 @@ hard boundary → 새 hard segment 시작
 같은 hard segment 내에서 부정 단위 간 link(prev_link)를 추적:
 
 - conditional link와 직전 unit의 부정 여부를 `neg_before_boundary`로 저장
-- 조건절 앞 unit에 부정이 없고(`neg_before_boundary=False`) 이후 unit에 부정이 등장 → **construction hit**
+- 조건절 앞 unit에 부정이 있고(`neg_before_boundary=True`) 이후 unit에도 부정이 등장 → **construction hit**
 - 첫 부정 이후 `quote` 또는 `nominal` link가 있고 두 번째 부정 등장 → **embedded link**
 
 **construction 예시:**
 
 | 문장                   | 조건절 앞 부정 | 조건절 이후 부정 |     결과     |
 | ---------------------- | :------------: | :--------------: | :-----------: |
-| `가면 모르지 않는다` |      없음      |       있음       | **1.0** |
+| `가면 모르지 않는다` |      없음      |       있음       |      0.0      |
 | `가지 않으면 모른다` |      있음      |       없음       |      0.0      |
-| `안 하면 안 된다`    |      있음      |       있음       |      0.0      |
+| `안 하면 안 된다`    |      있음      |       있음       | **0.4** |
 
 ---
 

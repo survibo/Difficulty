@@ -52,7 +52,10 @@ class NegationAnalyzerTest(unittest.TestCase):
     def setUp(self) -> None:
         self.analyzer = NegationAnalyzer()
 
-    def _assert_negation(self, tokens, *, count=None, local_max=None, score=None, construction_hits=None):
+    def _assert_negation(
+        self, tokens, *, count=None, local_max=None, score=None,
+        construction_hits=None, construction_score=None,
+    ):
         result = self.analyzer.analyze(tokens)
         if count is not None:
             self.assertEqual(result["negation_count_total"], count)
@@ -62,6 +65,8 @@ class NegationAnalyzerTest(unittest.TestCase):
             self.assertGreaterEqual(result["negation_score"], score)
         if construction_hits is not None:
             self.assertEqual(result["negation_construction_hits"], construction_hits)
+        if construction_score is not None:
+            self.assertEqual(result["construction_negation_score"], construction_score)
 
     # =====================================================================
     # simple negation → score == 0.0
@@ -267,11 +272,11 @@ class NegationAnalyzerTest(unittest.TestCase):
         self.assertEqual(result["negation_score"], 0.0)
 
     # =====================================================================
-    # conditional multiple negation → score >= 1.0
+    # conditional multiple negation → construction score 0.4
     # =====================================================================
 
     def test_conditional_an_myeon_an_doenda(self):
-        # 안 하면 안 된다: negation BOTH before + after conditional → NOT construction
+        # 안 하면 안 된다: negation BOTH before + after conditional → construction
         tokens = [
             _make_token("안", "안", "MAG"),
             _make_token("하", "하다", "VV"),
@@ -279,10 +284,13 @@ class NegationAnalyzerTest(unittest.TestCase):
             _make_token("안", "안", "MAG"),
             _make_token("되", "되다", "VV"),
         ]
-        self._assert_negation(tokens, count=2, local_max=1, construction_hits=0)
+        self._assert_negation(
+            tokens, count=2, local_max=1,
+            construction_hits=1, construction_score=0.4,
+        )
 
     def test_conditional_gaji_anh_eumyeon_an(self):
-        # 가지 않으면 안 된다: negation BOTH before + after conditional → NOT construction
+        # 가지 않으면 안 된다: negation BOTH before + after conditional → construction
         tokens = [
             _make_token("가", "가다", "VV"),
             _make_token("지", "지", "EC"),
@@ -291,10 +299,13 @@ class NegationAnalyzerTest(unittest.TestCase):
             _make_token("안", "안", "MAG"),
             _make_token("되", "되다", "VV"),
         ]
-        self._assert_negation(tokens, count=2, local_max=1, construction_hits=0)
+        self._assert_negation(
+            tokens, count=2, local_max=1,
+            construction_hits=1, construction_score=0.4,
+        )
 
     def test_conditional_haji_anh_eumyeon_an(self):
-        # 하지 않으면 안 된다: negation BOTH before + after conditional → NOT construction
+        # 하지 않으면 안 된다: negation BOTH before + after conditional → construction
         tokens = [
             _make_token("하", "하다", "VV"),
             _make_token("지", "지", "EC"),
@@ -303,10 +314,13 @@ class NegationAnalyzerTest(unittest.TestCase):
             _make_token("안", "안", "MAG"),
             _make_token("되", "되다", "VV"),
         ]
-        self._assert_negation(tokens, count=2, local_max=1, construction_hits=0)
+        self._assert_negation(
+            tokens, count=2, local_max=1,
+            construction_hits=1, construction_score=0.4,
+        )
 
     # =====================================================================
-    # construction 엣지케이스 (가중치 순서: neg-free before + neg after)
+    # construction 엣지케이스 (조건절 앞뒤 모두 부정)
     # =====================================================================
 
     def test_construction_gaji_anh_eumyeon_moreunda(self):
@@ -323,7 +337,7 @@ class NegationAnalyzerTest(unittest.TestCase):
         self._assert_negation(tokens, count=1, construction_hits=0)
 
     def test_construction_myeon_moreuji_anhneunda(self):
-        # 가면 모르지 않는다: 조건절 긍정, 결과절 부정 → construction hit
+        # 가면 모르지 않는다: 조건절 긍정, 결과절 부정 → ordinary single negation
         tokens = [
             _make_token("가", "가다", "VV"),
             _make_token("면", "면", "EC"),
@@ -332,7 +346,7 @@ class NegationAnalyzerTest(unittest.TestCase):
             _make_token("않", "않", "VX"),
             _make_token("는다", "는다", "EF"),
         ]
-        self._assert_negation(tokens, count=1, construction_hits=1)
+        self._assert_negation(tokens, count=1, construction_hits=0)
 
     def test_eopneun_han(self):
         # 없는 한 처벌받지 않는다: 없(VA) 부정 아님, 이중부정 아님

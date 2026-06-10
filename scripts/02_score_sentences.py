@@ -193,7 +193,8 @@ def format_result(result: dict, debug: bool = False) -> str:
                 hits.append(f"embedded={nd['embedded_negation_score']}")
             if nd["negation_density_score"] > 0:
                 hits.append(f"density={nd['negation_density_score']}")
-            parts.append(f"  {nd['negation_count_total']} negation markers: {', '.join(hits)} → max={nd['negation_score']}")
+            detail = ", ".join(hits) if hits else "ordinary single negation"
+            parts.append(f"  {nd['negation_count_total']} negation markers: {detail} → max={nd['negation_score']}")
         else:
             parts.append("  no negation markers detected")
         parts.append("  clause boundaries:")
