@@ -786,7 +786,6 @@
             throw new Error(text || "Server error");
           }
           const data = await res.json();
-          document.getElementById("banner").style.display = "none";
           lastResult = data;
           lastMode = mode;
           if (mode === "paragraph") renderParagraph(data);
@@ -1073,13 +1072,6 @@
             d.lexical_unit_count +
               " (중복보정 " +
               d.lexical_unit_count_capped +
-              ")",
-          ],
-          [
-            "mean_all 분모",
-            (p.mean_all_count ?? d.lexical_unit_count_capped) +
-              " (0.0 제외 " +
-              (p.mean_all_zero_excluded_count || 0) +
               ")",
           ],
         ]);

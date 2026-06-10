@@ -270,8 +270,6 @@ class LexiconScorerTest(unittest.TestCase):
         self.assertEqual(result["lexical_unit_count_capped"], 0)
         self.assertEqual(result["unknown_lexical_unit_count"], 0)
         self.assertEqual(result["score_parts"]["mean_all"], 0.0)
-        self.assertEqual(result["score_parts"]["mean_all_count"], 0)
-        self.assertEqual(result["score_parts"]["mean_all_zero_excluded_count"], 0)
         self.assertEqual(result["score_parts"]["mean_top_n"], 0.0)
         self.assertEqual(result["score_parts"]["max"], 0.0)
 
@@ -297,8 +295,6 @@ class LexiconScorerTest(unittest.TestCase):
         expected = w_mean_all * mean_all + w_mean_top_n * mean_top_n + w_max * max_val
         self.assertAlmostEqual(result["lexical_score_0_1"], expected, places=4)
         self.assertAlmostEqual(result["score_parts"]["mean_all"], mean_all, places=4)
-        self.assertEqual(result["score_parts"]["mean_all_count"], 5)
-        self.assertEqual(result["score_parts"]["mean_all_zero_excluded_count"], 0)
         self.assertAlmostEqual(result["score_parts"]["mean_top_n"], mean_top_n, places=4)
         self.assertAlmostEqual(result["score_parts"]["max"], max_val, places=4)
         self.assertIn("lexical_weights", result["score_parts"])
@@ -330,8 +326,6 @@ class LexiconScorerTest(unittest.TestCase):
         self.assertIn("scored_words", result)
         self.assertIn("score_parts", result)
         self.assertIn("mean_all", result["score_parts"])
-        self.assertIn("mean_all_count", result["score_parts"])
-        self.assertIn("mean_all_zero_excluded_count", result["score_parts"])
         self.assertIn("mean_top_n", result["score_parts"])
         self.assertIn("max", result["score_parts"])
         self.assertEqual(len(result["scored_words"]), 2)
@@ -344,21 +338,7 @@ class LexiconScorerTest(unittest.TestCase):
             self.assertIn("match_method", word)
             self.assertIn("matched_entry_id", word)
 
-    def test_mean_all_includes_zero_below_ten_capped_units(self) -> None:
-        tokens = [_make_token("쉽다", "쉽다", "형용사")]
-        tokens.extend(
-            _make_token(f"미등록{i}", f"미등록{i}", "명사")
-            for i in range(8)
-        )
-
-        result = self.scorer.compute_sentence_score(tokens)
-
-        self.assertEqual(result["lexical_unit_count_capped"], 9)
-        self.assertAlmostEqual(result["score_parts"]["mean_all"], 2.4 / 9, places=4)
-        self.assertEqual(result["score_parts"]["mean_all_count"], 9)
-        self.assertEqual(result["score_parts"]["mean_all_zero_excluded_count"], 0)
-
-    def test_mean_all_excludes_zero_at_ten_capped_units(self) -> None:
+    def test_mean_all_includes_zero_at_ten_capped_units(self) -> None:
         tokens = [_make_token("쉽다", "쉽다", "형용사")]
         tokens.extend(
             _make_token(f"미등록{i}", f"미등록{i}", "명사")
@@ -368,9 +348,7 @@ class LexiconScorerTest(unittest.TestCase):
         result = self.scorer.compute_sentence_score(tokens)
 
         self.assertEqual(result["lexical_unit_count_capped"], 10)
-        self.assertAlmostEqual(result["score_parts"]["mean_all"], 0.3, places=4)
-        self.assertEqual(result["score_parts"]["mean_all_count"], 9)
-        self.assertEqual(result["score_parts"]["mean_all_zero_excluded_count"], 1)
+        self.assertAlmostEqual(result["score_parts"]["mean_all"], 2.7 / 10, places=4)
 
     def test_compute_score_single_token(self) -> None:
         tokens = [_make_token("어렵다", "어렵다", "형용사")]

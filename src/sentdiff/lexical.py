@@ -34,7 +34,6 @@ _WEIGHT_MEAN_ALL: float = 0.25
 _WEIGHT_MEAN_TOP_N: float = 0.50
 _WEIGHT_MAX: float = 0.25
 _TOP_N: int = 5
-_MEAN_ALL_ZERO_EXCLUSION_MIN_COUNT: int = 10
 
 
 def _lexical_weights(content_count: int) -> tuple[float, float, float]:
@@ -355,18 +354,12 @@ class LexiconScorer:
                 "scored_words": capped,
                 "score_parts": {
                     "mean_all": 0.0,
-                    "mean_all_count": 0,
-                    "mean_all_zero_excluded_count": 0,
                     "mean_top_n": 0.0,
                     "max": 0.0,
                 },
             }
 
-        mean_all_diffs = diffs
-        if len(capped) >= _MEAN_ALL_ZERO_EXCLUSION_MIN_COUNT:
-            mean_all_diffs = [difficulty for difficulty in diffs if difficulty != 0.0]
-        mean_all = mean(mean_all_diffs) if mean_all_diffs else 0.0
-        mean_all_zero_excluded_count = len(diffs) - len(mean_all_diffs)
+        mean_all = mean(diffs)
         top_n = sorted(diffs, reverse=True)[:_TOP_N]
         mean_top_n = mean(top_n) if top_n else 0.0
         max_val = max(diffs)
@@ -389,8 +382,6 @@ class LexiconScorer:
             "scored_words": capped,
             "score_parts": {
                 "mean_all": round(mean_all, 4),
-                "mean_all_count": len(mean_all_diffs),
-                "mean_all_zero_excluded_count": mean_all_zero_excluded_count,
                 "mean_top_n": round(mean_top_n, 4),
                 "max": round(max_val, 4),
                 "lexical_weights": {

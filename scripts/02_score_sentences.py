@@ -174,10 +174,6 @@ def format_result(result: dict, debug: bool = False) -> str:
         parts.append(
             f"    {lw['mean_all']}×mean_all({lp['mean_all']}) + {lw['mean_top_n']}×mean_top5({lp['mean_top_n']}) + {lw['max']}×max({lp['max']})"
         )
-        parts.append(
-            f"    mean_all denominator: {lp.get('mean_all_count', result['lexical_unit_count_capped'])}"
-            f" (excluded zero: {lp.get('mean_all_zero_excluded_count', 0)})"
-        )
         parts.append(f"    = {lex:.4f}")
 
         parts.append("")
