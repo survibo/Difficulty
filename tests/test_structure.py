@@ -118,7 +118,7 @@ class StructureScorerTest(unittest.TestCase):
         result = self.scorer.score_tokens(tokens)
         sp = result["structure_parts"]
         self.assertEqual(sp["predicate_count"], 4)
-        self.assertGreater(sp["predicate_score"], 0.0)
+        self.assertEqual(sp["predicate_score"], round(3 / 7, 4))
 
     def test_kiwi_suffix_tags_use_base_tag_for_structure_counts(self) -> None:
         tokens = [
@@ -146,7 +146,18 @@ class StructureScorerTest(unittest.TestCase):
         sp = result["structure_parts"]
         self.assertEqual(sp["adnominal_count"], 1)
         self.assertEqual(sp["nominalizer_count"], 1)
-        self.assertGreater(sp["embedding_score"], 0.0)
+        self.assertEqual(sp["embedding_score"], round(2 / 7, 4))
+
+    def test_embedding_score_reaches_full_at_seven(self) -> None:
+        tokens = [
+            _make_token(f"관형{i}", f"관형{i}", "ETM")
+            for i in range(7)
+        ]
+
+        sp = self.scorer.score_tokens(tokens)["structure_parts"]
+
+        self.assertEqual(sp["adnominal_count"], 7)
+        self.assertEqual(sp["embedding_score"], 1.0)
 
     # -----------------------------------------------------------------
     # adverbial_ending_count: EC "게" / "도록" / "듯이"
@@ -509,6 +520,28 @@ class StructureScorerTest(unittest.TestCase):
         adj_diff_2 = max(0.1, min(0.5, 0.7 / 1.5))
         expected_raw = (2 - 1) * adj_diff_1 * 1 + (3 - 1) * adj_diff_2 * 2
         self.assertAlmostEqual(sp["repetition_raw"], expected_raw, places=4)
+
+    def test_repetition_groups_different_surfaces_by_lemma(self) -> None:
+        tokens = [
+            _make_token("가고", "가다", "VV"),
+            _make_token("가면", "가다", "VV"),
+        ]
+        scored_words_full = [
+            {"surface": "가고", "lemma": "가다", "pos": "동사", "difficulty": 0.3, "match_method": "exact", "matched_entry_id": 1},
+            {"surface": "가면", "lemma": "가다", "pos": "동사", "difficulty": 0.3, "match_method": "exact", "matched_entry_id": 1},
+        ]
+
+        result = self.scorer.score_tokens(
+            tokens,
+            scored_words_full=scored_words_full,
+            polysemy_map={"가고": 1, "가면": 2},
+        )
+        sp = result["structure_parts"]
+
+        self.assertEqual(sp["repetition_count"], 1)
+        self.assertEqual(sp["repetition_details"][0]["lemma"], "가다")
+        self.assertEqual(sp["repetition_details"][0]["polysemy"], 2)
+        self.assertAlmostEqual(sp["repetition_raw"], 0.4, places=4)
 
     def test_repetition_details_structure(self) -> None:
         tokens = [

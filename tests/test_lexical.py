@@ -302,6 +302,21 @@ class LexiconScorerTest(unittest.TestCase):
         self.assertEqual(result["score_parts"]["lexical_weights"]["mean_top_n"], w_mean_top_n)
         self.assertEqual(result["score_parts"]["lexical_weights"]["max"], w_max)
 
+    def test_four_units_include_zero_in_top_five_mean(self) -> None:
+        tokens = [
+            _make_token("문장", "문장", "명사"),
+            _make_token("분석", "분석", "명사"),
+            _make_token("빠르다", "빠르다", "형용사"),
+            _make_token("쉽다", "쉽다", "형용사"),
+        ]
+
+        result = self.scorer.compute_sentence_score(tokens)
+
+        self.assertEqual(result["lexical_unit_count_capped"], 4)
+        self.assertEqual(result["score_parts"]["mean_all"], 0.2125)
+        self.assertEqual(result["score_parts"]["mean_top_n"], 0.2125)
+        self.assertEqual(result["lexical_score_0_1"], 0.2594)
+
     def test_compute_score_tracks_unknown_count(self) -> None:
         tokens = [
             _make_token("문장", "문장", "명사"),

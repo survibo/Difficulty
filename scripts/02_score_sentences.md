@@ -25,15 +25,19 @@ python scripts/02_score_sentences.py --debug "문장을 분석한다."
 ## 출력 예시
 
 ```
-  sentence:        문장을 분석한다.
+sentence: 문장을 분석한다.
   score_10:        3.12
+  reliability:     0.75
   lexical_score:   2.89
   structure_score: 3.67
   negation_score:  0.0
-  reliability:     0.75
-  content_words:   4
-  unknown_words:   1
+  lexical_units:   4
+  structure_words: 6
+  unknown_units:   1
 ```
+
+`--debug`에서는 `[summary]`, `[morph trace]`, `[lexical]`, `[structure]`,
+`[negation]`, `[warnings]` 섹션을 추가로 출력한다.
 
 ## CLI 옵션
 

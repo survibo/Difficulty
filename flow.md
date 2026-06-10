@@ -97,10 +97,10 @@ resolver는 합성 명사, `XR/NNG + XSA/XSV`, `XR + XSM`, `명사 + XSN` 등을
 | 어렵다 | 0.00 | 사전에 0.0으로 등록됨 |
 
 - mean_all = (0.20 + 0.25 + 0.22 + 0.00) / 4 = **0.1675**
-- mean_top_5 = (0.25 + 0.22 + 0.20) / 3 = **0.2233** (어휘 단위가 4개이므로 전체 평균과 동일)
+- mean_top_5 = (0.25 + 0.22 + 0.20 + 0.00) / 4 = **0.1675** (어휘 단위가 5개 미만이면 전체 평균과 동일)
 - max = **0.25**
 - capped=4 → 가중치 (0.50, 0.25, 0.25)
-- lexical = 0.50×0.1675 + 0.25×0.2233 + 0.25×0.25 = **0.2021**
+- lexical = 0.50×0.1675 + 0.25×0.1675 + 0.25×0.25 = **0.1881**
 
 ---
 
@@ -186,11 +186,11 @@ score = min(1.0, raw / 7)
 ```
 
 raw = adnominal_count + nominalizer_count + adverbial_ending_count
-score = min(1.0, raw / 5)
+score = min(1.0, raw / 7)
 
 ```
 
-5개 이상 → 1.0.
+7개 이상 → 1.0.
 
 ---
 
@@ -261,13 +261,14 @@ score = min(1.0, raw / 3)
 
 **repetition** — 단어 반복 처리 부담
 
-같은 표면형을 가진 내용어가 여러 번 등장하면, 다의어/동형어 판별 부담이 추가된다.
+같은 lemma를 가진 내용어가 여러 번 등장하면 반복 처리 부담이 추가된다.
+활용형처럼 표면형이 달라도 lemma가 같으면 하나의 반복 묶음으로 계산한다.
 
 ```
 
-effective_difficulty = max(difficulty, 0.05)
+effective_difficulty = max(0.10, min(0.5, difficulty / 1.5))
 raw = Σ (count - 1) × effective_difficulty × polysemy
-      (반복된 각 단어 표면형에 대해, 제외 lemma 제외)
+      (반복된 각 lemma에 대해, 제외 lemma 제외)
 score = min(1.0, raw / 6.0)
 
 ```
@@ -276,10 +277,10 @@ score = min(1.0, raw / 6.0)
 
 **계산 상세**:
 
-- 각 **표면형** 기준으로 등장 횟수 count를 센다
+- 각 **lemma** 기준으로 등장 횟수 count를 센다
 - count > 1이고 lemma가 제외 목록에 없으면 반복 부담 계산
-- `difficulty`: 해당 단어의 lexical lookup 난도값. 반복 계산에서는 최소 0.05로 보정한다.
-- `polysemy`: Kiwi로 해당 표면형을 분석했을 때 나오는 가능한 품사 태그의 가짓수
+- `difficulty`: 해당 lemma의 lexical lookup 난도값. 반복 계산에서는 `max(0.10, min(0.5, difficulty / 1.5))`로 보정한다.
+- `polysemy`: 같은 lemma에 속한 표면형들의 Kiwi 분석 결과 중 가장 큰 가능한 품사 태그 가짓수
 - 예: `밥을 먹고 밥을 마신다` → `밥` count=2, difficulty=0.15, polysemy=2 → (2-1)×0.15×2 = 0.30
 
 **derivational**(명사파생접미사 XSN)은 구조 점수 가중합에서는 제외되었지만,
