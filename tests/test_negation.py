@@ -473,6 +473,55 @@ class NegationAnalyzerTest(unittest.TestCase):
         ]
         self._assert_negation(tokens, count=2, local_max=1, score=0.5)
 
+    def test_combines_semantic_scores_without_adding_density(self):
+        # "안 가지 않을 수 없다는 주장을 부정하지 않는다"
+        # local=1.0, embedded=0.5, density=0.5
+        # final=1.0: density is not added on top of the semantic combination.
+        tokens = [
+            _make_token("안", "안", "MAG"),
+            _make_token("가", "가다", "VV"),
+            _make_token("지", "지", "EC"),
+            _make_token("않", "않", "VX"),
+            _make_token("을", "을", "ETM"),
+            _make_token("수", "수", "NNB"),
+            _make_token("없", "없다", "VA"),
+            _make_token("다는", "다는", "ETM"),
+            _make_token("주장", "주장", "NNG"),
+            _make_token("을", "을", "JKO"),
+            _make_token("부정", "부정", "NNG"),
+            _make_token("하", "하다", "XSV"),
+            _make_token("지", "지", "EC"),
+            _make_token("않", "않", "VX"),
+            _make_token("는다", "는다", "EF"),
+        ]
+
+        result = self.analyzer.analyze(tokens)
+
+        self.assertEqual(result["local_negation_score"], 1.0)
+        self.assertEqual(result["embedded_negation_score"], 0.5)
+        self.assertEqual(result["negation_density_score"], 0.5)
+        self.assertEqual(result["negation_score"], 1.0)
+
+    def test_adds_secondary_semantic_score_at_forty_percent(self):
+        tokens = [
+            _make_token("안", "안", "MAG"),
+            _make_token("가", "가다", "VV"),
+            _make_token("ᆫ", "ᆫ", "ETM"),
+            _make_token("것", "것", "NNB"),
+            _make_token("은", "은", "JX"),
+            _make_token("아니", "아니다", "VCN"),
+            _make_token("지", "지", "EC"),
+            _make_token("않", "않", "VX"),
+            _make_token("다", "다", "EF"),
+        ]
+
+        result = self.analyzer.analyze(tokens)
+
+        self.assertEqual(result["local_negation_score"], 0.4)
+        self.assertEqual(result["embedded_negation_score"], 0.5)
+        self.assertAlmostEqual(result["negation_density_score"], 1 / 3)
+        self.assertAlmostEqual(result["negation_score"], 0.66)
+
     # =====================================================================
     # output shape
     # =====================================================================

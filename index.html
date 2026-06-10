@@ -1268,7 +1268,7 @@
         const negSection = document.getElementById("negationSection");
         negSection.style.display = "block";
         document.getElementById("negationFormula").textContent =
-          "negation_score = max(local, construction, embedded, density); local: 0 if <=1, double=0.4, triple+=1.0";
+          "semantic = max(local, construction, embedded) + 0.4 × remaining semantic scores; negation_score = max(semantic, density); local: 0 if <=1, double=0.4, triple+=1.0";
         const items = [
           ["total negation count", nd.negation_count_total, ""],
           ["local_max (max per unit)", nd.negation_count_local_max, ""],

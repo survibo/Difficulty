@@ -305,7 +305,8 @@ cs = min(1.0, EC_개수 / 4)
 형태소 분석 결과에서 부정 표지(안/못/않/아니하/못하/말/없다/아니다)를 찾고,
 공통 `PatternMatcher`가 만든 절 경계 span을 사용하여
 **부정 처리 부담(negation processing burden)** 을 4개 하위 점수로 계산하고
-그 중 최댓값을 최종 점수로 사용한다.
+`local`, `construction`, `embedded`는 최고점에 나머지 점수의 40%를 더해 결합한다.
+`density`는 중복 가산하지 않고, 결합 점수보다 클 때만 최종 점수로 사용한다.
 
 ### 4.2 4개 하위 점수
 
@@ -315,6 +316,14 @@ cs = min(1.0, EC_개수 / 4)
 | **construction** | 조건절 분할 부정 (조건절 앞뒤 모두 부정)       | `0.4` if conditional link + 직전 unit 부정 있음 + 이후 unit 부정 있음 |
 | **embedded**     | 인용절/명사절 내 부정                         | `min(1.0, embedded_links / 2)`                                        |
 | **density**      | hard segment 내 부정 밀집                     | `0.5 × min(1.0, max(0, seg_neg - 1) / 3)`                            |
+
+최종 부정 점수:
+
+```
+semantic = min(1.0, max(local, construction, embedded)
+                    + 0.4 × Σ(나머지 semantic 점수))
+negation = max(semantic, density)
+```
 
 ### 4.3 절 경계 (boundary_kind)
 

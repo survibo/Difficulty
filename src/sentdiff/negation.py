@@ -2,7 +2,8 @@
 negation.py
 
 MorphToken 리스트를 기반으로 부정 처리 부담(negation processing burden)을 계산한다.
-4개 하위 점수(local / construction / embedded / density)의 max를 negation_score로 반환한다.
+local / construction / embedded는 최고점에 나머지 점수의 40%를 더해 결합한다.
+density는 중복 가산하지 않고, 결합 점수보다 클 때만 최종 점수로 사용한다.
 """
 
 from __future__ import annotations
@@ -211,7 +212,12 @@ class NegationAnalyzer:
         construction_score = CONSTRUCTION_SCORE if construction_hits > 0 else 0.0
         embedded_score = min(1.0, embedded_links / 2)
 
-        final = max(local_score, construction_score, embedded_score, density_score)
+        semantic_scores = sorted(
+            (local_score, construction_score, embedded_score),
+            reverse=True,
+        )
+        semantic_score = min(1.0, semantic_scores[0] + 0.4 * sum(semantic_scores[1:]))
+        final = max(semantic_score, density_score)
 
         return {
             "negation_count_total": total_neg,

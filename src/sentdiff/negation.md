@@ -5,7 +5,8 @@
 ## 역할
 
 MorphToken 리스트의 부정 표지를 분석하여 부정 처리 부담(negation processing burden)을
-4개 하위 점수로 계산하고 그 중 최댓값을 최종 negation_score로 반환한다.
+4개 하위 점수로 계산한다. local/construction/embedded는 최고점에 나머지 점수의
+40%를 더해 결합하고, density는 중복 가산하지 않고 fallback으로만 사용한다.
 절 경계는 structure의 논리 표현 분석과 같은 `PatternMatcher`가 만든 `PatternMatch` span을
 입력으로 사용한다.
 
@@ -111,10 +112,16 @@ density_score = 0.5 × segment_density
 ## 최종 점수
 
 ```
-negation_score = max(local_score, construction_score, embedded_score, density_score)
+semantic_score = min(
+    1.0,
+    max(local_score, construction_score, embedded_score)
+    + 0.4 × Σ(나머지 semantic 점수),
+)
+negation_score = max(semantic_score, density_score)
 ```
 
-4개 중 최댓값 채택. 범위 0~1.
+`density_score`는 다른 부정 유형과 중복되는 밀도 신호이므로 추가 가산하지 않는다.
+범위는 0~1이다.
 
 ## 출력 구조
 
@@ -128,7 +135,7 @@ negation_score = max(local_score, construction_score, embedded_score, density_sc
     "construction_negation_score": float, # construction 점수
     "embedded_negation_score": float,    # embedded 점수
     "negation_density_score": float,     # density 점수
-    "negation_score": float,             # 최종 점수 (최댓값)
+    "negation_score": float,             # semantic 결합 점수와 density 중 최댓값
     "boundary_matches": [                # 공통 matcher가 분류한 절 경계 span
         {"kind", "label", "start", "end", "token_start", "token_end"}
     ],
